@@ -110,14 +110,25 @@ Analogous to the discrete Fourier transform in classical signal processing, the 
 \subsection{Simulation}
 Yue writing up some ideas for the simulations
 
+Construct simulation from a circle and look at three case scenarios - 
+
+Simulate from the ESF model.  One where you have ESF noise but the pattern isn't spatial. 
+Step1: pull the square from the USPS
+
+
+
+2nd set of simulations
+Construct a few eigen functions on maps of the brain and lung and ?  simulate noise
+
+
 William's comments.  Want some effects that are smooth and some have hard boundaries.
 
 Yue's curiosity on how they perform empirically in finite sample sizes and different dimensions.
 
 \subsection{Application to toy example-USPS 358 data}
 \begin{enumerate}
-	\item Fit Sarah's model to the toy example predicting images from digit where digit is the spatially varying covariate.
-	\item Outcome whether you are a 3 or 5 and select the "top" few eigenvector and see how well you predict or model being a 3 or 5--use several different approaches to specify the network including the exponential (like in spESF--Sarah's paper), Laplacian, and ?? [one more from GSP literature]
+	\item Fit Sarah's model to the toy example predicting images from digit where digit is the spatially varying covariate and the digit is only 3 or 5. So subset the dataset.
+	\item Outcome whether you are a 3 or 5 and select the "top" few eigenvector and see how well you predict or model being a 3 or 5--use several different approaches to specify the network including the exponential (like in spESF--Sarah's paper), Laplacian, and ?? [one more from GSP literature].
 	\item Subset the USPS 358 data into a training and test/evaluation dataset and estimate a network and then go back and do 1 and 2.  Note this will be a boring example and we may want to use tree pattern data.
 \end{enumerate}
 

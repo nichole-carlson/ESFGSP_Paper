@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.24 (MiKTeX 22.1) (preloaded format=pdflatex 2022.5.19)  7 MAR 2024 09:55
+This is pdfTeX, Version 3.141592653-2.6-1.40.24 (MiKTeX 22.1) (preloaded format=pdflatex 2022.5.19)  12 MAR 2024 12:00
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -224,10 +224,6 @@ on input line 76.
 
 [3]
 
-LaTeX Warning: Reference `fig:eigenvectors' on page 4 undefined on input line 7
-8.
-
-
 Package natbib Warning: Citation `griffith2014spatial' on page 4 undefined on i
 nput line 82.
 
@@ -285,34 +281,27 @@ gures//EV4.png> <../Figures//EV100.png> <../Figures//EV200.png> <../Figures//EV
 
 Package natbib Warning: There were undefined citations.
 
-[7] (PaperDraft.aux)
-
-LaTeX Warning: There were undefined references.
-
-
-LaTeX Warning: Label(s) may have changed. Rerun to get cross-references right.
-
- ) 
+[7] (PaperDraft.aux) ) 
 Here is how much of TeX's memory you used:
  2630 strings out of 478615
  41903 string characters out of 2840263
- 337106 words of memory out of 3000000
+ 338105 words of memory out of 3000000
  20782 multiletter control sequences out of 15000+600000
  477221 words of font info for 55 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
  70i,6n,76p,1471b,272s stack positions out of 10000i,1000n,20000p,200000b,80000s
-</Library/Application Support/MiKTeX/texmfs/install/fonts/type1/public/amsfon
-ts/cm/cmbx12.pfb></Library/Application Support/MiKTeX/texmfs/install/fonts/type
-1/public/amsfonts/cm/cmmi12.pfb></Library/Application Support/MiKTeX/texmfs/ins
-tall/fonts/type1/public/amsfonts/cm/cmmi8.pfb></Library/Application Support/MiK
-TeX/texmfs/install/fonts/type1/public/amsfonts/cm/cmr12.pfb></Library/Applicati
-on Support/MiKTeX/texmfs/install/fonts/type1/public/amsfonts/cm/cmr17.pfb></Lib
-rary/Application Support/MiKTeX/texmfs/install/fonts/type1/public/amsfonts/cm/c
-mr8.pfb></Library/Application Support/MiKTeX/texmfs/install/fonts/type1/public/
-amsfonts/cm/cmsy10.pfb></Library/Application Support/MiKTeX/texmfs/install/font
-s/type1/public/amsfonts/cm/cmsy8.pfb></Library/Application Support/MiKTeX/texmf
-s/install/fonts/type1/public/amsfonts/cm/cmti8.pfb>
-Output written on PaperDraft.pdf (7 pages, 717619 bytes).
+</Library/Application Support/MiKTeX/texmfs/install/fonts
+/type1/public/amsfonts/cm/cmbx12.pfb></Library/Application Support/MiKTeX/texmf
+s/install/fonts/type1/public/amsfonts/cm/cmmi12.pfb></Library/Application Suppo
+rt/MiKTeX/texmfs/install/fonts/type1/public/amsfonts/cm/cmmi8.pfb></Library/App
+lication Support/MiKTeX/texmfs/install/fonts/type1/public/amsfonts/cm/cmr12.pfb
+></Library/Application Support/MiKTeX/texmfs/install/fonts/type1/public/amsfont
+s/cm/cmr17.pfb></Library/Application Support/MiKTeX/texmfs/install/fonts/type1/
+public/amsfonts/cm/cmr8.pfb></Library/Application Support/MiKTeX/texmfs/install
+/fonts/type1/public/amsfonts/cm/cmsy10.pfb></Library/Application Support/MiKTeX
+/texmfs/install/fonts/type1/public/amsfonts/cm/cmsy8.pfb></Library/Application 
+Support/MiKTeX/texmfs/install/fonts/type1/public/amsfonts/cm/cmti8.pfb>
+Output written on PaperDraft.pdf (7 pages, 717990 bytes).
 PDF statistics:
  88 PDF objects out of 1000 (max. 8388607)
  0 named destinations out of 1000 (max. 500000)
