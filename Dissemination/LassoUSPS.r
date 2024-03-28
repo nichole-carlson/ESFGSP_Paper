@@ -5,7 +5,6 @@ library(MASS)
 library(Matrix)
 library(glmnet)
 
-
 # Use the USPS handwritten digit data for 3, 5 and 8. It contains 1756 images,
 # each image contains 256 pixels, with -1 corresponds to white and 1 to black.
 data(USPSdigits, package = "IMIFA")
@@ -196,15 +195,15 @@ y_ind <- ifelse(y == 5, 0, 1)
 x_list <- c(list(x_adj, x_logit), map(eig_results, ~ .x$x_trans))
 names(x_list) <- c("org", "logit", "adj", "mat", "emp")
 full_fit <- map(x_list, ~ perform_lasso(.x, y_ind))
-unlist(map(full_fit, ~ paste0(round(.x$mse * 100, 2), "%")))
-#     org   logit     adj     mat     emp
-# "4.51%" "4.02%" "4.31%" "4.44%" "4.21%"
+format(unlist(map(full_fit, ~ .x$mse)), scientific = TRUE, digits = 3)
+#        org      logit        adj        mat        emp
+# "4.51e-02" "4.02e-02" "4.31e-02" "4.44e-02" "4.21e-02"
 
 # fit using x_adj, x_mat, x_emp with the top n eigenvectors
 top_n_eig_vecs <- 10
 top_n_fit <- map(
   eig_results, ~ perform_lasso(.x$x_trans[, seq_len(top_n_eig_vecs)], y_ind)
 )
-unlist(map(top_n_fit, ~ paste0(round(.x$mse * 100, 2), "%")))
-#     adj     mat     emp
-# "7.12%" "7.37%"  "5.5%"
+format(unlist(map(top_n_fit, ~ .x$mse)), scientific = TRUE, digits = 3)
+#        adj        mat        emp
+# "7.12e-02" "7.37e-02" "5.50e-02"
