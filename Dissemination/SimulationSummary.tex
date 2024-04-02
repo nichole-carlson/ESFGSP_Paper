@@ -6,7 +6,14 @@
 \topmargin 0in \headheight 0.0in \textheight 9in \textwidth 6.5in
 \oddsidemargin 0.1in \evensidemargin 0.1in
 
-
 \begin{document}
+
+\section*{Data Generation}
+
+The dataset comprises 2000 simulated images, each with 256 pixels, split equally into groups A and B, represented by \(z_i\) (1 for A, 0 for B). The effect size, captured by the \(\beta\) vector, is set to 1 within a central 8x8 region of each image, indicating the area of group A's influence, while the rest is 0, showing no effect. The random error \(\epsilon_i\) for each image follows a multivariate normal distribution with zero mean and an exponential correlation structure with rate equals 1.
+
+\section*{VBM}
+
+In the VBM analysis, a Generalized Linear Model (GLM) was applied pixel-wise to assess group effects on pixel intensities. The analysis yielded effect size estimates and p-values for each pixel, which were corrected for multiple comparisons using the Bonferroni method. The results were visualized in two maps: one showing effect sizes and another depicting significant differences (\(p < 0.05\)) in black, illustrating the focal areas of group differences in the simulated brain images.
 
 \end{document}
