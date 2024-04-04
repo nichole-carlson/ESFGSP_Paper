@@ -52,8 +52,8 @@ df_long <- {
 
 # VBM ----------------------------------------------------------------
 results <- list()
-for (pixel in seq_len(ncol(y))) {
-  y_pixel <- y[, pixel]
+for (pixel in seq_len(ncol(pixel_value))) {
+  y_pixel <- pixel_value[, pixel]
   model <- lm(y_pixel ~ z - 1)
   results[[pixel]] <- summary(model)
 }
