@@ -178,15 +178,34 @@ perform_lasso <- function(x, y, test_frac = 0.2) {
   # Cross-validation to find the optimal lambda
   cv_model <- cv.glmnet(x_train, y_train, alpha = 1)
   lambda_best <- cv_model$lambda.min
+  lambda_1se <- cv_model$lambda.1se
 
-  # Fit Lasso model on training set with best lambda
-  model <- glmnet(x_train, y_train, alpha = 1, lambda = lambda_best)
+  # Fit Lasso models on training set with both lambda.min and lambda.1se
+  model_min <- glmnet(x_train, y_train, alpha = 1, lambda = lambda_best)
+  model_1se <- glmnet(x_train, y_train, alpha = 1, lambda = lambda_1se)
 
   # Evaluate model performance on the test set
-  preds <- predict(model, s = lambda_best, newx = x_test)
-  mse <- mean((y_test - preds)^2)
+  preds_min <- predict(model_min, s = lambda_best, newx = x_test)
+  preds_1se <- predict(model_1se, s = lambda_1se, newx = x_test)
 
-  list(model = model, lambda = lambda_best, mse = mse)
+  # Convert predictions to binary outcomes
+  preds_bin_min <- ifelse(preds_min > 0.5, 1, 0)
+  preds_bin_1se <- ifelse(preds_1se > 0.5, 1, 0)
+
+  # Calculate accuracy
+  acc_min <- mean(preds_bin_min == y_test)
+  acc_1se <- mean(preds_bin_1se == y_test)
+
+  # Calculate AUC
+  auc_min <- pROC::auc(pROC::roc(y_test, preds_min[, 1]))
+  auc_1se <- pROC::auc(pROC::roc(y_test, preds_1se[, 1]))
+
+  list(
+    model_min = model_min, model_1se = model_1se,
+    lambda_min = lambda_best, lambda_1se = lambda_1se,
+    acc_min = acc_min, acc_1se = acc_1se,
+    auc_min = auc_min, auc_1se = auc_1se
+  )
 }
 
 y_ind <- ifelse(y == 5, 0, 1)
@@ -194,16 +213,35 @@ y_ind <- ifelse(y == 5, 0, 1)
 # fit using the full x (x orginal, x_logit, x_adj, x_mat, x_emp)
 x_list <- c(list(x_adj, x_logit), map(eig_results, ~ .x$x_trans))
 names(x_list) <- c("org", "logit", "adj", "mat", "emp")
+
 full_fit <- map(x_list, ~ perform_lasso(.x, y_ind))
-format(unlist(map(full_fit, ~ .x$mse)), scientific = TRUE, digits = 3)
-#        org      logit        adj        mat        emp
-# "4.51e-02" "4.02e-02" "4.31e-02" "4.44e-02" "4.21e-02"
+results <- map(full_fit, ~ c(
+  acc_min = .x$acc_min, acc_1se = .x$acc_1se,
+  auc_min = .x$auc_min, auc_1se = .x$auc_1se
+))
+results_df <- as.data.frame(do.call(rbind, results))
+print(format(results_df, digits = 3))
+
+#       acc_min acc_1se auc_min auc_1se
+# org     0.945   0.950   0.996   0.995
+# logit   0.959   0.959   0.998   0.996
+# adj     0.964   0.973   0.996   0.995
+# mat     0.964   0.964   0.995   0.995
+# emp     0.959   0.968   0.997   0.998
 
 # fit using x_adj, x_mat, x_emp with the top n eigenvectors
 top_n_eig_vecs <- 10
 top_n_fit <- map(
   eig_results, ~ perform_lasso(.x$x_trans[, seq_len(top_n_eig_vecs)], y_ind)
 )
-format(unlist(map(top_n_fit, ~ .x$mse)), scientific = TRUE, digits = 3)
-#        adj        mat        emp
-# "7.12e-02" "7.37e-02" "5.50e-02"
+top_n_results <- map(top_n_fit, ~ c(
+  acc_min = .x$acc_min, acc_1se = .x$acc_1se,
+  auc_min = .x$auc_min, auc_1se = .x$auc_1se
+))
+top_n_results_df <- as.data.frame(do.call(rbind, top_n_results))
+print(format(top_n_results_df, digits = 3))
+
+#     acc_min acc_1se auc_min auc_1se
+# adj   0.932   0.914   0.986   0.983
+# mat   0.927   0.914   0.986   0.984
+# emp   0.964   0.959   0.992   0.995
