@@ -178,7 +178,7 @@ emp_corr <- function(mat) {
   return(c_emp)
 }
 
-eig_decompose <- function(C) {
+eig_decomp <- function(C) {
   p <- ncol(C)
   M <- diag(p) - matrix(1, p, p) / p
   eig_data <- eigen(M %*% C %*% M, symmetric = TRUE)
@@ -193,14 +193,46 @@ eig_decompose <- function(C) {
   ))
 }
 
+weighted_contribs_mat <- matrix(NA, n_iter, n_pixel)
+
 for (i in 1:n_iter) {
-  y_iter <- y[i, , ]
-  C <- emp_corr(y_iter)
-  eig_components <- eig_decompose(C)
+  y_i <- y_3d[i, , ]
+  C <- emp_corr(y_i)
+  eig_comp <- eig_decomp(C)
 
   # Subset the eigenvectors with positive eigenvalues
-  pos_eig_vecs <- eig_components$eigenvectors[, eig_components$eigenvalues > 0]
+  pos_eig_vecs <- eig_comp$eigenvectors[, eig_comp$eigenvalues > 0]
 
   # Transform y using the positive eigenvectors
-  y_trans[i, , ] <- y %*% pos_eig_vecs
+  y_trans <- y_i %*% pos_eig_vecs
+
+  # Fit LASSO model
+  model <- lasso.proj(
+    y_trans,
+    group_ind,
+    family = "binomial",
+    parallel = TRUE,
+    ncores = 4
+  )
+
+  # Find significant predictors
+  pvals <- model$pval.corr
+  sig <- (pvals < 0.05)
+  if (sum(sig) == 0) {
+    weighted_contribs_mat[i, ] <- rep(0, n_pixel)
+  } else {
+    sig_eig_vecs <- pos_eig_vecs[, sig, drop = FALSE]
+    contribs <- abs(sig_eig_vecs)
+    sig_vals <- -log(pvals[sig])
+    weighted_contribs_mat[i, ] <- contribs %*% matrix(sig_vals, ncol = 1)[, 1]
+  }
 }
+
+weighted_contribs %>%
+  matrix(., image_size, image_size) %>%
+  melt() %>%
+  ggplot(., aes(x = Var2, y = Var1, fill = value)) +
+  geom_tile() +
+  scale_fill_gradient(low = "white", high = "black") +
+  labs(title = "Heatmap of Variable Significance") +
+  theme_minimal()
