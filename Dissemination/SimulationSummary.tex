@@ -60,5 +60,8 @@ In our simulated data, this could be simplified to \(y_s^i = x_s^i \beta_s^{SVC}
     \label{fig:my_label}
 \end{figure}
 
+\section*{LASSO}
+
+Predict \texttt{group\_ind} from imaging using LASSO regresion via the \texttt{hdi} package in R. In each iteration, randomly partition the data, fit LASSO to the first subset to identify non-zero coefficients, and then apply OLS using these coefficients on the second subset to estimate p-values. Repeat this process to obtain average p-values for the coefficients.
 
 \end{document}
