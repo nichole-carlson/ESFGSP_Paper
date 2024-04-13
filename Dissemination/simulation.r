@@ -35,7 +35,7 @@ group_ind_long <- rep(rep(group_ind, each = n_pixel), n_iter)
 beta <- matrix(0, image_size, image_size)
 index_st <- (image_size - center_size) %/% 2 + 1
 index_end <- index_st + center_size - 1
-beta[index_st:index_end, index_st:index_end] <- 1
+beta[index_st:index_end, index_st:index_end] <- 8
 beta <- as.vector(beta)
 beta_long <- rep(beta, n_iter * n_image)
 
@@ -60,7 +60,8 @@ for (i in seq_len(n_iter)) {
     s <- s + n_pixel
   }
 }
-rm(s, i, j)
+rm(s, i, j, y_ij, corr_mat, epsilon)
+gc()
 
 
 # Visualization --------------------------------------------------------
