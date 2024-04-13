@@ -5,9 +5,11 @@ library(hdi)
 library(tictoc)
 library(viridis)
 library(reshape2)
+library(parallel)
 
-source("/Users/siyangren/Documents/ra-cida/spatial-filtering/code/resf_vc.R")
-source("/Users/siyangren/Documents/ra-cida/spatial-filtering/code/mymeigen2D.R")
+source("/Users/siyangren/Documents/ra-cida/ESFGSP_Paper/Dissemination/simWrapper.r")
+# source("/Users/siyangren/Documents/ra-cida/spatial-filtering/code/resf_vc.R")
+# source("/Users/siyangren/Documents/ra-cida/spatial-filtering/code/mymeigen2D.R")
 
 
 # Simulate data ------------------------------------------------------
@@ -47,6 +49,7 @@ exp_corr_mat <- function(n, rate) {
 }
 corr_mat <- exp_corr_mat(n_pixel, rate = 1)
 
+set.seed(123)
 epsilon <- mvrnorm(n = n_iter * n_image, mu = rep(0, n_pixel), Sigma = corr_mat)
 
 # y
@@ -142,23 +145,29 @@ ggplot(melt(vbm_pvals_mat), aes(Var1, Var2, fill = value)) +
 # For each iteration,
 # group_indicator as the outcome;
 # y (2000, 256) as the predictors;
-# randomly divide the data into two parts, fit LASSO in one part, obtain pvals
-# using OLS on the other part
 
-lasso_pvals <- matrix(NA, 100, 256)
-tic()
-for (i in seq_len(n_iter)) {
+# Setting for parallel
+n_iter <- 4
+f_sim <- function(i) {
   y_i <- y_3d[i, , ]
-  model <- lasso.proj(
-    y_i,
-    group_ind,
-    family = "binomial",
-    parallel = TRUE,
-    ncores = 4
-  )
-  lasso_pvals[i, ] <- model$pval.corr
+  model <- lasso.proj(y_i, group_ind, family = "binomial")
+  return(model$pval.corr)
 }
-toc()
+TF_parallel <- TRUE
+n_cores <- detectCores() - 1
+list_package <- c("hdi", "glmnet")
+# Objects to export to each cluster node
+list_export <- c("y_3d", "group_ind", "lasso.proj", "list_package")
+
+iterated_results <- simWrapper(
+  n_sim = n_iter,
+  f_sim = f_sim,
+  TF_parallel = TF_parallel,
+  n_cores = n_cores,
+  list_export = list_export,
+  list_package = list_package
+)
+
 
 lasso_pvals_mat <- colSums(lasso_pvals < 0.05) / n_iter * 100 %>%
   matrix(., image_size, image_size)
