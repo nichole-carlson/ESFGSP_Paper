@@ -1,13 +1,31 @@
-library(MASS)
-library(stats)
-library(tidyverse)
-library(hdi)
-library(tictoc)
-library(viridis)
-library(reshape2)
-library(parallel)
+setup_packages <- function(packages) {
+  for (package in packages) {
+    # Check if the package is installed
+    if (!require(package, character.only = TRUE)) {
+      cat(sprintf("Installing package: %s\n", package))
+      install.packages(package)
 
-source("/Users/siyangren/Documents/ra-cida/ESFGSP_Paper/Dissemination/simWrapper.r")
+      # Attempt to load the package again after installing
+      if (!require(package, character.only = TRUE)) {
+        cat(sprintf("Failed to install package: %s\n", package))
+      } else {
+        cat(sprintf("Package loaded successfully: %s\n", package))
+      }
+    } else {
+      cat(sprintf("Package already installed and loaded: %s\n", package))
+    }
+  }
+}
+
+# List of packages to check and install if necessary
+packages_to_install <- c(
+  "MASS", "stats", "tidyverse", "hdi", "tictoc", "viridis", "reshape2",
+  "parallel"
+)
+
+setup_packages(packages_to_install)
+
+source("/Users/siyangren/Documents/ESFGSP/simWrapper.r")
 # source("/Users/siyangren/Documents/ra-cida/spatial-filtering/code/resf_vc.R")
 # source("/Users/siyangren/Documents/ra-cida/spatial-filtering/code/mymeigen2D.R")
 
@@ -83,7 +101,7 @@ plot_matrix <- function(vec) {
   return(plot)
 }
 
-plot_matrix(y_3d[1, 62, ])
+plot_matrix(y_3d[1, 1056, ])
 plot_matrix(y_3d[35, 78, ])
 
 
@@ -147,11 +165,11 @@ ggplot(melt(vbm_pvals_mat), aes(Var1, Var2, fill = value)) +
 # y (2000, 256) as the predictors;
 
 # Setting for parallel
-n_iter <- 4
+n_iter <- 10
 f_sim <- function(i) {
-  y_i <- y_3d[i, , ]
+  y_i <- y_3d[i, , c(1, 5, 8)]
   model <- lasso.proj(y_i, group_ind, family = "binomial")
-  return(model$pval.corr)
+  return(model$pval)
 }
 TF_parallel <- TRUE
 n_cores <- detectCores() - 1
@@ -159,6 +177,7 @@ list_package <- c("hdi", "glmnet")
 # Objects to export to each cluster node
 list_export <- c("y_3d", "group_ind", "lasso.proj", "list_package")
 
+tic()
 iterated_results <- simWrapper(
   n_sim = n_iter,
   f_sim = f_sim,
@@ -167,7 +186,7 @@ iterated_results <- simWrapper(
   list_export = list_export,
   list_package = list_package
 )
-
+toc()
 
 lasso_pvals_mat <- colSums(lasso_pvals < 0.05) / n_iter * 100 %>%
   matrix(., image_size, image_size)
