@@ -70,9 +70,8 @@ n_a <- 1000
 n_b <- 1000
 n_pixel <- 256
 center_size <- 8
-rate <- 1 # exp corr rate
 
-generate_data <- function(n_a, n_b, n_pixel, center_size, rate) {
+generate_data <- function(n_a, n_b, n_pixel, center_size) {
   n_image <- n_a + n_b
   square_size <- sqrt(n_pixel)
 
@@ -87,12 +86,12 @@ generate_data <- function(n_a, n_b, n_pixel, center_size, rate) {
   beta <- as.vector(beta) # (256, )
 
   # multivariate normal error
-  exp_corr_mat <- function(n, rate) {
+  exp_corr_mat <- function(n) {
     dist_mat <- outer(seq_len(n), seq_len(n), function(x, y) abs(x - y))
-    corr_mat <- exp(-rate * dist_mat)
+    corr_mat <- exp(-dist_mat / max(dist_mat))
     return(corr_mat)
   }
-  corr_mat <- exp_corr_mat(n_pixel, rate)
+  corr_mat <- exp_corr_mat(n_pixel)
 
   # generate errors (2000, 256)
   epsilon <- mvrnorm(n = n_image, mu = rep(0, n_pixel), Sigma = corr_mat)
@@ -104,7 +103,7 @@ generate_data <- function(n_a, n_b, n_pixel, center_size, rate) {
 }
 
 gen_data_objs <- c(
-  "n_a", "n_b", "n_pixel", "center_size", "rate", "generate_data"
+  "n_a", "n_b", "n_pixel", "center_size", "generate_data"
 )
 gen_data_pkgs <- c("MASS")
 
@@ -253,17 +252,24 @@ lasso_fsim <- function(i) {
   y <- simulated_data[, 1]
 
   # fit lasso model
-  model <- lasso.proj(x, y, family = "binomial")
+  # model <- lasso.proj(x[, c(1, 3, 123, 124)], y, family = "binomial")
 
-  return(model$pval.corr)
+  # return(model$pval.corr)
+
+  model <- cv.glmnet(x[, c(1, 3, 123, 124)], y, family = "binomial", alpha = 1)
+  best_lambda <- model$lambda.min
+  coefs <- coef(model, s = best_lambda)[-1, 1]
+
+  return(coefs)
 }
 
-lasso_pkgs <- c("hdi")
-lasso_objs <- c()
+lasso_pkgs <- c("hdi", "glmnet")
+lasso_objs <- c("perm_lasso")
 list_package <- c(gen_data_pkgs, lasso_pkgs)
 
+set.seed(42)
 tic()
-lasso_pvals <- call_simWrapper(
+lasso_coefs <- call_simWrapper(
   n_sim = n_iter,
   f_sim = lasso_fsim,
   list_export = c(gen_data_objs, lasso_objs, "list_package"),
@@ -271,28 +277,18 @@ lasso_pvals <- call_simWrapper(
 )
 toc()
 
-lasso_pvals_mat <- colSums(lasso_pvals < 0.05) / n_iter * 100 %>%
-  matrix(., square_size, square_size)
+# lasso_pvals_mat <- colSums(lasso_pvals < 0.05) / n_iter * 100
 
 # no pixel is significant even before correction
 
-glmnet_fit <- cv.glmnet(x[, c(1, 125)], y, family = "binomial")
-best_lambda <- glmnet_fit$lambda.min
-coef(glmnet_fit, s = best_lambda)[, 1]
+
 
 
 # Frequency --------------------------------------------------------
-# Predict z using y projected on the frequency domain
-# For each iteration,
-# 1. Calculate the correlation matrix C;
-# 2. Calculate the eigenvalues and eigenvectors;
-# 3. Project the pixel values (y) by different eigenvectors
+# Predict group_ind using image projected on the frequency domain
+# Find a fix correlation matrix, such as exp corr mat
+# Do the transformation use 1. positive eigenvalues only 2. all eigenvalues
 
-emp_corr <- function(mat) {
-  c_emp <- cor(mat)
-  diag(c_emp) <- 0
-  return(c_emp)
-}
 
 eig_decomp <- function(C) {
   p <- ncol(C)
@@ -309,11 +305,11 @@ eig_decomp <- function(C) {
   ))
 }
 
-perm_lasso <- function(x, y, n_perm = n_perm) {
+perm_lasso <- function(x, y, n_perm) {
   # get original coef estimates
   cv_fit <- cv.glmnet(x, y, alpha = 1)
   best_lambda <- cv_fit$lambda.min
-  orig_coef <- coef(cv_fit, s = "lambda.min")[, 1]
+  orig_coef <- coef(cv_fit, s = "lambda.min")[-1, 1]
 
   perm_coefs <- matrix(NA, n_perm, length(orig_coef))
 
@@ -321,7 +317,7 @@ perm_lasso <- function(x, y, n_perm = n_perm) {
   for (i in seq_len(n_perm)) {
     y_perm <- sample(y)
     perm_fit <- glmnet(x, y_perm, alpha = 1)
-    perm_coefs[i, ] <- coef(perm_fit, s = best_lambda)[, 1]
+    perm_coefs[i, ] <- coef(perm_fit, s = best_lambda)[-1, 1]
   }
 
   # calculate p-values
