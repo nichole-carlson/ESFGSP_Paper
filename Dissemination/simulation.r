@@ -34,6 +34,7 @@ source("/Users/siyangren/Documents/ESFGSP/simWrapper.r")
 # Parallel global settings --------------------------------------------
 TF_parallel <- TRUE
 n_cores <- detectCores() - 1
+n_iter <- 1000
 
 call_simWrapper <- function(
     n_sim, f_sim, list_package, list_export, params = list()) {
@@ -109,49 +110,99 @@ gen_data_pkgs <- c("MASS")
 
 
 # Visualization --------------------------------------------------------
+set.seed(121)
 df_sample <- generate_data(n_a, n_b, n_pixel, center_size, rate)
 
-plot_matrix <- function(vec) {
+plot_matrix <- function(vec, value_limits = c()) {
   # Convert the matrix to a long format data frame
   mat <- matrix(vec, 16, 16, byrow = TRUE)
+
+  # Convert the matrix to a long format data frame
   data_long <- melt(mat)
+
+  # Ensure value_limits is of length 2
+  if (length(value_limits) != 2) {
+    stop("value_limits must be a vector of length 2, like c(low, high)")
+  }
 
   # Create the plot using ggplot2
   plot <- ggplot(data_long, aes(x = Var1, y = Var2, fill = value)) +
     geom_tile() +
-    scale_fill_viridis(name = "Value") +
+    scale_fill_gradient(
+      low = "white", high = "black",
+      limits = value_limits,
+      oob = scales::squish
+    ) +
     theme_minimal() +
+    theme(
+      plot.background = element_rect(fill = "white", colour = "white"),
+      panel.background = element_rect(fill = "white", colour = "white")
+    ) +
     labs(x = "", y = "")
 
   return(plot)
 }
 
-plot_matrix(df_sample[1024, -1])
-plot_matrix(df_sample[78, -1])
+image_a <- plot_matrix(df_sample[78, -1], range(df_sample))
+image_b <- plot_matrix(df_sample[1024, -1], range(df_sample))
+
+image_path <- file.path(getwd(), "Figures")
+
+ggsave(file.path(image_path, "image_ex1.png"), plot = image_a)
+ggsave(file.path(image_path, "image_ex2.png"), plot = image_b)
+
 
 
 # VBM ----------------------------------------------------------------
 
-vbm_pvals <- matrix(0, n_iter, n_pixel)
+vbm_fsim <- function(i) {
+  # simulate data
+  simulated_data <- generate_data(
+    n_a = n_a,
+    n_b = n_b,
+    n_pixel = n_pixel,
+    center_size = center_size,
+    rate = rate
+  )
 
-for (i in seq_len(n_iter)) {
+  pvals <- rep(NA, n_pixel)
+
   for (j in seq_len(n_pixel)) {
-    y_pixel <- y_3d[i, , j]
-    model <- lm(y_pixel ~ group_ind)
-    vbm_pvals[i, j] <- summary(model)$coefficients[2, 4]
+    pixel_value <- simulated_data[, j + 1]
+    group_ind <- simulated_data[, 1]
+    model <- lm(pixel_value ~ group_ind)
+    pvals[j] <- summary(model)$coefficients[2, 4]
   }
-  vbm_pvals[i, ] <- p.adjust(vbm_pvals[i, ], method = "holm")
+
+  return(pvals)
 }
 
-# calculate the perc of p-values < 0.05 for each pixel
-vbm_pvals_mat <- colSums(vbm_pvals < 0.05) / n_iter * 100 %>%
-  matrix(., square_size, square_size)
+vbm_pkgs <- c()
+vbm_objs <- c()
+list_package <- c(gen_data_pkgs, vbm_pkgs)
 
-ggplot(melt(vbm_pvals_mat), aes(Var1, Var2, fill = value)) +
-  geom_tile() +
-  scale_fill_gradient(low = "white", high = "black") +
-  labs(title = "Corrected p-values") +
-  theme_minimal()
+tic()
+vbm_pvals <- call_simWrapper(
+  n_sim = n_iter,
+  f_sim = vbm_fsim,
+  list_export = c(gen_data_objs, vbm_objs, "list_package"),
+  list_package = list_package
+)
+toc()
+
+vbm_pvals_corr <- t(apply(vbm_pvals, 1, p.adjust, method = "bonferroni"))
+
+# calculate the perc of p-values < 0.05 for each pixel
+vbm_pvals_perc <- colSums(vbm_pvals < 0.05) / n_iter * 100
+vbm_pvals_corr_perc <- colSums(vbm_pvals_corr < 0.05) / n_iter * 100
+
+image_vbm_pvals <- plot_matrix(vbm_pvals_perc, c(0, 100))
+image_vbm_pvals_corr <- plot_matrix(vbm_pvals_corr_perc, c(0, 100))
+
+image_path <- file.path(getwd(), "Figures")
+
+ggsave(file.path(image_path, "vbm_pvals.png"), plot = image_vbm_pvals)
+ggsave(file.path(image_path, "vbm_pvals_corr.png"), plot = image_vbm_pvals_corr)
 
 
 # spVBM ------------------------------------------------------------
@@ -225,6 +276,9 @@ lasso_pvals_mat <- colSums(lasso_pvals < 0.05) / n_iter * 100 %>%
 
 # no pixel is significant even before correction
 
+glmnet_fit <- cv.glmnet(x[, c(1, 125)], y, family = "binomial")
+best_lambda <- glmnet_fit$lambda.min
+coef(glmnet_fit, s = best_lambda)[, 1]
 
 
 # Frequency --------------------------------------------------------

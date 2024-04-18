@@ -21,11 +21,13 @@ To adapt the data for the input specifications of the \texttt{myresf\_vc} functi
     % First figure
     \begin{minipage}[b]{0.45\textwidth}
         \includegraphics[width=\textwidth]{/Users/siyangren/Documents/ra-cida/ESFGSP_Paper/Figures/image_ex1.png}
+        \caption{Example image from group A}
     \end{minipage}
     \hfill % This command adds a space between the two figures
     % Second figure
     \begin{minipage}[b]{0.45\textwidth}
         \includegraphics[width=\textwidth]{/Users/siyangren/Documents/ra-cida/ESFGSP_Paper/Figures/image_ex2.png}
+        \caption{Example image from group B}
     \end{minipage}
 \end{figure}
 
@@ -33,13 +35,20 @@ To adapt the data for the input specifications of the \texttt{myresf\_vc} functi
 
 In the VBM analysis, a Generalized Linear Model (GLM) was applied pixel-wise to assess group effects on pixel intensities across 100 iterations. For each iteration, the model generated effect size estimates and p-values for each pixel. These p-values were then corrected for multiple comparisons using the Bonferroni method. Figure \ref{fig:vbm_pvals} depicts the frequency of significant p-values in across pixels, with pixels showing significant \(\beta\) in all 100 iterations appearing in black, and those never showing significance in white.
 
-\begin{figure}[ht]
+\begin{figure}[H]
     \centering
-    \includegraphics[width=0.5\textwidth]{/Users/siyangren/Documents/ra-cida/ESFGSP_Paper/Figures/vbm_pvals.png}
-    \caption{\% of significant p-values across pixels in VBM analysis}
-    \label{fig:vbm_pvals}
+    % First figure
+    \begin{minipage}[b]{0.45\textwidth}
+        \includegraphics[width=\textwidth]{/Users/siyangren/Documents/ra-cida/ESFGSP_Paper/Figures/vbm_pvals.png}
+        \caption{\% of significant p-values across pixels in VBM analysis}
+    \end{minipage}
+    \hfill % This command adds a space between the two figures
+    % Second figure
+    \begin{minipage}[b]{0.45\textwidth}
+        \includegraphics[width=\textwidth]{/Users/siyangren/Documents/ra-cida/ESFGSP_Paper/Figures/vbm_pvals_corr.png}
+        \caption{\% of significant p-values after correction across pixels in VBM analysis}
+    \end{minipage}
 \end{figure}
-
 
 
 \section*{spVBM}
