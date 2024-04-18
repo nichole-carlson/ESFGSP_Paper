@@ -110,7 +110,7 @@ gen_data_pkgs <- c("MASS")
 
 # Visualization --------------------------------------------------------
 set.seed(121)
-df_sample <- generate_data(n_a, n_b, n_pixel, center_size, rate)
+df_sample <- generate_data(n_a, n_b, n_pixel, center_size)
 
 plot_matrix <- function(vec, value_limits = c()) {
   # Convert the matrix to a long format data frame
@@ -160,8 +160,7 @@ vbm_fsim <- function(i) {
     n_a = n_a,
     n_b = n_b,
     n_pixel = n_pixel,
-    center_size = center_size,
-    rate = rate
+    center_size = center_size
   )
 
   pvals <- rep(NA, n_pixel)
@@ -245,8 +244,7 @@ lasso_fsim <- function(i) {
     n_a = n_a,
     n_b = n_b,
     n_pixel = n_pixel,
-    center_size = center_size,
-    rate = rate
+    center_size = center_size
   )
   x <- simulated_data[, -1]
   y <- simulated_data[, 1]
@@ -264,7 +262,7 @@ lasso_fsim <- function(i) {
 }
 
 lasso_pkgs <- c("hdi", "glmnet")
-lasso_objs <- c("perm_lasso")
+lasso_objs <- c()
 list_package <- c(gen_data_pkgs, lasso_pkgs)
 
 set.seed(42)
@@ -289,6 +287,11 @@ toc()
 # Find a fix correlation matrix, such as exp corr mat
 # Do the transformation use 1. positive eigenvalues only 2. all eigenvalues
 
+exp_corr_mat <- function(n) {
+  dist_mat <- outer(seq_len(n), seq_len(n), function(x, y) abs(x - y))
+  corr_mat <- exp(-dist_mat / max(dist_mat))
+  return(corr_mat)
+}
 
 eig_decomp <- function(C) {
   p <- ncol(C)
@@ -349,8 +352,7 @@ freq_fsim <- function(i) {
     n_a = n_a,
     n_b = n_b,
     n_pixel = n_pixel,
-    center_size = center_size,
-    rate = rate
+    center_size = center_size
   )
   x <- simulated_data[, -1]
   y <- simulated_data[, 1]
