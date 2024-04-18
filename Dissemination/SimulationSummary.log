@@ -1,9 +1,9 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.25 (TeX Live 2023) (preloaded format=pdflatex 2024.2.22)  18 APR 2024 11:59
+This is pdfTeX, Version 3.141592653-2.6-1.40.25 (TeX Live 2023) (preloaded format=pdflatex 2023.12.11)  18 APR 2024 15:23
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
  %&-line parsing enabled.
-**/Users/siyangren/Documents/ra-cida/ESFGSP_Paper/Dissemination/SimulationSummary.tex
+**/Users/siyangren/Documents/ra-cida/ESFGSP_Paper/Dissemination/SimulationSummary
 (/Users/siyangren/Documents/ra-cida/ESFGSP_Paper/Dissemination/SimulationSummary.tex
 LaTeX2e <2022-11-01> patch level 1
 L3 programming layer <2023-02-22> (/usr/local/texlive/2023/texmf-dist/tex/latex/base/article.cls
@@ -169,16 +169,16 @@ LaTeX Font Info:    Trying to load font information for U+msb on input line 15.
  (/usr/local/texlive/2023/texmf-dist/tex/latex/amsfonts/umsb.fd
 File: umsb.fd 2013/01/14 v3.01 AMS symbols B
 )
-</Users/siyangren/Documents/ra-cida/ESFGSP_Paper/Figures/image_ex1.png, id=1, 505.6491pt x 505.6491pt>
+</Users/siyangren/Documents/ra-cida/ESFGSP_Paper/Figures/image_ex1.png, id=1, 505.89pt x 505.89pt>
 File: /Users/siyangren/Documents/ra-cida/ESFGSP_Paper/Figures/image_ex1.png Graphic file (type png)
 <use /Users/siyangren/Documents/ra-cida/ESFGSP_Paper/Figures/image_ex1.png>
 Package pdftex.def Info: /Users/siyangren/Documents/ra-cida/ESFGSP_Paper/Figures/image_ex1.png  used on input line 23.
-(pdftex.def)             Requested size: 211.3883pt x 211.39128pt.
-</Users/siyangren/Documents/ra-cida/ESFGSP_Paper/Figures/image_ex2.png, id=2, 505.6491pt x 505.6491pt>
+(pdftex.def)             Requested size: 211.3883pt x 211.39165pt.
+</Users/siyangren/Documents/ra-cida/ESFGSP_Paper/Figures/image_ex2.png, id=2, 505.89pt x 505.89pt>
 File: /Users/siyangren/Documents/ra-cida/ESFGSP_Paper/Figures/image_ex2.png Graphic file (type png)
 <use /Users/siyangren/Documents/ra-cida/ESFGSP_Paper/Figures/image_ex2.png>
 Package pdftex.def Info: /Users/siyangren/Documents/ra-cida/ESFGSP_Paper/Figures/image_ex2.png  used on input line 29.
-(pdftex.def)             Requested size: 211.3883pt x 211.39128pt.
+(pdftex.def)             Requested size: 211.3883pt x 211.39165pt.
 
 
 LaTeX Warning: Reference `fig:vbm_pvals' on page 1 undefined on input line 36.
@@ -208,14 +208,14 @@ LaTeX Warning: There were undefined references.
  ) 
 Here is how much of TeX's memory you used:
  2292 strings out of 476025
- 37956 string characters out of 5790017
+ 37956 string characters out of 5790016
  1855388 words of memory out of 5000000
  22727 multiletter control sequences out of 15000+600000
  520476 words of font info for 62 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 57i,12n,62p,720b,296s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 57i,12n,62p,716b,296s stack positions out of 10000i,1000n,20000p,200000b,200000s
 </usr/local/texlive/2023/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb></usr/local/texlive/2023/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx8.pfb></usr/local/texlive/2023/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb></usr/local/texlive/2023/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi12.pfb></usr/local/texlive/2023/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi8.pfb></usr/local/texlive/2023/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb></usr/local/texlive/2023/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb></usr/local/texlive/2023/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/local/texlive/2023/texmf-dist/fonts/type1/public/amsfonts/cm/cmtt12.pfb>
-Output written on SimulationSummary.pdf (3 pages, 525745 bytes).
+Output written on SimulationSummary.pdf (3 pages, 525372 bytes).
 PDF statistics:
  66 PDF objects out of 1000 (max. 8388607)
  36 compressed objects within 1 object stream
