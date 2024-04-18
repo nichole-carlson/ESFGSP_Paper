@@ -2,6 +2,7 @@
 \usepackage{amsmath,amsfonts}
 \usepackage{enumerate}
 \usepackage{graphicx}
+\usepackage{float}
 
 \renewcommand{\baselinestretch}{1}
 \topmargin 0in \headheight 0.0in \textheight 9in \textwidth 6.5in
@@ -11,22 +12,11 @@
 
 \section*{Data Generation}
 
-The dataset contains 2000 simulated images, with 1000 images each in groups A and B. Each image has 256 pixels arranged in a \(16 \times 16\) grid. The \(\beta\) matrix, set to 1 in an \(8 \times 8\) central region and 0 elsewhere, modifies the pixel values in group A. The \texttt{group\_ind} vector differentiates the groups, assigning 1 to group A and 0 to group B. Noise \(\epsilon_i\), generated from a multivariate normal distribution with zero mean and a covariance matrix from an exponential correlation function with rate 1, is added to the pixel values.
+The dataset contains 2000 simulated images, with 1000 images each in groups A and B. Each image has 256 pixels arranged in a \(16 \times 16\) grid. The \(\beta\) matrix, set to 8 in an \(8 \times 8\) central region and 0 elsewhere, modifies the pixel values in group A. The \texttt{group\_ind} vector differentiates the groups, assigning 1 to group A and 0 to group B. Noise \(\epsilon_i\), generated from a multivariate normal distribution with zero mean and a covariance matrix from an exponential correlation function with rate 1, is added to the pixel values.
 
 To adapt the data for the input specifications of the \texttt{myresf\_vc} function, the dataset was transformed into a long format. In this format, the columns \texttt{x} and \texttt{y} denote the coordinates, while \texttt{pixel\_value} corresponds to the simulated $y$ values.
 
-\section*{VBM}
-
-In the VBM analysis, a Generalized Linear Model (GLM) was applied pixel-wise to assess group effects on pixel intensities across 100 iterations. For each iteration, the model generated effect size estimates and p-values for each pixel. These p-values were then corrected for multiple comparisons using the Bonferroni method. Figure \ref{fig:vbm_pvals} depicts the frequency of significant p-values in across pixels, with pixels showing significant \(\beta\) in all 100 iterations appearing in black, and those never showing significance in white.
-
-\begin{figure}[ht]
-    \centering
-    \includegraphics[width=0.5\textwidth]{/Users/siyangren/Documents/ra-cida/ESFGSP_Paper/Figures/vbm_pvals.png}
-    \caption{}
-    \label{fig:vbm_pvals}
-\end{figure}
-
-\begin{figure}[ht]
+\begin{figure}[H]
     \centering
     % First figure
     \begin{minipage}[b]{0.45\textwidth}
@@ -38,6 +28,19 @@ In the VBM analysis, a Generalized Linear Model (GLM) was applied pixel-wise to 
         \includegraphics[width=\textwidth]{/Users/siyangren/Documents/ra-cida/ESFGSP_Paper/Figures/image_ex2.png}
     \end{minipage}
 \end{figure}
+
+\section*{VBM}
+
+In the VBM analysis, a Generalized Linear Model (GLM) was applied pixel-wise to assess group effects on pixel intensities across 100 iterations. For each iteration, the model generated effect size estimates and p-values for each pixel. These p-values were then corrected for multiple comparisons using the Bonferroni method. Figure \ref{fig:vbm_pvals} depicts the frequency of significant p-values in across pixels, with pixels showing significant \(\beta\) in all 100 iterations appearing in black, and those never showing significance in white.
+
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=0.5\textwidth]{/Users/siyangren/Documents/ra-cida/ESFGSP_Paper/Figures/vbm_pvals.png}
+    \caption{\% of significant p-values across pixels in VBM analysis}
+    \label{fig:vbm_pvals}
+\end{figure}
+
+
 
 \section*{spVBM}
 
@@ -53,7 +56,7 @@ The spVBM model is:
 
 In our simulated data, this could be simplified to \(y_s^i = x_s^i \beta_s^{SVC} + (?) \). My question is, which term captures the exponential correlation structure in the model? \(G\) or \(\Gamma\)?
 
-\begin{figure}[ht]
+\begin{figure}[H]
     \centering
     \includegraphics[width=0.5\textwidth]{/Users/siyangren/Documents/ra-cida/ESFGSP_Paper/Figures/spvbm_coefs_april_3.png}
     \caption{Estimated coefficients}
@@ -63,5 +66,9 @@ In our simulated data, this could be simplified to \(y_s^i = x_s^i \beta_s^{SVC}
 \section*{LASSO}
 
 Predict \texttt{group\_ind} from imaging using LASSO regresion via the \texttt{hdi} package in R. In each iteration, randomly partition the data, fit LASSO to the first subset to identify non-zero coefficients, and then apply OLS using these coefficients on the second subset to estimate p-values. Repeat this process to obtain average p-values for the coefficients.
+
+\section*{Frequency}
+
+An empirical correlation matrix was computed from the \(2000 \times 256\) pixel matrix, followed by the extraction of eigenvectors and eigenvalues. The dataset X was then transformed using the eigenvectors corresponding to positive eigenvalues. A Lasso regression model was fitted on the transformed data to predict \texttt{group\_ind}. The significance of the model coefficients was assessed using p-values obtained from 1000 permutation tests.
 
 \end{document}
