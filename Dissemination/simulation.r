@@ -34,7 +34,6 @@ source("/Users/siyangren/Documents/ESFGSP/simWrapper.r")
 # Parallel global settings --------------------------------------------
 TF_parallel <- TRUE
 n_cores <- detectCores() - 1
-n_iter <- 1000
 
 call_simWrapper <- function(
     n_sim, f_sim, list_package, list_export, params = list()) {
@@ -154,6 +153,8 @@ ggsave(file.path(image_path, "image_ex2.png"), plot = image_b)
 
 # VBM ----------------------------------------------------------------
 
+n_iter <- 1000
+
 vbm_fsim <- function(i) {
   # simulate data
   simulated_data <- generate_data(
@@ -238,6 +239,8 @@ ggsave(file.path(image_path, "vbm_pvals_corr.png"), plot = image_vbm_pvals_corr)
 # group_indicator as the outcome;
 # y (2000, 256) as the predictors;
 
+n_iter <- 1000
+
 lasso_fsim <- function(i) {
   # simulate data
   simulated_data <- generate_data(
@@ -250,15 +253,15 @@ lasso_fsim <- function(i) {
   y <- simulated_data[, 1]
 
   # fit lasso model
-  # model <- lasso.proj(x[, c(1, 3, 123, 124)], y, family = "binomial")
+  model <- lasso.proj(x[, c(1, 3, 123, 124)], y, family = "binomial")
 
-  # return(model$pval.corr)
+  return(model$pval.corr)
 
-  model <- cv.glmnet(x[, c(1, 3, 123, 124)], y, family = "binomial", alpha = 1)
-  best_lambda <- model$lambda.min
-  coefs <- coef(model, s = best_lambda)[-1, 1]
+  # model <- cv.glmnet(x[, c(1, 3, 123, 124)], y, family = "binomial", alpha = 1)
+  # best_lambda <- model$lambda.min
+  # coefs <- coef(model, s = best_lambda)[-1, 1]
 
-  return(coefs)
+  # return(coefs)
 }
 
 lasso_pkgs <- c("hdi", "glmnet")
@@ -275,17 +278,18 @@ lasso_coefs <- call_simWrapper(
 )
 toc()
 
-# lasso_pvals_mat <- colSums(lasso_pvals < 0.05) / n_iter * 100
+lasso_pvals_mat <- colSums(lasso_pvals < 0.05) / n_iter * 100
 
 # no pixel is significant even before correction
-
 
 
 
 # Frequency --------------------------------------------------------
 # Predict group_ind using image projected on the frequency domain
 # Find a fix correlation matrix, such as exp corr mat
-# Do the transformation use 1. positive eigenvalues only 2. all eigenvalues
+# Do the transformation use
+#   1. positive eigenvalues only
+#   2. all eigenvalues
 
 exp_corr_mat <- function(n) {
   dist_mat <- outer(seq_len(n), seq_len(n), function(x, y) abs(x - y))
@@ -328,24 +332,10 @@ perm_lasso <- function(x, y, n_perm) {
   return(p_vals)
 }
 
-# Use empirical correlation matrix, only use positive eigenvalues
-fit_freq_model <- function(x, y, n_perm = 1000) {
-  # eigen transpose
-  emp_corr_mat <- emp_corr(x)
-  eig_comp <- eig_decomp(emp_corr_mat)
-  pos_eig_vecs <- eig_comp$eigenvectors[, eig_comp$eigenvalues > 0]
-  x_trans <- x %*% pos_eig_vecs
-
-  # perform lasso with permutation test
-  p_vals <- perm_lasso(x_trans, y, n_perm)
-
-  # pad vector to the same length
-  p_vals_ext <- c(p_vals, rep(NA, ncol(x) - length(p_vals)))
-  return(p_vals_ext)
-}
-
 # parallel data generation and freq model fitting above
-n_iter <- 2
+n_iter <- 100
+n_perm <- 1000
+
 freq_fsim <- function(i) {
   # simulate data
   simulated_data <- generate_data(
@@ -357,13 +347,24 @@ freq_fsim <- function(i) {
   x <- simulated_data[, -1]
   y <- simulated_data[, 1]
 
-  # fit lasso model with permutation test for p-values
-  p_vals <- fit_freq_model(x, y)
+  # build exponential correlation matrix
+  corr_mat <- exp_corr_mat(ncol(x))
 
-  return(p_vals)
+  # eigendecompose
+  eig_comp <- eig_decomp(corr_mat)
+
+  # eigen transpose in two ways
+  x_trans_pos <- x %*% eig_comp$eigenvectors[, eig_comp$eigenvalues > 0]
+  x_trans <- x %*% eig_comp$eigenvectors
+
+  # perform lasso with permutation test
+  p_vals <- perm_lasso(x_trans, y, n_perm)
+  p_vals_pos <- perm_lasso(x_trans_pos, y, n_perm)
+
+  return(cbind(p_vals, p_vals_pos))
 }
 
-freq_objs <- c("emp_corr", "eig_decomp", "perm_lasso", "fit_freq_model")
+freq_objs <- c("exp_corr_mat", "eig_decomp", "perm_lasso", "n_perm")
 freq_pkgs <- c("glmnet")
 list_package <- c(gen_data_pkgs, freq_pkgs)
 
