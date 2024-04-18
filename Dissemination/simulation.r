@@ -20,7 +20,7 @@ setup_packages <- function(packages) {
 # List of packages to check and install if necessary
 packages_to_install <- c(
   "MASS", "stats", "tidyverse", "hdi", "tictoc", "viridis", "reshape2",
-  "parallel"
+  "parallel", "glmnet"
 )
 
 setup_packages(packages_to_install)
@@ -28,6 +28,32 @@ setup_packages(packages_to_install)
 source("/Users/siyangren/Documents/ESFGSP/simWrapper.r")
 # source("/Users/siyangren/Documents/ra-cida/spatial-filtering/code/resf_vc.R")
 # source("/Users/siyangren/Documents/ra-cida/spatial-filtering/code/mymeigen2D.R")
+
+
+
+# Parallel global settings --------------------------------------------
+TF_parallel <- TRUE
+n_cores <- detectCores() - 1
+
+call_simWrapper <- function(
+    n_sim, f_sim, list_package, list_export, params = list()) {
+  # Establish default parameters for the simWrapper function
+  default_params <- list(
+    n_sim = n_sim,
+    f_sim = f_sim,
+    TF_parallel = TF_parallel,
+    n_cores = n_cores,
+    list_package = list_package,
+    list_export = list_export
+  )
+
+  # Merge user-specified parameters with defaults
+  # Any additional parameters in 'params' will override the defaults if provided
+  args <- modifyList(default_params, params)
+
+  # Use do.call to execute simWrapper with these arguments
+  do.call("simWrapper", args)
+}
 
 
 # Simulate data ------------------------------------------------------
@@ -41,51 +67,50 @@ source("/Users/siyangren/Documents/ESFGSP/simWrapper.r")
 
 n_a <- 1000
 n_b <- 1000
-n_image <- n_a + n_b
 n_pixel <- 256
-n_iter <- 100
-image_size <- sqrt(n_pixel)
 center_size <- 8
+rate <- 1 # exp corr rate
 
-# generate z, group indicator
-group_ind <- c(rep(1, n_a), rep(0, n_b))
-group_ind_long <- rep(rep(group_ind, each = n_pixel), n_iter)
+generate_data <- function(n_a, n_b, n_pixel, center_size, rate) {
+  n_image <- n_a + n_b
+  square_size <- sqrt(n_pixel)
 
-# group beta, effect by pixel
-beta <- matrix(0, image_size, image_size)
-index_st <- (image_size - center_size) %/% 2 + 1
-index_end <- index_st + center_size - 1
-beta[index_st:index_end, index_st:index_end] <- 8
-beta <- as.vector(beta)
-beta_long <- rep(beta, n_iter * n_image)
+  # generate group indicator
+  group_ind <- c(rep(1, n_a), rep(0, n_b)) # (2000, )
 
-# multivariate normal error
-exp_corr_mat <- function(n, rate) {
-  dist_mat <- outer(seq_len(n), seq_len(n), function(x, y) abs(x - y))
-  corr_mat <- exp(-rate * dist_mat)
-  return(corr_mat)
-}
-corr_mat <- exp_corr_mat(n_pixel, rate = 1)
+  # group effect by pixel
+  beta <- matrix(0, square_size, square_size)
+  index_st <- (square_size - center_size) %/% 2 + 1
+  index_end <- index_st + center_size - 1
+  beta[index_st:index_end, index_st:index_end] <- 8
+  beta <- as.vector(beta) # (256, )
 
-set.seed(123)
-epsilon <- mvrnorm(n = n_iter * n_image, mu = rep(0, n_pixel), Sigma = corr_mat)
-
-# y
-y <- beta_long * group_ind_long + epsilon
-y_3d <- array(NA, dim = c(n_iter, n_image, n_pixel))
-s <- 1
-for (i in seq_len(n_iter)) {
-  for (j in seq_len(n_image)) {
-    y_ij <- y[s:(s + n_pixel - 1)]
-    y_3d[i, j, ] <- y_ij
-    s <- s + n_pixel
+  # multivariate normal error
+  exp_corr_mat <- function(n, rate) {
+    dist_mat <- outer(seq_len(n), seq_len(n), function(x, y) abs(x - y))
+    corr_mat <- exp(-rate * dist_mat)
+    return(corr_mat)
   }
+  corr_mat <- exp_corr_mat(n_pixel, rate)
+
+  # generate errors (2000, 256)
+  epsilon <- mvrnorm(n = n_image, mu = rep(0, n_pixel), Sigma = corr_mat)
+
+  # generate y
+  y <- outer(group_ind, beta) + epsilon
+
+  return(cbind(group_ind, y))
 }
-rm(s, i, j, y_ij, corr_mat, epsilon)
-gc()
+
+gen_data_objs <- c(
+  "n_a", "n_b", "n_pixel", "center_size", "rate", "generate_data"
+)
+gen_data_pkgs <- c("MASS")
 
 
 # Visualization --------------------------------------------------------
+df_sample <- generate_data(n_a, n_b, n_pixel, center_size, rate)
+
 plot_matrix <- function(vec) {
   # Convert the matrix to a long format data frame
   mat <- matrix(vec, 16, 16, byrow = TRUE)
@@ -101,8 +126,8 @@ plot_matrix <- function(vec) {
   return(plot)
 }
 
-plot_matrix(y_3d[1, 1056, ])
-plot_matrix(y_3d[35, 78, ])
+plot_matrix(df_sample[1024, -1])
+plot_matrix(df_sample[78, -1])
 
 
 # VBM ----------------------------------------------------------------
@@ -120,7 +145,7 @@ for (i in seq_len(n_iter)) {
 
 # calculate the perc of p-values < 0.05 for each pixel
 vbm_pvals_mat <- colSums(vbm_pvals < 0.05) / n_iter * 100 %>%
-  matrix(., image_size, image_size)
+  matrix(., square_size, square_size)
 
 ggplot(melt(vbm_pvals_mat), aes(Var1, Var2, fill = value)) +
   geom_tile() +
@@ -164,34 +189,42 @@ ggplot(melt(vbm_pvals_mat), aes(Var1, Var2, fill = value)) +
 # group_indicator as the outcome;
 # y (2000, 256) as the predictors;
 
-# Setting for parallel
-n_iter <- 10
-f_sim <- function(i) {
-  y_i <- y_3d[i, , c(1, 5, 8)]
-  model <- lasso.proj(y_i, group_ind, family = "binomial")
-  return(model$pval)
+lasso_fsim <- function(i) {
+  # simulate data
+  simulated_data <- generate_data(
+    n_a = n_a,
+    n_b = n_b,
+    n_pixel = n_pixel,
+    center_size = center_size,
+    rate = rate
+  )
+  x <- simulated_data[, -1]
+  y <- simulated_data[, 1]
+
+  # fit lasso model
+  model <- lasso.proj(x, y, family = "binomial")
+
+  return(model$pval.corr)
 }
-TF_parallel <- TRUE
-n_cores <- detectCores() - 1
-list_package <- c("hdi", "glmnet")
-# Objects to export to each cluster node
-list_export <- c("y_3d", "group_ind", "lasso.proj", "list_package")
+
+lasso_pkgs <- c("hdi")
+lasso_objs <- c()
+list_package <- c(gen_data_pkgs, lasso_pkgs)
 
 tic()
-iterated_results <- simWrapper(
+lasso_pvals <- call_simWrapper(
   n_sim = n_iter,
-  f_sim = f_sim,
-  TF_parallel = TF_parallel,
-  n_cores = n_cores,
-  list_export = list_export,
+  f_sim = lasso_fsim,
+  list_export = c(gen_data_objs, lasso_objs, "list_package"),
   list_package = list_package
 )
 toc()
 
 lasso_pvals_mat <- colSums(lasso_pvals < 0.05) / n_iter * 100 %>%
-  matrix(., image_size, image_size)
+  matrix(., square_size, square_size)
 
 # no pixel is significant even before correction
+
 
 
 # Frequency --------------------------------------------------------
@@ -222,46 +255,74 @@ eig_decomp <- function(C) {
   ))
 }
 
-weighted_contribs_mat <- matrix(NA, n_iter, n_pixel)
+perm_lasso <- function(x, y, n_perm = n_perm) {
+  # get original coef estimates
+  cv_fit <- cv.glmnet(x, y, alpha = 1)
+  best_lambda <- cv_fit$lambda.min
+  orig_coef <- coef(cv_fit, s = "lambda.min")[, 1]
 
-for (i in 1:n_iter) {
-  y_i <- y_3d[i, , ]
-  C <- emp_corr(y_i)
-  eig_comp <- eig_decomp(C)
+  perm_coefs <- matrix(NA, n_perm, length(orig_coef))
 
-  # Subset the eigenvectors with positive eigenvalues
-  pos_eig_vecs <- eig_comp$eigenvectors[, eig_comp$eigenvalues > 0]
-
-  # Transform y using the positive eigenvectors
-  y_trans <- y_i %*% pos_eig_vecs
-
-  # Fit LASSO model
-  model <- lasso.proj(
-    y_trans,
-    group_ind,
-    family = "binomial",
-    parallel = TRUE,
-    ncores = 4
-  )
-
-  # Find significant predictors
-  pvals <- model$pval.corr
-  sig <- (pvals < 0.05)
-  if (sum(sig) == 0) {
-    weighted_contribs_mat[i, ] <- rep(0, n_pixel)
-  } else {
-    sig_eig_vecs <- pos_eig_vecs[, sig, drop = FALSE]
-    contribs <- abs(sig_eig_vecs)
-    sig_vals <- -log(pvals[sig])
-    weighted_contribs_mat[i, ] <- contribs %*% matrix(sig_vals, ncol = 1)[, 1]
+  # perform permutations
+  for (i in seq_len(n_perm)) {
+    y_perm <- sample(y)
+    perm_fit <- glmnet(x, y_perm, alpha = 1)
+    perm_coefs[i, ] <- coef(perm_fit, s = best_lambda)[, 1]
   }
+
+  # calculate p-values
+  p_vals <- colMeans(abs(perm_coefs) >= abs(orig_coef))
+  return(p_vals)
 }
 
-weighted_contribs %>%
-  matrix(., image_size, image_size) %>%
-  melt() %>%
-  ggplot(., aes(x = Var2, y = Var1, fill = value)) +
-  geom_tile() +
-  scale_fill_gradient(low = "white", high = "black") +
-  labs(title = "Heatmap of Variable Significance") +
-  theme_minimal()
+# Use empirical correlation matrix, only use positive eigenvalues
+fit_freq_model <- function(x, y, n_perm = 1000) {
+  # eigen transpose
+  emp_corr_mat <- emp_corr(x)
+  eig_comp <- eig_decomp(emp_corr_mat)
+  pos_eig_vecs <- eig_comp$eigenvectors[, eig_comp$eigenvalues > 0]
+  x_trans <- x %*% pos_eig_vecs
+
+  # perform lasso with permutation test
+  p_vals <- perm_lasso(x_trans, y, n_perm)
+
+  # pad vector to the same length
+  p_vals_ext <- c(p_vals, rep(NA, ncol(x) - length(p_vals)))
+  return(p_vals_ext)
+}
+
+# parallel data generation and freq model fitting above
+n_iter <- 2
+freq_fsim <- function(i) {
+  # simulate data
+  simulated_data <- generate_data(
+    n_a = n_a,
+    n_b = n_b,
+    n_pixel = n_pixel,
+    center_size = center_size,
+    rate = rate
+  )
+  x <- simulated_data[, -1]
+  y <- simulated_data[, 1]
+
+  # fit lasso model with permutation test for p-values
+  p_vals <- fit_freq_model(x, y)
+
+  return(p_vals)
+}
+
+freq_objs <- c("emp_corr", "eig_decomp", "perm_lasso", "fit_freq_model")
+freq_pkgs <- c("glmnet")
+list_package <- c(gen_data_pkgs, freq_pkgs)
+
+set.seed(42)
+tic()
+freq_pvals <- call_simWrapper(
+  n_sim = n_iter,
+  f_sim = freq_fsim,
+  list_export = c(gen_data_objs, freq_objs, "list_package"),
+  list_package = list_package
+)
+toc()
+
+freq_pvals <- freq_pvals[, colSums(is.na(freq_pvals)) < nrow(freq_pvals)]
