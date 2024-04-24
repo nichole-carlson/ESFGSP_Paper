@@ -20,7 +20,7 @@ setup_packages <- function(packages) {
 # List of packages to check and install if necessary
 packages_to_install <- c(
   "MASS", "stats", "tidyverse", "hdi", "tictoc", "viridis", "reshape2",
-  "parallel", "glmnet"
+  "parallel", "glmnet", "pROC"
 )
 
 setup_packages(packages_to_install)
@@ -239,7 +239,83 @@ ggsave(file.path(image_path, "vbm_pvals_corr.png"), plot = image_vbm_pvals_corr)
 # group_indicator as the outcome;
 # y (2000, 256) as the predictors;
 
+# n_iter <- 1000
+
+# lasso_fsim <- function(i) {
+#   # simulate data
+#   simulated_data <- generate_data(
+#     n_a = n_a,
+#     n_b = n_b,
+#     n_pixel = n_pixel,
+#     center_size = center_size
+#   )
+#   x <- simulated_data[, -1]
+#   y <- simulated_data[, 1]
+
+#   # fit lasso model
+#   model <- lasso.proj(x[, c(1, 3, 123, 124)], y, family = "binomial")
+
+#   return(model$pval.corr)
+
+#   # model <- cv.glmnet(x[, c(1, 3, 123, 124)], y, family = "binomial", alpha = 1)
+#   # best_lambda <- model$lambda.min
+#   # coefs <- coef(model, s = best_lambda)[-1, 1]
+
+#   # return(coefs)
+# }
+
+# lasso_pkgs <- c("hdi", "glmnet")
+# lasso_objs <- c()
+# list_package <- c(gen_data_pkgs, lasso_pkgs)
+
+# set.seed(42)
+# tic()
+# lasso_coefs <- call_simWrapper(
+#   n_sim = n_iter,
+#   f_sim = lasso_fsim,
+#   list_export = c(gen_data_objs, lasso_objs, "list_package"),
+#   list_package = list_package
+# )
+# toc()
+
+# lasso_pvals_mat <- colSums(lasso_pvals < 0.05) / n_iter * 100
+
+# no pixel is significant even before correction
+
 n_iter <- 1000
+p_train <- 0.8
+
+perform_lasso <- function(x, y, p_train) {
+  # Split data into training and test sets
+  set.seed(123)
+  n <- nrow(x)
+  train_idx <- sample(seq_len(n), size = floor(n * p_train))
+
+  x_train <- as.matrix(x[train_idx, ])
+  y_train <- y[train_idx]
+  x_test <- as.matrix(x[-train_idx, ])
+  y_test <- y[-train_idx]
+
+  # Cross-validation to find the optimal lambda
+  cv_model <- cv.glmnet(x_train, y_train, alpha = 1)
+  lambda_best <- cv_model$lambda.min
+  lambda_1se <- cv_model$lambda.1se
+
+  # Fit Lasso models on training set with both lambda.min and lambda.1se
+  model_min <- glmnet(x_train, y_train, alpha = 1, lambda = lambda_best)
+  model_1se <- glmnet(x_train, y_train, alpha = 1, lambda = lambda_1se)
+
+  # Evaluate model performance on the test set
+  preds_min <- predict(model_min, s = lambda_best, newx = x_test)
+  preds_1se <- predict(model_1se, s = lambda_1se, newx = x_test)
+
+  # Calculate AUC
+  auc_min <- pROC::auc(pROC::roc(y_test, preds_min[, 1]))
+  auc_1se <- pROC::auc(pROC::roc(y_test, preds_1se[, 1]))
+
+  res <- matrix(c(auc_min, auc_1se), nrow = 1)
+  return(res)
+}
 
 lasso_fsim <- function(i) {
   # simulate data
@@ -249,39 +325,28 @@ lasso_fsim <- function(i) {
     n_pixel = n_pixel,
     center_size = center_size
   )
-  x <- simulated_data[, -1]
+  x <- simulated_data[, -1][, c(1, 122)]
   y <- simulated_data[, 1]
 
-  # fit lasso model
-  model <- lasso.proj(x[, c(1, 3, 123, 124)], y, family = "binomial")
+  # fit lasso
+  aucs <- perform_lasso(x, y, p_train)
 
-  return(model$pval.corr)
-
-  # model <- cv.glmnet(x[, c(1, 3, 123, 124)], y, family = "binomial", alpha = 1)
-  # best_lambda <- model$lambda.min
-  # coefs <- coef(model, s = best_lambda)[-1, 1]
-
-  # return(coefs)
+  return(aucs)
 }
 
-lasso_pkgs <- c("hdi", "glmnet")
-lasso_objs <- c()
+lasso_pkgs <- c("glmnet", "pROC")
+lasso_objs <- c("p_train", "perform_lasso")
 list_package <- c(gen_data_pkgs, lasso_pkgs)
 
 set.seed(42)
 tic()
-lasso_coefs <- call_simWrapper(
+lasso_aucs <- call_simWrapper(
   n_sim = n_iter,
   f_sim = lasso_fsim,
   list_export = c(gen_data_objs, lasso_objs, "list_package"),
   list_package = list_package
 )
 toc()
-
-lasso_pvals_mat <- colSums(lasso_pvals < 0.05) / n_iter * 100
-
-# no pixel is significant even before correction
-
 
 
 # Frequency --------------------------------------------------------
@@ -328,9 +393,11 @@ perm_lasso <- function(x, y, n_perm) {
   }
 
   # calculate p-values
-  p_vals <- colMeans(abs(perm_coefs) >= abs(orig_coef))
+  p_vals <- matrix(colMeans(abs(perm_coefs) >= abs(orig_coef)), nrow = 1)
   return(p_vals)
 }
+
+
 
 # parallel data generation and freq model fitting above
 n_iter <- 100
@@ -378,4 +445,9 @@ freq_pvals <- call_simWrapper(
 )
 toc()
 
-freq_pvals <- freq_pvals[, colSums(is.na(freq_pvals)) < nrow(freq_pvals)]
+saveRDS(freq_pvals, file = "freq_pvals.rds")
+
+# p-values when using all eigenvectors for transformation
+freq_pvals_total <- freq_pvals[, seq_len(n_pixel)]
+# p-values when using eigenvectors with postive eigenvalues only
+freq_pvals_pos <- freq_pvals[, (n_pixel + 1):ncol(freq_pvals)]
