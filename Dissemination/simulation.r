@@ -101,9 +101,7 @@ generate_data <- function(n_a, n_b, n_pixel, center_size) {
   return(cbind(group_ind, y))
 }
 
-gen_data_objs <- c(
-  "n_a", "n_b", "n_pixel", "center_size", "generate_data"
-)
+gen_data_objs <- c("n_a", "n_b", "n_pixel", "center_size", "generate_data")
 gen_data_pkgs <- c("MASS")
 
 
@@ -285,37 +283,83 @@ ggsave(file.path(image_path, "vbm_pvals_corr.png"), plot = image_vbm_pvals_corr)
 n_iter <- 1000
 p_train <- 0.8
 
-perform_lasso <- function(x, y, p_train) {
-  # Split data into training and test sets
+train_test_split <- function(x, y, p_train) {
   set.seed(123)
   n <- nrow(x)
   train_idx <- sample(seq_len(n), size = floor(n * p_train))
 
-  x_train <- as.matrix(x[train_idx, ])
+  x_train <- x[train_idx, , drop = FALSE]
+  x_test <- x[-train_idx, , drop = FALSE]
   y_train <- y[train_idx]
-  x_test <- as.matrix(x[-train_idx, ])
   y_test <- y[-train_idx]
 
-  # Cross-validation to find the optimal lambda
-  cv_model <- cv.glmnet(x_train, y_train, alpha = 1)
-  lambda_best <- cv_model$lambda.min
-  lambda_1se <- cv_model$lambda.1se
-
-  # Fit Lasso models on training set with both lambda.min and lambda.1se
-  model_min <- glmnet(x_train, y_train, alpha = 1, lambda = lambda_best)
-  model_1se <- glmnet(x_train, y_train, alpha = 1, lambda = lambda_1se)
-
-  # Evaluate model performance on the test set
-  preds_min <- predict(model_min, s = lambda_best, newx = x_test)
-  preds_1se <- predict(model_1se, s = lambda_1se, newx = x_test)
-
-  # Calculate AUC
-  auc_min <- pROC::auc(pROC::roc(y_test, preds_min[, 1]))
-  auc_1se <- pROC::auc(pROC::roc(y_test, preds_1se[, 1]))
-
-  res <- matrix(c(auc_min, auc_1se), nrow = 1)
-  return(res)
+  return(list(
+    x_train = x_train,
+    x_test = x_test,
+    y_train = y_train,
+    y_test = y_test
+  ))
 }
+
+
+perform_lasso <- function(x, y, p_train) {
+  # Split the dataset
+  split <- train_test_split(x, y, p_train)
+
+  # Extract training and testing data
+  x_tr <- split$x_train
+  x_te <- split$x_test
+  y_tr <- split$y_train
+  y_te <- split$y_test
+
+  # Perform cross-validation to find the optimal lambda values
+  cv_mod <- cv.glmnet(x_tr, y_tr, alpha = 1, family = "binomial")
+  l_min <- cv_mod$lambda.min
+  l_1se <- cv_mod$lambda.1se
+
+  # Function to evaluate model performance
+  eval_perf <- function(l) {
+    mod <- glmnet(x_tr, y_tr, alpha = 1, lambda = l, family = "binomial")
+    preds <- predict(mod, newx = x_te, type = "response")[, 1]
+    preds_bin <- ifelse(preds > 0.5, 1, 0)
+
+    acc <- mean(preds_bin == y_te)
+    auc <- pROC::auc(pROC::roc(y_te, preds))
+
+    c(acc = acc, AUC = auc)
+  }
+
+  # Get performance metrics for both lambda.min and lambda.1se
+  perf_min <- eval_perf(l_min)
+  perf_1se <- eval_perf(l_1se)
+
+  # Combine results into a coherent matrix
+  results <- c(perf_min, perf_1se)
+  results <- matrix(results, nrow = 1)
+  colnames(results) <- c("min_acc", "min_auc", "1se_acc", "1se_auc")
+
+  return(results)
+}
+
+
+perform_glm <- function(x, y, p_train) {
+  data_split <- train_test_split(x, y, p_train)
+  tr_data <- data.frame(y = data_split$y_train, data_split$x_train)
+  te_data <- data.frame(y = data_split$y_test, data_split$x_test)
+
+  model <- glm(y ~ ., data = tr_data, family = "binomial")
+
+  # Prediction on test data
+  preds <- predict(model, newdata = te_data, type = "response")
+  preds_bin <- ifelse(preds > 0.5, 1, 0)
+
+  acc <- mean(preds_bin == data_split$y_test)
+  auc <- pROC::auc(pROC::roc(data_split$y_test, preds))
+
+  # Return both accuracy and AUC
+  return(c(acc, auc))
+}
+
 
 lasso_fsim <- function(i) {
   # simulate data
@@ -325,13 +369,13 @@ lasso_fsim <- function(i) {
     n_pixel = n_pixel,
     center_size = center_size
   )
-  x <- simulated_data[, -1][, c(1, 122)]
+  x <- simulated_data[, -1]
   y <- simulated_data[, 1]
 
   # fit lasso
-  aucs <- perform_lasso(x, y, p_train)
+  evals <- perform_lasso(x, y, p_train)
 
-  return(aucs)
+  return(evals)
 }
 
 lasso_pkgs <- c("glmnet", "pROC")
@@ -377,26 +421,25 @@ eig_decomp <- function(C) {
   ))
 }
 
-perm_lasso <- function(x, y, n_perm) {
-  # get original coef estimates
-  cv_fit <- cv.glmnet(x, y, alpha = 1)
-  best_lambda <- cv_fit$lambda.min
-  orig_coef <- coef(cv_fit, s = "lambda.min")[-1, 1]
+# perm_lasso <- function(x, y, n_perm) {
+#   # get original coef estimates
+#   cv_fit <- cv.glmnet(x, y, alpha = 1)
+#   best_lambda <- cv_fit$lambda.min
+#   orig_coef <- coef(cv_fit, s = "lambda.min")[-1, 1]
 
-  perm_coefs <- matrix(NA, n_perm, length(orig_coef))
+#   perm_coefs <- matrix(NA, n_perm, length(orig_coef))
 
-  # perform permutations
-  for (i in seq_len(n_perm)) {
-    y_perm <- sample(y)
-    perm_fit <- glmnet(x, y_perm, alpha = 1)
-    perm_coefs[i, ] <- coef(perm_fit, s = best_lambda)[-1, 1]
-  }
+#   # perform permutations
+#   for (i in seq_len(n_perm)) {
+#     y_perm <- sample(y)
+#     perm_fit <- glmnet(x, y_perm, alpha = 1)
+#     perm_coefs[i, ] <- coef(perm_fit, s = best_lambda)[-1, 1]
+#   }
 
-  # calculate p-values
-  p_vals <- matrix(colMeans(abs(perm_coefs) >= abs(orig_coef)), nrow = 1)
-  return(p_vals)
-}
-
+#   # calculate p-values
+#   p_vals <- matrix(colMeans(abs(perm_coefs) >= abs(orig_coef)), nrow = 1)
+#   return(p_vals)
+# }
 
 
 # parallel data generation and freq model fitting above
@@ -421,14 +464,18 @@ freq_fsim <- function(i) {
   eig_comp <- eig_decomp(corr_mat)
 
   # eigen transpose in two ways
-  x_trans_pos <- x %*% eig_comp$eigenvectors[, eig_comp$eigenvalues > 0]
+  pos_eigenvalues <- eig_comp$eigenvalues > 0
+  x_trans_pos <- x %*% eig_comp$eigenvectors[, pos_eigenvalues]
   x_trans <- x %*% eig_comp$eigenvectors
 
-  # perform lasso with permutation test
-  p_vals <- perm_lasso(x_trans, y, n_perm)
-  p_vals_pos <- perm_lasso(x_trans_pos, y, n_perm)
+  # Perform lasso regression on the transformed datasets
+  evals_pos <- perform_lasso(x_trans_pos, y, p_train)
+  evals <- perform_lasso(x_trans, y, p_train)
 
-  return(cbind(p_vals, p_vals_pos))
+  # Combine results, assume evals and evals_pos are matrices or data frames
+  results <- cbind(evals_pos, evals)
+
+  return(results)
 }
 
 freq_objs <- c("exp_corr_mat", "eig_decomp", "perm_lasso", "n_perm")
@@ -444,10 +491,3 @@ freq_pvals <- call_simWrapper(
   list_package = list_package
 )
 toc()
-
-saveRDS(freq_pvals, file = "freq_pvals.rds")
-
-# p-values when using all eigenvectors for transformation
-freq_pvals_total <- freq_pvals[, seq_len(n_pixel)]
-# p-values when using eigenvectors with postive eigenvalues only
-freq_pvals_pos <- freq_pvals[, (n_pixel + 1):ncol(freq_pvals)]
