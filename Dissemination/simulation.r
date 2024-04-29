@@ -81,7 +81,7 @@ generate_data <- function(n_a, n_b, n_pixel, center_size) {
   beta <- matrix(0, square_size, square_size)
   index_st <- (square_size - center_size) %/% 2 + 1
   index_end <- index_st + center_size - 1
-  beta[index_st:index_end, index_st:index_end] <- 8
+  beta[index_st:index_end, index_st:index_end] <- 1.5
   beta <- as.vector(beta) # (256, )
 
   # multivariate normal error
@@ -369,7 +369,7 @@ lasso_fsim <- function(i) {
     n_pixel = n_pixel,
     center_size = center_size
   )
-  x <- simulated_data[, -1]
+  x <- simulated_data[, -1][, c(1, 121)]
   y <- simulated_data[, 1]
 
   # fit lasso
@@ -469,7 +469,7 @@ freq_fsim <- function(i) {
   x_trans <- x %*% eig_comp$eigenvectors
 
   # Perform lasso regression on the transformed datasets
-  evals_pos <- perform_lasso(x_trans_pos, y, p_train)
+  evals_pos <- perform_lasso(x_trans_pos[, 1:2], y, p_train)
   evals <- perform_lasso(x_trans, y, p_train)
 
   # Combine results, assume evals and evals_pos are matrices or data frames
@@ -491,3 +491,41 @@ freq_pvals <- call_simWrapper(
   list_package = list_package
 )
 toc()
+
+
+
+
+generate_data <- function(beta_eff) {
+  n_image <- 2000
+  square_size <- sqrt(256)
+
+  # generate group indicator
+  group_ind <- c(rep(1, 1000), rep(0, 1000)) # (2000, )
+
+  # group effect by pixel
+  beta <- matrix(0, square_size, square_size)
+  index_st <- (square_size - center_size) %/% 2 + 1
+  index_end <- index_st + center_size - 1
+  beta[index_st:index_end, index_st:index_end] <- beta_eff
+  beta <- as.vector(beta) # (256, )
+
+  # multivariate normal error
+  exp_corr_mat <- function(n) {
+    dist_mat <- outer(seq_len(n), seq_len(n), function(x, y) abs(x - y))
+    corr_mat <- exp(-dist_mat / max(dist_mat))
+    return(corr_mat)
+  }
+  corr_mat <- exp_corr_mat(n_pixel)
+
+  # generate errors (2000, 256)
+  epsilon <- mvrnorm(n = n_image, mu = rep(0, n_pixel), Sigma = corr_mat)
+
+  # generate y
+  y <- outer(group_ind, beta) + epsilon
+
+  return(cbind(group_ind, y))
+}
+
+beta_eff <- 1.5
+df_sample <- generate_data(beta_eff)
+plot_matrix(df_sample[78, -1], range(df_sample))
