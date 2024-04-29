@@ -421,25 +421,29 @@ eig_decomp <- function(C) {
   ))
 }
 
-# perm_lasso <- function(x, y, n_perm) {
-#   # get original coef estimates
-#   cv_fit <- cv.glmnet(x, y, alpha = 1)
-#   best_lambda <- cv_fit$lambda.min
-#   orig_coef <- coef(cv_fit, s = "lambda.min")[-1, 1]
+perm_lasso <- function(x, y, n_perm) {
+  cv_lasso <- function(x, y) {
+    cv_fit <- cv.glmnet(x, y, alpha = 1)
+    best_lambda <- cv_fit$lambda.min
+    coefs <- coef(cv_fit, s = "lambda.min")[-1, 1]
+    return(coefs)
+  }
 
-#   perm_coefs <- matrix(NA, n_perm, length(orig_coef))
+  # get original coef estimates
+  orig_coefs <- cv_lasso(x, y)
 
-#   # perform permutations
-#   for (i in seq_len(n_perm)) {
-#     y_perm <- sample(y)
-#     perm_fit <- glmnet(x, y_perm, alpha = 1)
-#     perm_coefs[i, ] <- coef(perm_fit, s = best_lambda)[-1, 1]
-#   }
+  # perform permutations
+  perm_coefs <- matrix(NA, n_perm, length(orig_coefs))
 
-#   # calculate p-values
-#   p_vals <- matrix(colMeans(abs(perm_coefs) >= abs(orig_coef)), nrow = 1)
-#   return(p_vals)
-# }
+  for (i in seq_len(n_perm)) {
+    y_perm <- sample(y)
+    perm_coefs[i, ] <- cv_lasso(x, y_perm)
+  }
+
+  # calculate p-values
+  p_vals <- matrix(colMeans(abs(perm_coefs) > abs(orig_coefs)), nrow = 1)
+  return(p_vals)
+}
 
 
 # parallel data generation and freq model fitting above
