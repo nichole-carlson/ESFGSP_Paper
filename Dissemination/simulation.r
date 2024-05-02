@@ -1,18 +1,50 @@
+##########################################################################
+# Simulate imaging data to see how models work
+
+# Step 0: Set Up Parallel
+# - TF_parallel equals TRUE
+# - Decide how many cores to use
+
+# Step 1: Simulate Data
+# -  Generate group indicator, 1000 in group A; 1000 in group B
+# - Generate the beta as 16*16 matrix, it has 1 in the center 8*8 and 0 in
+#    other areas.
+# - Generate the exponential correlation matrix
+# - Use the corr matrix to generate the epsilon as a multivariate normal.
+#    Epsilon should be (100, 2000, 256)
+# - Broadcast and generate y
+
+# Step 2: Visualization
+# - Pick one image from the group A, another from group B
+# - Visualize them by heatmap, check how obvious the center effect is
+
+# Step 3: VBM Model
+# - Fit linear model on each pixel, with the pixel value as the outcome and
+#   group indicator as the covariate
+# - Adjust p-values for multitesting
+
+# Step 4: spVBM Model
+
+# Step 5: LASSO Model
+# - This time using the group indicator as the outcome and all pixel values
+#   as covariates
+# - Calculate p-values by either the LASSO projection method,
+#   or using permutation tests
+
+##########################################################################
+
 setup_packages <- function(packages) {
   for (package in packages) {
-    # Check if the package is installed
     if (!require(package, character.only = TRUE)) {
-      cat(sprintf("Installing package: %s\n", package))
+      cat("Installing package:", package, "\n")
       install.packages(package)
-
-      # Attempt to load the package again after installing
       if (!require(package, character.only = TRUE)) {
-        cat(sprintf("Failed to install package: %s\n", package))
+        cat("Failed to install package:", package, "\n")
       } else {
-        cat(sprintf("Package loaded successfully: %s\n", package))
+        cat("Package loaded successfully:", package, "\n")
       }
     } else {
-      cat(sprintf("Package already installed and loaded: %s\n", package))
+      cat("Package already installed and loaded:", package, "\n")
     }
   }
 }
@@ -25,52 +57,20 @@ packages_to_install <- c(
 
 setup_packages(packages_to_install)
 
-source("/Users/siyangren/Documents/ESFGSP/simWrapper.r")
 # source("/Users/siyangren/Documents/ra-cida/spatial-filtering/code/resf_vc.R")
 # source("/Users/siyangren/Documents/ra-cida/spatial-filtering/code/mymeigen2D.R")
 
 
 
-# Parallel global settings --------------------------------------------
+# 0 Set Up Parallel --------------------------------------------
+source("/Users/siyangren/Documents/ESFGSP/simWrapper.r")
 TF_parallel <- TRUE
 n_cores <- detectCores() - 1
 
-call_simWrapper <- function(
-    n_sim, f_sim, list_package, list_export, params = list()) {
-  # Establish default parameters for the simWrapper function
-  default_params <- list(
-    n_sim = n_sim,
-    f_sim = f_sim,
-    TF_parallel = TF_parallel,
-    n_cores = n_cores,
-    list_package = list_package,
-    list_export = list_export
-  )
 
-  # Merge user-specified parameters with defaults
-  # Any additional parameters in 'params' will override the defaults if provided
-  args <- modifyList(default_params, params)
-
-  # Use do.call to execute simWrapper with these arguments
-  do.call("simWrapper", args)
-}
-
-
-# Simulate data ------------------------------------------------------
-# 1. Generate group indicator, 1000 in group A; 1000 in group B
-# 2. Generate the beta as 16*16 matrix, it has 1 in the center 8*8 and 0 in
-#    other areas.
-# 3. Generate the exponential correlation matrix
-# 4. Use the corr matrix to generate the epsilon as a multivariate normal.
-#    Epsilon should be (100, 2000, 256)
-# 5. Broadcast and generate y
-
-n_a <- 1000
-n_b <- 1000
-n_pixel <- 256
-center_size <- 8
-
-generate_data <- function(n_a, n_b, n_pixel, center_size) {
+# 1 Simulate Data -------------------------------------------------------
+generate_data <- function(
+    n_a = 1000, n_b = 1000, n_pixel = 256, center_size = 8, center_effect) {
   n_image <- n_a + n_b
   square_size <- sqrt(n_pixel)
 
@@ -81,7 +81,7 @@ generate_data <- function(n_a, n_b, n_pixel, center_size) {
   beta <- matrix(0, square_size, square_size)
   index_st <- (square_size - center_size) %/% 2 + 1
   index_end <- index_st + center_size - 1
-  beta[index_st:index_end, index_st:index_end] <- 1.5
+  beta[index_st:index_end, index_st:index_end] <- center_effect
   beta <- as.vector(beta) # (256, )
 
   # multivariate normal error
@@ -101,14 +101,11 @@ generate_data <- function(n_a, n_b, n_pixel, center_size) {
   return(cbind(group_ind, y))
 }
 
-gen_data_objs <- c("n_a", "n_b", "n_pixel", "center_size", "generate_data")
+gen_data_objs <- c("generate_data", "center_effect")
 gen_data_pkgs <- c("MASS")
 
 
-# Visualization --------------------------------------------------------
-set.seed(121)
-df_sample <- generate_data(n_a, n_b, n_pixel, center_size)
-
+# 2 Visualization --------------------------------------------------------
 plot_matrix <- function(vec, value_limits = c()) {
   # Convert the matrix to a long format data frame
   mat <- matrix(vec, 16, 16, byrow = TRUE)
@@ -139,13 +136,23 @@ plot_matrix <- function(vec, value_limits = c()) {
   return(plot)
 }
 
-image_a <- plot_matrix(df_sample[78, -1], range(df_sample))
-image_b <- plot_matrix(df_sample[1024, -1], range(df_sample))
+# Decide the strength of center effect by visualization
+set.seed(121)
+df1 <- generate_data(center_effect = 1.5)
+plot_matrix(df1[78, -1], range(df1))
+
+df2 <- generate_data(center_effect = 1.5)
+plot_matrix(df2[78, -1], range(df2))
+
+image1_5 <- plot_matrix(df1[78, -1], range(df1))
+image2 <- plot_matrix(df2[78, -1], range(df2)) # w/ center effect
+image2c <- plot_matrix(df2[1001, -1], range(df2)) # w/o center effect
 
 image_path <- file.path(getwd(), "Figures")
 
-ggsave(file.path(image_path, "image_ex1.png"), plot = image_a)
-ggsave(file.path(image_path, "image_ex2.png"), plot = image_b)
+ggsave(file.path(image_path, "image_ex1_5.png"), plot = image1_5)
+ggsave(file.path(image_path, "image_ex2.png"), plot = image_2)
+ggsave(file.path(image_path, "image_ex2c.png", plot = image_2c))
 
 
 
@@ -237,52 +244,6 @@ ggsave(file.path(image_path, "vbm_pvals_corr.png"), plot = image_vbm_pvals_corr)
 # group_indicator as the outcome;
 # y (2000, 256) as the predictors;
 
-# n_iter <- 1000
-
-# lasso_fsim <- function(i) {
-#   # simulate data
-#   simulated_data <- generate_data(
-#     n_a = n_a,
-#     n_b = n_b,
-#     n_pixel = n_pixel,
-#     center_size = center_size
-#   )
-#   x <- simulated_data[, -1]
-#   y <- simulated_data[, 1]
-
-#   # fit lasso model
-#   model <- lasso.proj(x[, c(1, 3, 123, 124)], y, family = "binomial")
-
-#   return(model$pval.corr)
-
-#   # model <- cv.glmnet(x[, c(1, 3, 123, 124)], y, family = "binomial", alpha = 1)
-#   # best_lambda <- model$lambda.min
-#   # coefs <- coef(model, s = best_lambda)[-1, 1]
-
-#   # return(coefs)
-# }
-
-# lasso_pkgs <- c("hdi", "glmnet")
-# lasso_objs <- c()
-# list_package <- c(gen_data_pkgs, lasso_pkgs)
-
-# set.seed(42)
-# tic()
-# lasso_coefs <- call_simWrapper(
-#   n_sim = n_iter,
-#   f_sim = lasso_fsim,
-#   list_export = c(gen_data_objs, lasso_objs, "list_package"),
-#   list_package = list_package
-# )
-# toc()
-
-# lasso_pvals_mat <- colSums(lasso_pvals < 0.05) / n_iter * 100
-
-# no pixel is significant even before correction
-
-n_iter <- 1000
-p_train <- 0.8
-
 train_test_split <- function(x, y, p_train) {
   set.seed(123)
   n <- nrow(x)
@@ -301,7 +262,8 @@ train_test_split <- function(x, y, p_train) {
   ))
 }
 
-
+# select optimal lambda via cross-validation
+# evaluate performance via accuracy and AUC
 perform_lasso <- function(x, y, p_train) {
   # Split the dataset
   split <- train_test_split(x, y, p_train)
@@ -341,23 +303,63 @@ perform_lasso <- function(x, y, p_train) {
   return(results)
 }
 
+rm(df1, df2)
+set.seed(121)
+df <- generate_data(center_effect = 2)
+x <- df[, -1]
+y <- df[, 1]
+perform_lasso(x, y, p_train = 0.8) # use all pixels cause perfect separation
 
-perform_glm <- function(x, y, p_train) {
-  data_split <- train_test_split(x, y, p_train)
-  tr_data <- data.frame(y = data_split$y_train, data_split$x_train)
-  te_data <- data.frame(y = data_split$y_test, data_split$x_test)
+# search after adding how many pixels into the LASSO model will cause perfect
+# separation
+i <- 1 # number of pixels from each side
+m <- 0 # maximum AUC/accuracy
+# indices for center pixels
+c_indices <- {
+  c_rows <- 5:12
+  as.vector(outer(c_rows, c_rows, FUN = function(i, j) (i - 1) * 16 + j))
+}
+# indices for edge pixels
+e_indices <- {
+  all_indices <- 1:256
+  setdiff(all_indices, c_indices)
+}
 
-  model <- glm(y ~ ., data = tr_data, family = "binomial")
+while (m < 1) {
+  ia <- sample(c_indices, i) + 1
+  ib <- sample(e_indices, i) + 1
+  x <- df[, c(ia, ib)]
+  y <- df[, 1]
+  res <- perform_lasso(x, y, p_train = 0.8)
+  m <- max(res)
+  i <- i + 1
+}
+# stop at i = 3
 
-  # Prediction on test data
-  preds <- predict(model, newdata = te_data, type = "response")
-  preds_bin <- ifelse(preds > 0.5, 1, 0)
 
-  acc <- mean(preds_bin == data_split$y_test)
-  auc <- pROC::auc(pROC::roc(data_split$y_test, preds))
 
-  # Return both accuracy and AUC
-  return(c(acc, auc))
+perm_lasso <- function(x, y, n_perm) {
+  cv_lasso <- function(x, y) {
+    cv_fit <- cv.glmnet(x, y, alpha = 1)
+    best_lambda <- cv_fit$lambda.min
+    coefs <- coef(cv_fit, s = "lambda.min")[-1, 1]
+    return(coefs)
+  }
+
+  # get original coef estimates
+  orig_coefs <- cv_lasso(x, y)
+
+  # perform permutations
+  perm_coefs <- matrix(NA, n_perm, length(orig_coefs))
+
+  for (i in seq_len(n_perm)) {
+    y_perm <- sample(y)
+    perm_coefs[i, ] <- cv_lasso(x, y_perm)
+  }
+
+  # calculate p-values
+  p_vals <- matrix(colMeans(abs(perm_coefs) > abs(orig_coefs)), nrow = 1)
+  return(p_vals)
 }
 
 
@@ -421,29 +423,6 @@ eig_decomp <- function(C) {
   ))
 }
 
-perm_lasso <- function(x, y, n_perm) {
-  cv_lasso <- function(x, y) {
-    cv_fit <- cv.glmnet(x, y, alpha = 1)
-    best_lambda <- cv_fit$lambda.min
-    coefs <- coef(cv_fit, s = "lambda.min")[-1, 1]
-    return(coefs)
-  }
-
-  # get original coef estimates
-  orig_coefs <- cv_lasso(x, y)
-
-  # perform permutations
-  perm_coefs <- matrix(NA, n_perm, length(orig_coefs))
-
-  for (i in seq_len(n_perm)) {
-    y_perm <- sample(y)
-    perm_coefs[i, ] <- cv_lasso(x, y_perm)
-  }
-
-  # calculate p-values
-  p_vals <- matrix(colMeans(abs(perm_coefs) > abs(orig_coefs)), nrow = 1)
-  return(p_vals)
-}
 
 
 # parallel data generation and freq model fitting above
