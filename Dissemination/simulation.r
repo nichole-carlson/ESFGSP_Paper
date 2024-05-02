@@ -101,7 +101,7 @@ generate_data <- function(
   return(cbind(group_ind, y))
 }
 
-gen_data_objs <- c("generate_data", "center_effect")
+gen_data_objs <- c("generate_data")
 gen_data_pkgs <- c("MASS")
 
 
@@ -141,18 +141,18 @@ set.seed(121)
 df1 <- generate_data(center_effect = 1.5)
 plot_matrix(df1[78, -1], range(df1))
 
-df2 <- generate_data(center_effect = 1.5)
+df2 <- generate_data(center_effect = 2)
 plot_matrix(df2[78, -1], range(df2))
 
-image1_5 <- plot_matrix(df1[78, -1], range(df1))
-image2 <- plot_matrix(df2[78, -1], range(df2)) # w/ center effect
-image2c <- plot_matrix(df2[1001, -1], range(df2)) # w/o center effect
+image1_5 <- plot_matrix(df1[78, -1], range(df1, df2))
+image2 <- plot_matrix(df2[78, -1], range(df1, df2)) # w/ center effect
+image2c <- plot_matrix(df2[1001, -1], range(df1, df2)) # w/o center effect
 
 image_path <- file.path(getwd(), "Figures")
 
 ggsave(file.path(image_path, "image_ex1_5.png"), plot = image1_5)
-ggsave(file.path(image_path, "image_ex2.png"), plot = image_2)
-ggsave(file.path(image_path, "image_ex2c.png", plot = image_2c))
+ggsave(file.path(image_path, "image_ex2.png"), plot = image2)
+ggsave(file.path(image_path, "image_ex2c.png"), plot = image2c)
 
 
 
@@ -337,7 +337,7 @@ while (m < 1) {
 # stop at i = 3
 
 
-
+# Estimate p-value for each pixel using permutation test
 perm_lasso <- function(x, y, n_perm) {
   cv_lasso <- function(x, y) {
     cv_fit <- cv.glmnet(x, y, alpha = 1)
@@ -362,37 +362,47 @@ perm_lasso <- function(x, y, n_perm) {
   return(p_vals)
 }
 
-
 lasso_fsim <- function(i) {
   # simulate data
-  simulated_data <- generate_data(
-    n_a = n_a,
-    n_b = n_b,
-    n_pixel = n_pixel,
-    center_size = center_size
-  )
-  x <- simulated_data[, -1][, c(1, 121)]
+  simulated_data <- generate_data(center_effect = 2)
+  x <- simulated_data[, -1]
   y <- simulated_data[, 1]
 
   # fit lasso
-  evals <- perform_lasso(x, y, p_train)
+  pvals <- perm_lasso(x, y, n_perm = 100)
 
-  return(evals)
+  return(pvals)
 }
 
 lasso_pkgs <- c("glmnet", "pROC")
-lasso_objs <- c("p_train", "perform_lasso")
+lasso_objs <- c("perm_lasso")
 list_package <- c(gen_data_pkgs, lasso_pkgs)
 
 set.seed(42)
 tic()
-lasso_aucs <- call_simWrapper(
-  n_sim = n_iter,
+lasso_pvals <- simWrapper(
+  n_sim = 100,
   f_sim = lasso_fsim,
-  list_export = c(gen_data_objs, lasso_objs, "list_package"),
-  list_package = list_package
+  TF_parallel = TRUE,
+  n_cores = detectCores() - 1,
+  list_package = list_package,
+  list_export = c(gen_data_objs, lasso_objs, "list_package")
 )
 toc()
+
+lasso_pvals_corr <- t(apply(lasso_pvals, 1, p.adjust, method = "bonferroni"))
+
+# calculate the perc of p-values < 0.05 for each pixel
+lasso_pvals_perc <- colSums(lasso_pvals < 0.05) / nrow(lasso_pvals) * 100
+lasso_pvals_corr_perc <- colSums(lasso_pvals_corr < 0.05) / nrow(lasso_pvals) * 100
+
+image_lasso_pvals <- plot_matrix(lasso_pvals_perc, c(0, 100))
+image_lasso_pvals_corr <- plot_matrix(lasso_pvals_corr_perc, c(0, 100))
+
+image_path <- file.path(getwd(), "Figures")
+
+ggsave(file.path(image_path, "lasso_pvals.png"), plot = image_lasso_pvals)
+ggsave(file.path(image_path, "lasso_pvals_corr.png"), plot = image_lasso_pvals_corr)
 
 
 # Frequency --------------------------------------------------------

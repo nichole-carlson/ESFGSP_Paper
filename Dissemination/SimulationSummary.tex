@@ -12,22 +12,38 @@
 
 \section*{Data Generation}
 
-The dataset contains 2000 simulated images, with 1000 images each in groups A and B. Each image has 256 pixels arranged in a \(16 \times 16\) grid. The \(\beta\) matrix, set to 8 in an \(8 \times 8\) central region and 0 elsewhere, modifies the pixel values in group A. The \texttt{group\_ind} vector differentiates the groups, assigning 1 to group A and 0 to group B. Noise \(\epsilon_i\), generated from a multivariate normal distribution with zero mean and a covariance matrix from an exponential correlation function with rate 1, is added to the pixel values.
+The dataset consists of 2,000 simulated images, each with a \(16 \times 16\) grid of 256 pixels, split evenly into groups A and B. For images in group A, the central \(8 \times 8\) region is subject to a \(\beta\) effect, which was adjusted visually to be noticeable yet minimal. Figure~\ref{fig:image1} displays an image without the \(\beta\) effect, Figure~\ref{fig:image2} shows the effect at a strength of 1.5, and Figure~\ref{fig:image3} at a strength of 2, with the latter chosen for subsequent analyses.
 
-To adapt the data for the input specifications of the \texttt{myresf\_vc} function, the dataset was transformed into a long format. In this format, the columns \texttt{x} and \texttt{y} denote the coordinates, while \texttt{pixel\_value} corresponds to the simulated $y$ values.
+The \(\beta\) matrix values are zero except in the central region, and the \texttt{group\_ind} vector classifies images into groups A (1) and B (0). Noise, \(\epsilon_i\), is added to each image, derived from a multivariate normal distribution with zero mean and a covariance structure based on an exponential correlation function with rate 1.
+
+
+% To adapt the data for the input specifications of the \texttt{myresf\_vc} function, the dataset was transformed into a long format. In this format, the columns \texttt{x} and \texttt{y} denote the coordinates, while \texttt{pixel\_value} corresponds to the simulated $y$ values.
 
 \begin{figure}[H]
     \centering
-    % First figure
-    \begin{minipage}[b]{0.45\textwidth}
-        \includegraphics[width=\textwidth]{/Users/siyangren/Documents/ra-cida/ESFGSP_Paper/Figures/image_ex1.png}
-        \caption{Example image from group A}
+    % First Row
+    \begin{minipage}{0.45\textwidth}
+        \centering
+        \includegraphics[width=0.9\textwidth]{../Figures/image_ex2c.png}
+        \caption{Example image without \(\beta\) effect}
+        \label{fig:image1}
+    \end{minipage}\hfill
+    \begin{minipage}{0.45\textwidth}
+        \centering
+        \includegraphics[width=0.9\textwidth]{../Figures/image_ex1_5.png}
+        \caption{Example image with \(\beta = 1.5\)}
+        \label{fig:image2}
     \end{minipage}
-    \hfill % This command adds a space between the two figures
-    % Second figure
-    \begin{minipage}[b]{0.45\textwidth}
-        \includegraphics[width=\textwidth]{/Users/siyangren/Documents/ra-cida/ESFGSP_Paper/Figures/image_ex2.png}
-        \caption{Example image from group B}
+
+    % Second Row
+    \begin{minipage}{0.45\textwidth}
+        \centering
+        \includegraphics[width=0.9\textwidth]{../Figures/image_ex2.png}
+        \caption{Example image with \(\beta = 2\)}
+        \label{fig:image3}
+    \end{minipage}\hfill
+    \begin{minipage}{0.45\textwidth}
+        % left blank
     \end{minipage}
 \end{figure}
 
@@ -74,7 +90,27 @@ In our simulated data, this could be simplified to \(y_s^i = x_s^i \beta_s^{SVC}
 
 \section*{LASSO}
 
-Predict \texttt{group\_ind} from imaging using LASSO regresion via the \texttt{hdi} package in R. In each iteration, randomly partition the data, fit LASSO to the first subset to identify non-zero coefficients, and then apply OLS using these coefficients on the second subset to estimate p-values. Repeat this process to obtain average p-values for the coefficients.
+A LASSO model was employed to predict group assignments using pixel values from images. In each iteration, 80\% of the data was used for training and the remaining 20\% for testing. The optimal \(\lambda\) parameters, \texttt{lambda\_min} and \texttt{lambda\_1se}, were determined via cross-validation within the training group. The model's performance was assessed on the test group using accuracy and AUC metrics.
+
+Initially, including all pixel values in the model led to perfect separation, indicating potential overfitting. To address this, the model construction began by incrementally adding one pixel from the image's edge and one from the center, evaluating if these additions achieved perfect accuracy. After integrating three pairs of pixels, totaling six pixels, the model achieved perfect separation.
+
+Additionally, a permutation test was conducted to estimate p-values.
+
+\begin{figure}[H]
+    \centering
+    % First figure
+    \begin{minipage}[b]{0.45\textwidth}
+        \includegraphics[width=\textwidth]{../Figures/lasso_pvals.png}
+        \caption{\% of significant p-values across pixels in LASSO}
+    \end{minipage}
+    \hfill % This command adds a space between the two figures
+    % Second figure
+    \begin{minipage}[b]{0.45\textwidth}
+        \includegraphics[width=\textwidth]{../Figures/lasso_pvals_corr.png}
+        \caption{\% of significant p-values after correction across pixels in LASSO}
+    \end{minipage}
+\end{figure}
+
 
 \section*{Frequency}
 
