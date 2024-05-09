@@ -16,6 +16,12 @@ The dataset consists of 2,000 simulated images, each with a \(16 \times 16\) gri
 
 The \(\beta\) matrix values are zero except in the central region, and the \texttt{group\_ind} vector classifies images into groups A (1) and B (0). Noise, \(\epsilon_i\), is added to each image, derived from a multivariate normal distribution with zero mean and a covariance structure based on an exponential correlation function with rate 1.
 
+Question about how to generate exponential correlation matrix: for any two pixels, \(\text{dist}(i, j) = \sqrt{(x_1 - x_2)^2 + (y_1 - y_2)^2}\). I found two ways to calculate the exponential correlation matrix online:
+\begin{itemize}
+    \item \(\text{cor}(i, j) = \exp(-\alpha \times \text{dist}(i, j))\), \(\alpha\) is called rate;
+    \item \(\text{cor}(i, j) = \rho^{\text{dist}(i, j)}, \ \rho < 1\)
+\end{itemize}
+I think we are aiming at the first one?
 
 % To adapt the data for the input specifications of the \texttt{myresf\_vc} function, the dataset was transformed into a long format. In this format, the columns \texttt{x} and \texttt{y} denote the coordinates, while \texttt{pixel\_value} corresponds to the simulated $y$ values.
 
