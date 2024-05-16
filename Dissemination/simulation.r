@@ -10,6 +10,8 @@
 # - Generate the beta as 16*16 matrix, it has 1 in the center 8*8 and 0 in
 #    other areas.
 # - Generate the exponential correlation matrix
+#   - For two pixels i, j in the picture, their correlation are calculated
+#     as exp(-dist(i, j)). dist(i, j) are defined as their Euclidean dist.
 # - Use the corr matrix to generate the epsilon as a multivariate normal.
 #    Epsilon should be (100, 2000, 256)
 # - Broadcast and generate y
@@ -35,16 +37,12 @@
 
 setup_packages <- function(packages) {
   for (package in packages) {
-    if (!require(package, character.only = TRUE)) {
+    if (!require(package, character.only = TRUE, quietly = TRUE)) {
       cat("Installing package:", package, "\n")
       install.packages(package)
-      if (!require(package, character.only = TRUE)) {
+      if (!require(package, character.only = TRUE, quietly = TRUE)) {
         cat("Failed to install package:", package, "\n")
-      } else {
-        cat("Package loaded successfully:", package, "\n")
       }
-    } else {
-      cat("Package already installed and loaded:", package, "\n")
     }
   }
 }
@@ -60,40 +58,66 @@ setup_packages(packages_to_install)
 # source("/Users/siyangren/Documents/ra-cida/spatial-filtering/code/resf_vc.R")
 # source("/Users/siyangren/Documents/ra-cida/spatial-filtering/code/mymeigen2D.R")
 
-
-
-# 0 Set Up Parallel --------------------------------------------
 source("/Users/siyangren/Documents/ESFGSP/simWrapper.r")
-TF_parallel <- TRUE
-n_cores <- detectCores() - 1
 
 
-# 1 Simulate Data -------------------------------------------------------
+
+# 1 Define function to simulate data ------------------------------------
 generate_data <- function(
-    n_a = 1000, n_b = 1000, n_pixel = 256, center_size = 8, center_effect) {
-  n_image <- n_a + n_b
-  square_size <- sqrt(n_pixel)
-
+    na = 1000, # n obs from group A
+    nb = 1000,
+    image_size = c(16, 16),
+    center_size = 8,
+    center_effect) {
+  n_row <- image_size[1]
+  n_col <- image_size[2]
+  n_pixel <- n_row * n_col
   # generate group indicator
-  group_ind <- c(rep(1, n_a), rep(0, n_b)) # (2000, )
+  group_ind <- c(rep(1, na), rep(0, nb)) # (2000, )
 
   # group effect by pixel
-  beta <- matrix(0, square_size, square_size)
-  index_st <- (square_size - center_size) %/% 2 + 1
+  beta <- matrix(0, nrow = n_row, ncol = n_col)
+  index_st <- (n_row - center_size) %/% 2 + 1
   index_end <- index_st + center_size - 1
   beta[index_st:index_end, index_st:index_end] <- center_effect
   beta <- as.vector(beta) # (256, )
 
   # multivariate normal error
-  exp_corr_mat <- function(n) {
-    dist_mat <- outer(seq_len(n), seq_len(n), function(x, y) abs(x - y))
-    corr_mat <- exp(-dist_mat / max(dist_mat))
-    return(corr_mat)
+  convert_1d_to_2d <- function(index, ncol) {
+    # Adjust for zero-based indexing
+    index_zero_based <- index - 1
+
+    # Calculate row and column
+    row_index <- index_zero_based %/% ncol
+    column_index <- index_zero_based %% ncol
+
+    # Return the 2D coordinates (row, column)
+    return(c(row_index, column_index))
   }
-  corr_mat <- exp_corr_mat(n_pixel)
+
+  # Function to calculate the Euclidean distance between two points in a 2D grid
+  dist <- function(i, j, ncol) {
+    # Convert 1D indices to 2D coordinates
+    coord1 <- convert_1d_to_2d(i, ncol)
+    coord2 <- convert_1d_to_2d(j, ncol)
+
+    # Calculate Euclidean distance
+    distance <- sqrt((coord1[1] - coord2[1])^2 + (coord1[2] - coord2[2])^2)
+
+    return(distance)
+  }
+
+  vec_dist <- Vectorize(dist, c("i", "j"))
+
+  exp_corr_mat <- outer(seq_len(n_pixel), seq_len(n_pixel), function(i, j) {
+    dist_ij <- vec_dist(i, j, n_col)
+    exp(-dist_ij)
+  })
 
   # generate errors (2000, 256)
-  epsilon <- mvrnorm(n = n_image, mu = rep(0, n_pixel), Sigma = corr_mat)
+  epsilon <- MASS::mvrnorm(
+    n = na + nb, mu = rep(0, n_pixel), Sigma = exp_corr_mat
+  )
 
   # generate y
   y <- outer(group_ind, beta) + epsilon
@@ -111,7 +135,7 @@ plot_matrix <- function(vec, value_limits = c()) {
   mat <- matrix(vec, 16, 16, byrow = TRUE)
 
   # Convert the matrix to a long format data frame
-  data_long <- melt(mat)
+  data_long <- reshape2::melt(mat)
 
   # Ensure value_limits is of length 2
   if (length(value_limits) != 2) {
@@ -138,22 +162,25 @@ plot_matrix <- function(vec, value_limits = c()) {
 
 # Decide the strength of center effect by visualization
 set.seed(121)
-df1 <- generate_data(center_effect = 1.5)
+df1 <- generate_data(center_effect = 4)
 plot_matrix(df1[78, -1], range(df1))
 
-df2 <- generate_data(center_effect = 2)
+df2 <- generate_data(center_effect = 5)
 plot_matrix(df2[78, -1], range(df2))
 
-image1_5 <- plot_matrix(df1[78, -1], range(df1, df2))
-image2 <- plot_matrix(df2[78, -1], range(df1, df2)) # w/ center effect
-image2c <- plot_matrix(df2[1001, -1], range(df1, df2)) # w/o center effect
+image_4 <- plot_matrix(df1[78, -1], range(df1, df2))
+image_5c <- plot_matrix(df2[1001, -1], range(df1, df2)) # w/o center effect
+image_5 <- plot_matrix(df2[78, -1], range(df1, df2)) # w/ center effect
 
 image_path <- file.path(getwd(), "Figures")
 
-ggsave(file.path(image_path, "image_ex1_5.png"), plot = image1_5)
-ggsave(file.path(image_path, "image_ex2.png"), plot = image2)
-ggsave(file.path(image_path, "image_ex2c.png"), plot = image2c)
+ggsave(file.path(image_path, "ex_image_4.png"), plot = image_4)
+ggsave(file.path(image_path, "ex_image_5.png"), plot = image_5)
+ggsave(file.path(image_path, "ex_image_5c.png"), plot = image_5c)
 
+# set up global center effect
+center_effect <- 5
+gen_data_objs <- c(gen_data_objs, "center_effect")
 
 
 # VBM ----------------------------------------------------------------
@@ -162,13 +189,9 @@ n_iter <- 1000
 
 vbm_fsim <- function(i) {
   # simulate data
-  simulated_data <- generate_data(
-    n_a = n_a,
-    n_b = n_b,
-    n_pixel = n_pixel,
-    center_size = center_size
-  )
+  simulated_data <- generate_data(center_effect = center_effect)
 
+  n_pixel <- ncol(simulated_data) - 1
   pvals <- rep(NA, n_pixel)
 
   for (j in seq_len(n_pixel)) {
@@ -185,8 +208,9 @@ vbm_pkgs <- c()
 vbm_objs <- c()
 list_package <- c(gen_data_pkgs, vbm_pkgs)
 
+set.seed(42)
 tic()
-vbm_pvals <- call_simWrapper(
+vbm_pvals <- simWrapper(
   n_sim = n_iter,
   f_sim = vbm_fsim,
   list_export = c(gen_data_objs, vbm_objs, "list_package"),
@@ -442,8 +466,8 @@ n_perm <- 1000
 freq_fsim <- function(i) {
   # simulate data
   simulated_data <- generate_data(
-    n_a = n_a,
-    n_b = n_b,
+    na = na,
+    nb = nb,
     n_pixel = n_pixel,
     center_size = center_size
   )
@@ -489,7 +513,7 @@ toc()
 
 
 generate_data <- function(beta_eff) {
-  n_image <- 2000
+  na + nb <- 2000
   square_size <- sqrt(256)
 
   # generate group indicator
@@ -511,7 +535,7 @@ generate_data <- function(beta_eff) {
   corr_mat <- exp_corr_mat(n_pixel)
 
   # generate errors (2000, 256)
-  epsilon <- mvrnorm(n = n_image, mu = rep(0, n_pixel), Sigma = corr_mat)
+  epsilon <- mvrnorm(n = na + nb, mu = rep(0, n_pixel), Sigma = corr_mat)
 
   # generate y
   y <- outer(group_ind, beta) + epsilon
