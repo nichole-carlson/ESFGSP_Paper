@@ -1,4 +1,3 @@
-##########################################################################
 # Simulate imaging data to see how models work
 
 # Defaultly do parallel
@@ -57,7 +56,11 @@ setup_packages(packages_to_install)
 # source("/Users/siyangren/Documents/ra-cida/spatial-filtering/code/resf_vc.R")
 # source("/Users/siyangren/Documents/ra-cida/spatial-filtering/code/mymeigen2D.R")
 
-source("/Users/siyangren/Documents/ESFGSP/simWrapper.r")
+
+proj_path <- "/Users/siyangren/Documents/ESFGSP"
+image_path <- file.path(proj_path, "Figures")
+source(file.path(proj_path, "simWrapper.r"))
+
 
 
 
@@ -176,8 +179,6 @@ image_4 <- plot_matrix(df1[78, -1], range(df1, df2))
 image_5c <- plot_matrix(df2[1001, -1], range(df1, df2)) # w/o center effect
 image_5 <- plot_matrix(df2[78, -1], range(df1, df2)) # w/ center effect
 
-image_path <- file.path(getwd(), "Figures")
-
 ggsave(file.path(image_path, "ex_image_4.png"), plot = image_4)
 ggsave(file.path(image_path, "ex_image_5.png"), plot = image_5)
 ggsave(file.path(image_path, "ex_image_5c.png"), plot = image_5c)
@@ -219,6 +220,7 @@ vbm_pkgs <- c()
 vbm_objs <- c()
 list_package <- c(gen_data_pkgs, vbm_pkgs)
 
+# Run the function
 set.seed(42)
 tic()
 vbm_pvals <- simWrapper(
@@ -229,21 +231,62 @@ vbm_pvals <- simWrapper(
 )
 toc()
 
+# Adjust p-values for multiple testing
 vbm_pvals_corr <- t(apply(vbm_pvals, 1, p.adjust, method = "bonferroni"))
 
-# calculate the perc of p-values < 0.05 for each pixel
+# Calculate the perc of p-values < 0.05 for each pixel
 vbm_pvals_perc <- colSums(vbm_pvals < 0.05) / n_iter * 100
 vbm_pvals_corr_perc <- colSums(vbm_pvals_corr < 0.05) / n_iter * 100
 
+# Visualize the p-values as an image. Each pixel is the number of significant
+# p-values across iterations.
 image_vbm_pvals <- plot_matrix(vbm_pvals_perc, c(0, 100))
 image_vbm_pvals_corr <- plot_matrix(vbm_pvals_corr_perc, c(0, 100))
-
-image_path <- file.path(getwd(), "Figures")
 
 ggsave(file.path(image_path, "vbm_pvals.png"), plot = image_vbm_pvals)
 ggsave(file.path(image_path, "vbm_pvals_corr.png"), plot = image_vbm_pvals_corr)
 
-# Build
+# Visualize the p-values from the outer area with histogram
+
+# Calculate the pixel index for outer area
+c_indices <- {
+  c_rows <- 5:12
+  as.vector(outer(c_rows, c_rows, FUN = function(i, j) (i - 1) * 16 + j))
+}
+# indices for edge pixels
+e_indices <- {
+  all_indices <- 1:256
+  setdiff(all_indices, c_indices)
+}
+
+vbm_tmp <- data.frame(
+  perc = c(vbm_pvals_perc[e_indices], vbm_pvals_corr_perc[e_indices]),
+  grp = factor(rep(c("Unadjusted", "Adjusted"), each = length(e_indices)))
+)
+
+# Create boxplots using ggplot2
+p <- ggplot(vbm_tmp, aes(x = grp, y = perc)) +
+  geom_boxplot() +
+  facet_wrap(~grp, scales = "free_x") +
+  labs(y = "Percentage of Significant P-Values", x = "") +
+  theme_minimal() +
+  theme(
+    plot.background = element_rect(fill = "white"),
+    panel.background = element_rect(fill = "white"),
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank(),
+    axis.title.x = element_blank()
+  ) +
+  scale_y_continuous(breaks = scales::pretty_breaks(n = 10))
+
+
+# Save the plot to a PNG file with specified dimensions
+ggsave(
+  file.path(image_path, "vbm_boxplots.png"),
+  plot = p,
+  width = 8, height = 4, dpi = 300
+)
+
 
 
 # spVBM ------------------------------------------------------------
