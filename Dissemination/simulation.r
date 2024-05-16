@@ -1,12 +1,11 @@
 ##########################################################################
 # Simulate imaging data to see how models work
 
-# Step 0: Set Up Parallel
-# - TF_parallel equals TRUE
-# - Decide how many cores to use
+# Defaultly do parallel
+# number of cores used = cores detected - 1
 
 # Step 1: Simulate Data
-# -  Generate group indicator, 1000 in group A; 1000 in group B
+# - Generate group indicator, 1000 in group A; 1000 in group B
 # - Generate the beta as 16*16 matrix, it has 1 in the center 8*8 and 0 in
 #    other areas.
 # - Generate the exponential correlation matrix
@@ -329,15 +328,13 @@ perform_lasso <- function(x, y, p_train) {
 
 rm(df1, df2)
 set.seed(121)
-df <- generate_data(center_effect = 2)
+df <- generate_data(center_effect = 5)
 x <- df[, -1]
 y <- df[, 1]
 perform_lasso(x, y, p_train = 0.8) # use all pixels cause perfect separation
 
-# search after adding how many pixels into the LASSO model will cause perfect
-# separation
-i <- 1 # number of pixels from each side
-m <- 0 # maximum AUC/accuracy
+# search how many pixels in the LASSO model will cause perfect separation
+
 # indices for center pixels
 c_indices <- {
   c_rows <- 5:12
@@ -349,17 +346,20 @@ e_indices <- {
   setdiff(all_indices, c_indices)
 }
 
+i <- 1 # number of pixels from each side
+m <- 0 # maximum AUC/accuracy
+res <- matrix(NA, nrow = 0, ncol = 4)
 while (m < 1) {
   ia <- sample(c_indices, i) + 1
   ib <- sample(e_indices, i) + 1
   x <- df[, c(ia, ib)]
   y <- df[, 1]
-  res <- perform_lasso(x, y, p_train = 0.8)
-  m <- max(res)
+  res <- rbind(res, perform_lasso(x, y, p_train = 0.8))
+  m <- max(res[i, ])
   i <- i + 1
 }
-# stop at i = 3
-
+# when use two points from each side, AUC/accuracy equals 1.
+rm(x, y, ia, ib, i, m, res)
 
 # Estimate p-value for each pixel using permutation test
 perm_lasso <- function(x, y, n_perm) {
@@ -388,7 +388,7 @@ perm_lasso <- function(x, y, n_perm) {
 
 lasso_fsim <- function(i) {
   # simulate data
-  simulated_data <- generate_data(center_effect = 2)
+  simulated_data <- generate_data(center_effect = 5)
   x <- simulated_data[, -1]
   y <- simulated_data[, 1]
 
@@ -407,8 +407,6 @@ tic()
 lasso_pvals <- simWrapper(
   n_sim = 100,
   f_sim = lasso_fsim,
-  TF_parallel = TRUE,
-  n_cores = detectCores() - 1,
   list_package = list_package,
   list_export = c(gen_data_objs, lasso_objs, "list_package")
 )
