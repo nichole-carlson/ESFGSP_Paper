@@ -64,6 +64,7 @@ source("/Users/siyangren/Documents/ESFGSP/simWrapper.r")
 # 1 Define function to simulate data ------------------------------------
 # The output is a 2000 * 257 matrix. The first column is the group indicator.
 # Each column of the remaining represents a pixel.
+
 generate_data <- function(
     na = 1000, # n obs from group A
     nb = 1000,
@@ -132,6 +133,7 @@ gen_data_pkgs <- c("MASS")
 
 # 2 Visualization --------------------------------------------------------
 # Input should be a (256, ) vector, representing a 1D 16*16 image.
+
 plot_matrix <- function(vec, value_limits = c()) {
   # Convert 1D vector to 2D matrix
   mat <- matrix(vec, 16, 16, byrow = TRUE)
@@ -185,9 +187,16 @@ center_effect <- 5
 gen_data_objs <- c(gen_data_objs, "center_effect")
 
 
-# VBM ----------------------------------------------------------------
+# 3. VBM --------------------------------------------------------------
 
 n_iter <- 1000
+
+# This function is designed exclusively for parallel execution.
+# In each iteration, the function generates 2000 images. It then utilizes a
+# grouping indicator to estimate the pixel values for each image. Each image
+# consists of a total of 256 pixels.
+# The output is a matrix with dimensions n_iters (number of iterations) by
+# n_pixels (number of pixels), containing the p-values for each pixel.
 
 vbm_fsim <- function(i) {
   # simulate data
