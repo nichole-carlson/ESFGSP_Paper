@@ -62,6 +62,8 @@ source("/Users/siyangren/Documents/ESFGSP/simWrapper.r")
 
 
 # 1 Define function to simulate data ------------------------------------
+# The output is a 2000 * 257 matrix. The first column is the group indicator.
+# Each column of the remaining represents a pixel.
 generate_data <- function(
     na = 1000, # n obs from group A
     nb = 1000,
@@ -129,11 +131,12 @@ gen_data_pkgs <- c("MASS")
 
 
 # 2 Visualization --------------------------------------------------------
+# Input should be a (256, ) vector, representing a 1D 16*16 image.
 plot_matrix <- function(vec, value_limits = c()) {
-  # Convert the matrix to a long format data frame
+  # Convert 1D vector to 2D matrix
   mat <- matrix(vec, 16, 16, byrow = TRUE)
 
-  # Convert the matrix to a long format data frame
+  # Convert the 2D matrix to a long data frame: x, y, value
   data_long <- reshape2::melt(mat)
 
   # Ensure value_limits is of length 2
@@ -177,7 +180,7 @@ ggsave(file.path(image_path, "ex_image_4.png"), plot = image_4)
 ggsave(file.path(image_path, "ex_image_5.png"), plot = image_5)
 ggsave(file.path(image_path, "ex_image_5c.png"), plot = image_5c)
 
-# set up global center effect
+# Set up global center effect
 center_effect <- 5
 gen_data_objs <- c(gen_data_objs, "center_effect")
 
@@ -230,6 +233,8 @@ image_path <- file.path(getwd(), "Figures")
 
 ggsave(file.path(image_path, "vbm_pvals.png"), plot = image_vbm_pvals)
 ggsave(file.path(image_path, "vbm_pvals_corr.png"), plot = image_vbm_pvals_corr)
+
+# Build
 
 
 # spVBM ------------------------------------------------------------
