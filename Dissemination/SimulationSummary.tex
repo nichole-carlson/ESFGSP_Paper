@@ -16,12 +16,12 @@ The dataset consists of 2,000 simulated images, each with a \(16 \times 16\) gri
 
 The \(\beta\) matrix values are zero except in the central region, and the \texttt{group\_ind} vector classifies images into groups A (1) and B (0). Noise, \(\epsilon_i\), is added to each image, derived from a multivariate normal distribution with zero mean and a covariance structure based on an exponential correlation function with rate 1.
 
-Question about how to generate exponential correlation matrix: for any two pixels, \(\text{dist}(i, j) = \sqrt{(x_1 - x_2)^2 + (y_1 - y_2)^2}\). I found two ways to calculate the exponential correlation matrix online:
-\begin{itemize}
-    \item \(\text{cor}(i, j) = \exp(-\alpha \times \text{dist}(i, j))\), \(\alpha\) is called rate;
-    \item \(\text{cor}(i, j) = \rho^{\text{dist}(i, j)}, \ \rho < 1\)
-\end{itemize}
-I think we are aiming at the first one?
+For two pixels \(i, \ j\), their correlation are calculated as
+\[
+    \exp \left(- \sqrt{(x_i - x_j)^2 + (y_i - y_j)^2}\right),
+\]
+where \(x, y\) are their coordinates in the image.
+
 
 % To adapt the data for the input specifications of the \texttt{myresf\_vc} function, the dataset was transformed into a long format. In this format, the columns \texttt{x} and \texttt{y} denote the coordinates, while \texttt{pixel\_value} corresponds to the simulated $y$ values.
 
@@ -30,22 +30,22 @@ I think we are aiming at the first one?
     % First Row
     \begin{minipage}{0.45\textwidth}
         \centering
-        \includegraphics[width=0.9\textwidth]{../Figures/image_ex2c.png}
+        \includegraphics[width=0.9\textwidth]{../Figures/ex_image_5c.png}
         \caption{Example image without \(\beta\) effect}
         \label{fig:image1}
     \end{minipage}\hfill
     \begin{minipage}{0.45\textwidth}
         \centering
-        \includegraphics[width=0.9\textwidth]{../Figures/image_ex1_5.png}
-        \caption{Example image with \(\beta = 1.5\)}
+        \includegraphics[width=0.9\textwidth]{../Figures/ex_image_5.png}
+        \caption{Example image with \(\beta = 5\)}
         \label{fig:image2}
     \end{minipage}
 
     % Second Row
     \begin{minipage}{0.45\textwidth}
         \centering
-        \includegraphics[width=0.9\textwidth]{../Figures/image_ex2.png}
-        \caption{Example image with \(\beta = 2\)}
+        \includegraphics[width=0.9\textwidth]{../Figures/ex_image_4.png}
+        \caption{Example image with \(\beta = 4\)}
         \label{fig:image3}
     \end{minipage}\hfill
     \begin{minipage}{0.45\textwidth}
@@ -55,7 +55,7 @@ I think we are aiming at the first one?
 
 \section*{VBM}
 
-In the VBM analysis, a Generalized Linear Model (GLM) was applied pixel-wise to assess group effects on pixel intensities across 100 iterations. For each iteration, the model generated effect size estimates and p-values for each pixel. These p-values were then corrected for multiple comparisons using the Bonferroni method. Figure \ref{fig:vbm_pvals} depicts the frequency of significant p-values in across pixels, with pixels showing significant \(\beta\) in all 100 iterations appearing in black, and those never showing significance in white.
+In the VBM analysis, a Generalized Linear Model (GLM) was applied pixel-wise to assess group effects on pixel intensities across 100 iterations. For each iteration, the model generated effect size estimates and p-values for each pixel. These p-values were then corrected for multiple comparisons using the Bonferroni method. Figure~\ref{fig:vbm_pvals} depicts the frequency of significant p-values in across pixels, with pixels showing significant \(\beta\) in all 100 iterations appearing in black, and those never showing significance in white.
 
 \begin{figure}[H]
     \centering
@@ -63,12 +63,14 @@ In the VBM analysis, a Generalized Linear Model (GLM) was applied pixel-wise to 
     \begin{minipage}[b]{0.45\textwidth}
         \includegraphics[width=\textwidth]{/Users/siyangren/Documents/ra-cida/ESFGSP_Paper/Figures/vbm_pvals.png}
         \caption{\% of significant p-values across pixels in VBM analysis}
+        \label{fig:vbm_pvals}
     \end{minipage}
     \hfill % This command adds a space between the two figures
     % Second figure
     \begin{minipage}[b]{0.45\textwidth}
         \includegraphics[width=\textwidth]{/Users/siyangren/Documents/ra-cida/ESFGSP_Paper/Figures/vbm_pvals_corr.png}
         \caption{\% of significant p-values after correction across pixels in VBM analysis}
+        \label{fig:vbm_pvals_corr}
     \end{minipage}
 \end{figure}
 
