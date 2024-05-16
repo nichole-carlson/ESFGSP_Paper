@@ -383,21 +383,19 @@ perform_lasso <- function(x, y, p_train) {
   return(results)
 }
 
-rm(df1, df2)
+# Generate a sample dataset. See whether using all pixels will cause perfect
+# separation.
 set.seed(121)
-df <- generate_data(center_effect = 5)
+df <- generate_data(center_effect = center_effect)
 x <- df[, -1]
 y <- df[, 1]
 perform_lasso(x, y, p_train = 0.8) # use all pixels cause perfect separation
 
 # search how many pixels in the LASSO model will cause perfect separation
-
-# indices for center pixels
 c_indices <- {
   c_rows <- 5:12
   as.vector(outer(c_rows, c_rows, FUN = function(i, j) (i - 1) * 16 + j))
 }
-# indices for edge pixels
 e_indices <- {
   all_indices <- 1:256
   setdiff(all_indices, c_indices)
@@ -419,6 +417,7 @@ while (m < 1) {
 rm(x, y, ia, ib, i, m, res)
 
 # Estimate p-value for each pixel using permutation test
+# The output is a 1 * n_pixel matrix with the value as p-values
 perm_lasso <- function(x, y, n_perm) {
   cv_lasso <- function(x, y) {
     cv_fit <- cv.glmnet(x, y, alpha = 1)
@@ -443,9 +442,17 @@ perm_lasso <- function(x, y, n_perm) {
   return(p_vals)
 }
 
+
+# This function is designed exclusively for parallel execution.
+# In each iteration, the function generates 2000 images. It then utilizes a
+# grouping indicator to estimate the pixel values for each image. Each image
+# consists of a total of 256 pixels.
+# The output is a matrix with dimensions n_iters (number of iterations) by
+# n_pixels (number of pixels), containing the p-values for each pixel.
+
 lasso_fsim <- function(i) {
   # simulate data
-  simulated_data <- generate_data(center_effect = 5)
+  simulated_data <- generate_data(center_effect = center_effect)
   x <- simulated_data[, -1]
   y <- simulated_data[, 1]
 
@@ -462,10 +469,10 @@ list_package <- c(gen_data_pkgs, lasso_pkgs)
 set.seed(42)
 tic()
 lasso_pvals <- simWrapper(
-  n_sim = 100,
+  n_sim = 1000,
   f_sim = lasso_fsim,
-  list_package = list_package,
-  list_export = c(gen_data_objs, lasso_objs, "list_package")
+  list_export = c(gen_data_objs, lasso_objs, "list_package"),
+  list_package = list_package
 )
 toc()
 
