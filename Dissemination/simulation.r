@@ -56,7 +56,6 @@ setup_packages(packages_to_install)
 # source("/Users/siyangren/Documents/ra-cida/spatial-filtering/code/resf_vc.R")
 # source("/Users/siyangren/Documents/ra-cida/spatial-filtering/code/mymeigen2D.R")
 
-
 proj_path <- "/Users/siyangren/Documents/ESFGSP"
 image_path <- file.path(proj_path, "Figures")
 source(file.path(proj_path, "simWrapper.r"))
@@ -190,8 +189,6 @@ gen_data_objs <- c(gen_data_objs, "center_effect")
 
 # 3. VBM --------------------------------------------------------------
 
-n_iter <- 1000
-
 # This function is designed exclusively for parallel execution.
 # In each iteration, the function generates 2000 images. It then utilizes a
 # grouping indicator to estimate the pixel values for each image. Each image
@@ -224,7 +221,7 @@ list_package <- c(gen_data_pkgs, vbm_pkgs)
 set.seed(42)
 tic()
 vbm_pvals <- simWrapper(
-  n_sim = n_iter,
+  n_sim = 1000,
   f_sim = vbm_fsim,
   list_export = c(gen_data_objs, vbm_objs, "list_package"),
   list_package = list_package
@@ -235,8 +232,8 @@ toc()
 vbm_pvals_corr <- t(apply(vbm_pvals, 1, p.adjust, method = "bonferroni"))
 
 # Calculate the perc of p-values < 0.05 for each pixel
-vbm_pvals_perc <- colSums(vbm_pvals < 0.05) / n_iter * 100
-vbm_pvals_corr_perc <- colSums(vbm_pvals_corr < 0.05) / n_iter * 100
+vbm_pvals_perc <- colSums(vbm_pvals < 0.05) / nrow(vbm_pvals) * 100
+vbm_pvals_corr_perc <- colSums(vbm_pvals_corr < 0.05) / nrow(vbm_pvals) * 100
 
 # Visualize the p-values as an image. Each pixel is the number of significant
 # p-values across iterations.
@@ -475,20 +472,52 @@ lasso_pvals <- simWrapper(
   list_package = list_package
 )
 toc()
+# save(lasso_pvals, file = "lasso_pvals.RData")
+load(file = "lasso_pvals.RData")
 
+# Adjust p-values for multiple testing
 lasso_pvals_corr <- t(apply(lasso_pvals, 1, p.adjust, method = "bonferroni"))
 
-# calculate the perc of p-values < 0.05 for each pixel
+# Calculate the perc of p-values < 0.05 for each pixel
 lasso_pvals_perc <- colSums(lasso_pvals < 0.05) / nrow(lasso_pvals) * 100
 lasso_pvals_corr_perc <- colSums(lasso_pvals_corr < 0.05) / nrow(lasso_pvals) * 100
 
+# Visualize the p-values as an image. Each pixel is the number of significant
+# p-values across iterations.
 image_lasso_pvals <- plot_matrix(lasso_pvals_perc, c(0, 100))
 image_lasso_pvals_corr <- plot_matrix(lasso_pvals_corr_perc, c(0, 100))
 
-image_path <- file.path(getwd(), "Figures")
-
 ggsave(file.path(image_path, "lasso_pvals.png"), plot = image_lasso_pvals)
 ggsave(file.path(image_path, "lasso_pvals_corr.png"), plot = image_lasso_pvals_corr)
+
+# Create boxplots using ggplot2
+lasso_tmp <- data.frame(
+  perc = c(lasso_pvals_perc[e_indices], lasso_pvals_corr_perc[e_indices]),
+  grp = factor(rep(c("Unadjusted", "Adjusted"), each = length(e_indices)))
+)
+
+
+p <- ggplot(lasso_tmp, aes(x = grp, y = perc)) +
+  geom_boxplot() +
+  facet_wrap(~grp, scales = "free_x") +
+  labs(y = "Percentage of Significant P-Values", x = "") +
+  theme_minimal() +
+  theme(
+    plot.background = element_rect(fill = "white"),
+    panel.background = element_rect(fill = "white"),
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank(),
+    axis.title.x = element_blank()
+  ) +
+  scale_y_continuous(breaks = scales::pretty_breaks(n = 10))
+
+# Save the plot to a PNG file with specified dimensions
+ggsave(
+  file.path(image_path, "lasso_boxplots.png"),
+  plot = p,
+  width = 8, height = 4, dpi = 300
+)
+
 
 
 # Frequency --------------------------------------------------------
