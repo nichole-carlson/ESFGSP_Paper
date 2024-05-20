@@ -632,9 +632,13 @@ list_package <- c(gen_data_pkgs, freq_pkgs)
 set.seed(42)
 tic()
 freq_pvals <- simWrapper(
-  n_sim = 1,
+  n_sim = 100,
   f_sim = freq_fsim,
   list_export = c(gen_data_objs, freq_objs, "list_package"),
   list_package = list_package
 )
 toc()
+save(
+  freq_pvals,
+  file = paste0("lasso_pvals", format(Sys.time(), "%y%m%d"), ".RData")
+)
