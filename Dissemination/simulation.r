@@ -71,8 +71,50 @@ image_path <- file.path(proj_path, "Figures")
 source(file.path(proj_path, "simWrapper.r"))
 
 # 0.1 Functions for data generation
+
+# Generate an exponential correlation matrix for a square matrix with n_pixels
+exp_corr_mat <- function(n_pixel) {
+  n_col <- sqrt(n_pixel)
+
+  # given any index from 1 to n^2, calculate its 2D indices
+  convert_1d_to_2d <- function(index, n_col) {
+    # Adjust for zero-based indexing
+    index_zero_based <- index - 1
+
+    # Calculate row and column
+    row_index <- index_zero_based %/% n_col
+    column_index <- index_zero_based %% n_col
+
+    # Return the 2D coordinates (row, column)
+    return(c(row_index, column_index))
+  }
+
+  # Function to calculate the Euclidean distance between two points in a 2D grid
+  dist <- function(i, j, n_col) {
+    # Convert 1D indices to 2D coordinates
+    coord1 <- convert_1d_to_2d(i, n_col)
+    coord2 <- convert_1d_to_2d(j, n_col)
+
+    # Calculate Euclidean distance
+    distance <- sqrt((coord1[1] - coord2[1])^2 + (coord1[2] - coord2[2])^2)
+
+    return(distance)
+  }
+
+  vec_dist <- Vectorize(dist, c("i", "j"))
+
+  # Generate the correlation matrix
+  corr_mat <- outer(seq_len(n_pixel), seq_len(n_pixel), function(i, j) {
+    dist_ij <- vec_dist(i, j, n_col)
+    exp(-dist_ij)
+  })
+
+  return(corr_mat)
+}
+
 # The output is a 2000 * 257 matrix. The first column is the group indicator.
 # Each column of the remaining represents a pixel.
+
 generate_data <- function(
     na = 1000, # n obs from group A
     nb = 1000,
@@ -93,40 +135,11 @@ generate_data <- function(
   beta <- as.vector(beta) # (256, )
 
   # multivariate normal error
-  convert_1d_to_2d <- function(index, ncol) {
-    # Adjust for zero-based indexing
-    index_zero_based <- index - 1
-
-    # Calculate row and column
-    row_index <- index_zero_based %/% ncol
-    column_index <- index_zero_based %% ncol
-
-    # Return the 2D coordinates (row, column)
-    return(c(row_index, column_index))
-  }
-
-  # Function to calculate the Euclidean distance between two points in a 2D grid
-  dist <- function(i, j, ncol) {
-    # Convert 1D indices to 2D coordinates
-    coord1 <- convert_1d_to_2d(i, ncol)
-    coord2 <- convert_1d_to_2d(j, ncol)
-
-    # Calculate Euclidean distance
-    distance <- sqrt((coord1[1] - coord2[1])^2 + (coord1[2] - coord2[2])^2)
-
-    return(distance)
-  }
-
-  vec_dist <- Vectorize(dist, c("i", "j"))
-
-  exp_corr_mat <- outer(seq_len(n_pixel), seq_len(n_pixel), function(i, j) {
-    dist_ij <- vec_dist(i, j, n_col)
-    exp(-dist_ij)
-  })
+  corr_mat <- exp_corr_mat(n_pixel)
 
   # generate errors (2000, 256)
   epsilon <- MASS::mvrnorm(
-    n = na + nb, mu = rep(0, n_pixel), Sigma = exp_corr_mat
+    n = na + nb, mu = rep(0, n_pixel), Sigma = corr_mat
   )
 
   # generate y
@@ -329,12 +342,6 @@ perm_lasso <- function(x, y, n_perm) {
 }
 
 # 0.6 Functions for eigen decomposition
-exp_corr_mat <- function(n) {
-  dist_mat <- outer(seq_len(n), seq_len(n), function(x, y) abs(x - y))
-  corr_mat <- exp(-dist_mat / max(dist_mat))
-  return(corr_mat)
-}
-
 eig_decomp <- function(C) {
   p <- ncol(C)
   M <- diag(p) - matrix(1, p, p) / p
@@ -555,20 +562,18 @@ ggsave(
 
 
 
-# Frequency --------------------------------------------------------
+# Model 4: Frequency ------------------------------------------------------
+
 # Predict group_ind using image projected on the frequency domain
 # Find a fix correlation matrix, such as exp corr mat
 # Do the transformation use
 #   1. positive eigenvalues only
 #   2. all eigenvalues
 
+# Similar to LASSO model, evaluate model performance by perdiction accuracy
+# and p-values.
 
 
-
-
-# parallel data generation and freq model fitting above
-n_iter <- 100
-n_perm <- 1000
 
 freq_fsim <- function(i) {
   # simulate data
@@ -615,41 +620,3 @@ freq_pvals <- call_simWrapper(
   list_package = list_package
 )
 toc()
-
-
-
-
-generate_data <- function(beta_eff) {
-  na + nb <- 2000
-  square_size <- sqrt(256)
-
-  # generate group indicator
-  group_ind <- c(rep(1, 1000), rep(0, 1000)) # (2000, )
-
-  # group effect by pixel
-  beta <- matrix(0, square_size, square_size)
-  index_st <- (square_size - center_size) %/% 2 + 1
-  index_end <- index_st + center_size - 1
-  beta[index_st:index_end, index_st:index_end] <- beta_eff
-  beta <- as.vector(beta) # (256, )
-
-  # multivariate normal error
-  exp_corr_mat <- function(n) {
-    dist_mat <- outer(seq_len(n), seq_len(n), function(x, y) abs(x - y))
-    corr_mat <- exp(-dist_mat / max(dist_mat))
-    return(corr_mat)
-  }
-  corr_mat <- exp_corr_mat(n_pixel)
-
-  # generate errors (2000, 256)
-  epsilon <- mvrnorm(n = na + nb, mu = rep(0, n_pixel), Sigma = corr_mat)
-
-  # generate y
-  y <- outer(group_ind, beta) + epsilon
-
-  return(cbind(group_ind, y))
-}
-
-beta_eff <- 1.5
-df_sample <- generate_data(beta_eff)
-plot_matrix(df_sample[78, -1], range(df_sample))
