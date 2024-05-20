@@ -425,31 +425,14 @@ ggsave(file.path(image_path, "vbm_pvals.png"), plot = image_vbm_pvals)
 ggsave(file.path(image_path, "vbm_pvals_corr.png"), plot = image_vbm_pvals_corr)
 
 # Visualize the p-values from the outer area with histogram
-vbm_tmp <- data.frame(
-  perc = c(vbm_results$perc[e_indices], vbm_results$perc_corr[e_indices]),
-  grp = factor(rep(c("Unadjusted", "Adjusted"), each = length(e_indices)))
+image_vbm_boxplot <- plot_boxplot(
+  vbm_results$perc[e_indices],
+  vbm_results$perc_corr[e_indicies]
 )
 
-# Create boxplots using ggplot2
-p <- ggplot(vbm_tmp, aes(x = grp, y = perc)) +
-  geom_boxplot() +
-  facet_wrap(~grp, scales = "free_x") +
-  labs(y = "Percentage of Significant P-Values", x = "") +
-  theme_minimal() +
-  theme(
-    plot.background = element_rect(fill = "white"),
-    panel.background = element_rect(fill = "white"),
-    axis.text.x = element_blank(),
-    axis.ticks.x = element_blank(),
-    axis.title.x = element_blank()
-  ) +
-  scale_y_continuous(breaks = scales::pretty_breaks(n = 10))
-
-
-# Save the plot to a PNG file with specified dimensions
 ggsave(
   file.path(image_path, "vbm_boxplots.png"),
-  plot = p,
+  plot = image_vbm_boxplot,
   width = 8, height = 4, dpi = 300
 )
 
@@ -485,14 +468,10 @@ ggsave(
 # plot.new()
 
 
-# LASSO -------------------------------------------------------------
+# Model 3: LASSO -------------------------------------------------------------
 # For each iteration,
 # group_indicator as the outcome;
 # y (2000, 256) as the predictors;
-
-
-
-
 
 # Generate a sample dataset. See whether using all pixels will cause perfect
 # separation.
@@ -503,7 +482,6 @@ y <- df[, 1]
 perform_lasso(x, y, p_train = 0.8) # use all pixels cause perfect separation
 
 # search how many pixels in the LASSO model will cause perfect separation
-
 
 i <- 1 # number of pixels from each side
 m <- 0 # maximum AUC/accuracy
@@ -518,17 +496,9 @@ while (m < 1) {
   i <- i + 1
 }
 # when use two points from each side, AUC/accuracy equals 1.
-rm(x, y, ia, ib, i, m, res)
-
-
-
+rm(df, x, y, ia, ib, i, m, res)
 
 # This function is designed exclusively for parallel execution.
-# In each iteration, the function generates 2000 images. It then utilizes a
-# grouping indicator to estimate the pixel values for each image. Each image
-# consists of a total of 256 pixels.
-# The output is a matrix with dimensions n_iters (number of iterations) by
-# n_pixels (number of pixels), containing the p-values for each pixel.
 
 lasso_fsim <- function(i) {
   # simulate data
@@ -546,6 +516,7 @@ lasso_pkgs <- c("glmnet", "pROC")
 lasso_objs <- c("perm_lasso")
 list_package <- c(gen_data_pkgs, lasso_pkgs)
 
+# Run the function
 set.seed(42)
 tic()
 lasso_pvals <- simWrapper(
@@ -559,45 +530,26 @@ toc()
 load(file = "lasso_pvals.RData")
 
 # Adjust p-values for multiple testing
-lasso_pvals_corr <- t(apply(lasso_pvals, 1, p.adjust, method = "bonferroni"))
-
 # Calculate the perc of p-values < 0.05 for each pixel
-lasso_pvals_perc <- colSums(lasso_pvals < 0.05) / nrow(lasso_pvals) * 100
-lasso_pvals_corr_perc <- colSums(lasso_pvals_corr < 0.05) / nrow(lasso_pvals) * 100
+lasso_results <- calc_pval_adj(lasso_pvals)
 
 # Visualize the p-values as an image. Each pixel is the number of significant
 # p-values across iterations.
-image_lasso_pvals <- plot_matrix(lasso_pvals_perc, c(0, 100))
-image_lasso_pvals_corr <- plot_matrix(lasso_pvals_corr_perc, c(0, 100))
+image_lasso_pvals <- plot_matrix(lasso_results$perc, c(0, 100))
+image_lasso_pvals_corr <- plot_matrix(lasso_results$perc_corr, c(0, 100))
 
 ggsave(file.path(image_path, "lasso_pvals.png"), plot = image_lasso_pvals)
 ggsave(file.path(image_path, "lasso_pvals_corr.png"), plot = image_lasso_pvals_corr)
 
-# Create boxplots using ggplot2
-lasso_tmp <- data.frame(
-  perc = c(lasso_pvals_perc[e_indices], lasso_pvals_corr_perc[e_indices]),
-  grp = factor(rep(c("Unadjusted", "Adjusted"), each = length(e_indices)))
+# Visualize the p-values from the outer area with histogram
+image_lasso_boxplot <- plot_boxplot(
+  lasso_results$perc[e_indices],
+  lasso_results$perc_corr[e_indicies]
 )
 
-
-p <- ggplot(lasso_tmp, aes(x = grp, y = perc)) +
-  geom_boxplot() +
-  facet_wrap(~grp, scales = "free_x") +
-  labs(y = "Percentage of Significant P-Values", x = "") +
-  theme_minimal() +
-  theme(
-    plot.background = element_rect(fill = "white"),
-    panel.background = element_rect(fill = "white"),
-    axis.text.x = element_blank(),
-    axis.ticks.x = element_blank(),
-    axis.title.x = element_blank()
-  ) +
-  scale_y_continuous(breaks = scales::pretty_breaks(n = 10))
-
-# Save the plot to a PNG file with specified dimensions
 ggsave(
   file.path(image_path, "lasso_boxplots.png"),
-  plot = p,
+  plot = image_lasso_boxplot,
   width = 8, height = 4, dpi = 300
 )
 
