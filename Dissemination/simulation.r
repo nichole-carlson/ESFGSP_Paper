@@ -18,7 +18,8 @@
 #   - Broadcast and generate y
 
 # - 0.2 Functions for matrix visualization:
-#     Given a (256, ) vector, visualize it as a 16*16 matrix
+#   - Heatmap: given a (256, ) vector, visualize it as a 16*16 matrix
+#   - Boxplot: given the p-values for outer area, show the boxplots
 
 # - 0.3 Indicies for center space and outer space
 # - 0.4 Functions for train/test split
@@ -189,6 +190,47 @@ plot_matrix <- function(vec, value_limits = c()) {
 center_effect <- 5
 gen_data_objs <- c(gen_data_objs, "center_effect")
 
+# vec1 should be a vector of p-values before multiple testing adjustment,
+# vec2 should be after adjustment
+plot_boxplot <- function(vec1, vec2, y_range = c()) {
+  # Create a data frame for plotting
+  data <- data.frame(
+    perc = c(vec1, vec2),
+    grp = factor(
+      c(
+        rep("Unadjusted", length(vec1)),
+        rep("Adjusted", length(vec2))
+      )
+    )
+  )
+
+  # Create boxplots
+  p <- ggplot(data, aes(x = grp, y = perc)) +
+    geom_boxplot() +
+    facet_wrap(~grp, scales = "free_x") +
+    labs(y = "Percentage of Significant P-Values", x = "") +
+    theme_minimal() +
+    theme(
+      plot.background = element_rect(fill = "white"),
+      panel.background = element_rect(fill = "white"),
+      axis.text.x = element_blank(),
+      axis.ticks.x = element_blank(),
+      axis.title.x = element_blank()
+    )
+
+  # Apply y-axis range if specified
+  if (length(y_range) == 2) {
+    p <- p + scale_y_continuous(
+      limits = y_range,
+      breaks = scales::pretty_breaks(n = 10)
+    )
+  } else {
+    p <- p + scale_y_continuous(breaks = scales::pretty_breaks(n = 10))
+  }
+
+  return(p)
+}
+
 # 0.3 Indicies for center space and outer space
 c_indices <- {
   c_rows <- 5:12
@@ -320,13 +362,15 @@ calc_pval_adj <- function(pvals) {
 
   # Return a list with both percentages
   list(
+    pvals = pvals,
     pvals_corr = pvals_corr,
-    perc_orig = perc_orig,
+    perc = perc_orig,
     perc_corr = perc_corr
   )
 }
 
-# 3. VBM --------------------------------------------------------------
+
+# Model 1: VBM --------------------------------------------------------
 
 # This function is designed exclusively for parallel execution.
 # In each iteration, the function generates 2000 images. It then utilizes a
@@ -368,35 +412,21 @@ vbm_pvals <- simWrapper(
 toc()
 
 # Adjust p-values for multiple testing
-vbm_pvals_corr <- t(apply(vbm_pvals, 1, p.adjust, method = "bonferroni"))
-
 # Calculate the perc of p-values < 0.05 for each pixel
-vbm_pvals_perc <- colSums(vbm_pvals < 0.05) / nrow(vbm_pvals) * 100
-vbm_pvals_corr_perc <- colSums(vbm_pvals_corr < 0.05) / nrow(vbm_pvals) * 100
+
+vbm_results <- calc_pval_adj(vbm_pvals)
 
 # Visualize the p-values as an image. Each pixel is the number of significant
 # p-values across iterations.
-image_vbm_pvals <- plot_matrix(vbm_pvals_perc, c(0, 100))
-image_vbm_pvals_corr <- plot_matrix(vbm_pvals_corr_perc, c(0, 100))
+image_vbm_pvals <- plot_matrix(vbm_results$perc, c(0, 100))
+image_vbm_pvals_corr <- plot_matrix(vbm_results$perc_corr, c(0, 100))
 
 ggsave(file.path(image_path, "vbm_pvals.png"), plot = image_vbm_pvals)
 ggsave(file.path(image_path, "vbm_pvals_corr.png"), plot = image_vbm_pvals_corr)
 
 # Visualize the p-values from the outer area with histogram
-
-# Calculate the pixel index for outer area
-c_indices <- {
-  c_rows <- 5:12
-  as.vector(outer(c_rows, c_rows, FUN = function(i, j) (i - 1) * 16 + j))
-}
-# indices for edge pixels
-e_indices <- {
-  all_indices <- 1:256
-  setdiff(all_indices, c_indices)
-}
-
 vbm_tmp <- data.frame(
-  perc = c(vbm_pvals_perc[e_indices], vbm_pvals_corr_perc[e_indices]),
+  perc = c(vbm_results$perc[e_indices], vbm_results$perc_corr[e_indices]),
   grp = factor(rep(c("Unadjusted", "Adjusted"), each = length(e_indices)))
 )
 
