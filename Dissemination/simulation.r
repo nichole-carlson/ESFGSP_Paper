@@ -1,24 +1,33 @@
+##########################################################################
 # Simulate imaging data to see how models work
 
 # Defaultly do parallel
 # number of cores used = cores detected - 1
 
-# Step 1: Simulate Data
-# - Generate group indicator, 1000 in group A; 1000 in group B
-# - Generate the beta as 16*16 matrix, it has 1 in the center 8*8 and 0 in
-#    other areas.
-# - Generate the exponential correlation matrix
-#   - For two pixels i, j in the picture, their correlation are calculated
-#     as exp(-dist(i, j)). dist(i, j) are defined as their Euclidean dist.
-# - Use the corr matrix to generate the epsilon as a multivariate normal.
-#    Epsilon should be (100, 2000, 256)
-# - Broadcast and generate y
+# Step 0: Set Up Functions
 
-# Step 2: Visualization
-# - Pick one image from the group A, another from group B
-# - Visualize them by heatmap, check how obvious the center effect is
+# - 0.1 Functions for data generation:
+#   - Generate group indicator: 1000 in group A; 1000 in group B
+#   - Generate beta as a 16x16 matrix with:
+#       5 in the center 8x8 block, 0 elsewhere
+#   - Generate an exponential correlation matrix:
+#       For pixels i, j, correlation = exp(-dist(i, j))
+#       where dist(i, j) is their Euclidean distance
+#   - Use the correlation matrix to generate epsilon as:
+#       multivariate normal (dims: 100, 2000, 256)
+#   - Broadcast and generate y
 
-# Step 3: VBM Model
+# - 0.2 Functions for matrix visualization:
+#     Given a (256, ) vector, visualize it as a 16*16 matrix
+
+# - 0.3 Indicies for center space and outer space
+# - 0.4 Functions for train/test split
+# - 0.5 Functions for performing LASSO (predictions) and perm_lasso (p-values)
+# - 0.6 Functions for eigen decomposition
+# - 0.7 Functions for p-value adjustment and summary over iterations
+
+
+# Step 1: VBM Model
 # - Fit linear model on each pixel, with the pixel value as the outcome and
 #   group indicator as the covariate
 # - Adjust p-values for multitesting
@@ -60,13 +69,9 @@ proj_path <- "/Users/siyangren/Documents/ESFGSP"
 image_path <- file.path(proj_path, "Figures")
 source(file.path(proj_path, "simWrapper.r"))
 
-
-
-
-# 1 Define function to simulate data ------------------------------------
+# 0.1 Functions for data generation
 # The output is a 2000 * 257 matrix. The first column is the group indicator.
 # Each column of the remaining represents a pixel.
-
 generate_data <- function(
     na = 1000, # n obs from group A
     nb = 1000,
@@ -132,10 +137,8 @@ generate_data <- function(
 gen_data_objs <- c("generate_data")
 gen_data_pkgs <- c("MASS")
 
-
-# 2 Visualization --------------------------------------------------------
+# 0.2 Functions for matrix visualization
 # Input should be a (256, ) vector, representing a 1D 16*16 image.
-
 plot_matrix <- function(vec, value_limits = c()) {
   # Convert 1D vector to 2D matrix
   mat <- matrix(vec, 16, 16, byrow = TRUE)
@@ -166,26 +169,162 @@ plot_matrix <- function(vec, value_limits = c()) {
   return(plot)
 }
 
-# Decide the strength of center effect by visualization
-set.seed(121)
-df1 <- generate_data(center_effect = 4)
-plot_matrix(df1[78, -1], range(df1))
+# # Decide the strength of center effect by visualization
+# set.seed(121)
+# df1 <- generate_data(center_effect = 4)
+# plot_matrix(df1[78, -1], range(df1))
 
-df2 <- generate_data(center_effect = 5)
-plot_matrix(df2[78, -1], range(df2))
+# df2 <- generate_data(center_effect = 5)
+# plot_matrix(df2[78, -1], range(df2))
 
-image_4 <- plot_matrix(df1[78, -1], range(df1, df2))
-image_5c <- plot_matrix(df2[1001, -1], range(df1, df2)) # w/o center effect
-image_5 <- plot_matrix(df2[78, -1], range(df1, df2)) # w/ center effect
+# image_4 <- plot_matrix(df1[78, -1], range(df1, df2))
+# image_5c <- plot_matrix(df2[1001, -1], range(df1, df2)) # w/o center effect
+# image_5 <- plot_matrix(df2[78, -1], range(df1, df2)) # w/ center effect
 
-ggsave(file.path(image_path, "ex_image_4.png"), plot = image_4)
-ggsave(file.path(image_path, "ex_image_5.png"), plot = image_5)
-ggsave(file.path(image_path, "ex_image_5c.png"), plot = image_5c)
+# ggsave(file.path(image_path, "ex_image_4.png"), plot = image_4)
+# ggsave(file.path(image_path, "ex_image_5.png"), plot = image_5)
+# ggsave(file.path(image_path, "ex_image_5c.png"), plot = image_5c)
 
 # Set up global center effect
 center_effect <- 5
 gen_data_objs <- c(gen_data_objs, "center_effect")
 
+# 0.3 Indicies for center space and outer space
+c_indices <- {
+  c_rows <- 5:12
+  as.vector(outer(c_rows, c_rows, FUN = function(i, j) (i - 1) * 16 + j))
+}
+e_indices <- {
+  all_indices <- 1:256
+  setdiff(all_indices, c_indices)
+}
+
+# 0.4 Functions for train/test split
+train_test_split <- function(x, y, p_train) {
+  set.seed(123)
+  n <- nrow(x)
+  train_idx <- sample(seq_len(n), size = floor(n * p_train))
+
+  x_train <- x[train_idx, , drop = FALSE]
+  x_test <- x[-train_idx, , drop = FALSE]
+  y_train <- y[train_idx]
+  y_test <- y[-train_idx]
+
+  return(list(
+    x_train = x_train,
+    x_test = x_test,
+    y_train = y_train,
+    y_test = y_test
+  ))
+}
+
+# 0.5 Functions for performing LASSO (predictions) and perm_lasso (p-values)
+# select optimal lambda via cross-validation
+# evaluate performance via accuracy and AUC
+perform_lasso <- function(x, y, p_train) {
+  # Split the dataset
+  split <- train_test_split(x, y, p_train)
+
+  # Extract training and testing data
+  x_tr <- split$x_train
+  x_te <- split$x_test
+  y_tr <- split$y_train
+  y_te <- split$y_test
+
+  # Perform cross-validation to find the optimal lambda values
+  cv_mod <- cv.glmnet(x_tr, y_tr, alpha = 1, family = "binomial")
+  l_min <- cv_mod$lambda.min
+  l_1se <- cv_mod$lambda.1se
+
+  # Function to evaluate model performance
+  eval_perf <- function(l) {
+    mod <- glmnet(x_tr, y_tr, alpha = 1, lambda = l, family = "binomial")
+    preds <- predict(mod, newx = x_te, type = "response")[, 1]
+    preds_bin <- ifelse(preds > 0.5, 1, 0)
+
+    acc <- mean(preds_bin == y_te)
+    auc <- pROC::auc(pROC::roc(y_te, preds))
+
+    c(acc = acc, AUC = auc)
+  }
+
+  # Get performance metrics for both lambda.min and lambda.1se
+  perf_min <- eval_perf(l_min)
+  perf_1se <- eval_perf(l_1se)
+
+  # Combine results into a coherent matrix
+  results <- c(perf_min, perf_1se)
+  results <- matrix(results, nrow = 1)
+  colnames(results) <- c("min_acc", "min_auc", "1se_acc", "1se_auc")
+
+  return(results)
+}
+
+# Estimate p-value for each pixel using permutation test
+# The output is a 1 * n_pixel matrix with the value as p-values
+perm_lasso <- function(x, y, n_perm) {
+  cv_lasso <- function(x, y) {
+    cv_fit <- cv.glmnet(x, y, alpha = 1)
+    best_lambda <- cv_fit$lambda.min
+    coefs <- coef(cv_fit, s = "lambda.min")[-1, 1]
+    return(coefs)
+  }
+
+  # get original coef estimates
+  orig_coefs <- cv_lasso(x, y)
+
+  # perform permutations
+  perm_coefs <- matrix(NA, n_perm, length(orig_coefs))
+
+  for (i in seq_len(n_perm)) {
+    y_perm <- sample(y)
+    perm_coefs[i, ] <- cv_lasso(x, y_perm)
+  }
+
+  # calculate p-values
+  p_vals <- matrix(colMeans(abs(perm_coefs) > abs(orig_coefs)), nrow = 1)
+  return(p_vals)
+}
+
+# 0.6 Functions for eigen decomposition
+exp_corr_mat <- function(n) {
+  dist_mat <- outer(seq_len(n), seq_len(n), function(x, y) abs(x - y))
+  corr_mat <- exp(-dist_mat / max(dist_mat))
+  return(corr_mat)
+}
+
+eig_decomp <- function(C) {
+  p <- ncol(C)
+  M <- diag(p) - matrix(1, p, p) / p
+  eig_data <- eigen(M %*% C %*% M, symmetric = TRUE)
+
+  order_idx <- order(eig_data$values, decreasing = TRUE)
+  eig_vecs <- eig_data$vectors[, order_idx]
+  eig_vals <- eig_data$values[order_idx]
+
+  return(list(
+    eigenvectors = eig_vecs,
+    eigenvalues = eig_vals
+  ))
+}
+
+# 0.7 Functions for p-value adjustment and summary over iterations
+# Input should be a matrix, # of rows equals # of simulations
+calc_pval_adj <- function(pvals) {
+  # Apply Bonferroni correction across each row
+  pvals_corr <- t(apply(pvals, 1, p.adjust, method = "bonferroni"))
+
+  # Calculate the percentage of p-values < 0.05 for each column
+  perc_orig <- colSums(pvals < 0.05) / nrow(pvals) * 100
+  perc_corr <- colSums(pvals_corr < 0.05) / nrow(pvals) * 100
+
+  # Return a list with both percentages
+  list(
+    pvals_corr = pvals_corr,
+    perc_orig = perc_orig,
+    perc_corr = perc_corr
+  )
+}
 
 # 3. VBM --------------------------------------------------------------
 
@@ -321,64 +460,9 @@ ggsave(
 # group_indicator as the outcome;
 # y (2000, 256) as the predictors;
 
-train_test_split <- function(x, y, p_train) {
-  set.seed(123)
-  n <- nrow(x)
-  train_idx <- sample(seq_len(n), size = floor(n * p_train))
 
-  x_train <- x[train_idx, , drop = FALSE]
-  x_test <- x[-train_idx, , drop = FALSE]
-  y_train <- y[train_idx]
-  y_test <- y[-train_idx]
 
-  return(list(
-    x_train = x_train,
-    x_test = x_test,
-    y_train = y_train,
-    y_test = y_test
-  ))
-}
 
-# select optimal lambda via cross-validation
-# evaluate performance via accuracy and AUC
-perform_lasso <- function(x, y, p_train) {
-  # Split the dataset
-  split <- train_test_split(x, y, p_train)
-
-  # Extract training and testing data
-  x_tr <- split$x_train
-  x_te <- split$x_test
-  y_tr <- split$y_train
-  y_te <- split$y_test
-
-  # Perform cross-validation to find the optimal lambda values
-  cv_mod <- cv.glmnet(x_tr, y_tr, alpha = 1, family = "binomial")
-  l_min <- cv_mod$lambda.min
-  l_1se <- cv_mod$lambda.1se
-
-  # Function to evaluate model performance
-  eval_perf <- function(l) {
-    mod <- glmnet(x_tr, y_tr, alpha = 1, lambda = l, family = "binomial")
-    preds <- predict(mod, newx = x_te, type = "response")[, 1]
-    preds_bin <- ifelse(preds > 0.5, 1, 0)
-
-    acc <- mean(preds_bin == y_te)
-    auc <- pROC::auc(pROC::roc(y_te, preds))
-
-    c(acc = acc, AUC = auc)
-  }
-
-  # Get performance metrics for both lambda.min and lambda.1se
-  perf_min <- eval_perf(l_min)
-  perf_1se <- eval_perf(l_1se)
-
-  # Combine results into a coherent matrix
-  results <- c(perf_min, perf_1se)
-  results <- matrix(results, nrow = 1)
-  colnames(results) <- c("min_acc", "min_auc", "1se_acc", "1se_auc")
-
-  return(results)
-}
 
 # Generate a sample dataset. See whether using all pixels will cause perfect
 # separation.
@@ -389,14 +473,7 @@ y <- df[, 1]
 perform_lasso(x, y, p_train = 0.8) # use all pixels cause perfect separation
 
 # search how many pixels in the LASSO model will cause perfect separation
-c_indices <- {
-  c_rows <- 5:12
-  as.vector(outer(c_rows, c_rows, FUN = function(i, j) (i - 1) * 16 + j))
-}
-e_indices <- {
-  all_indices <- 1:256
-  setdiff(all_indices, c_indices)
-}
+
 
 i <- 1 # number of pixels from each side
 m <- 0 # maximum AUC/accuracy
@@ -413,31 +490,7 @@ while (m < 1) {
 # when use two points from each side, AUC/accuracy equals 1.
 rm(x, y, ia, ib, i, m, res)
 
-# Estimate p-value for each pixel using permutation test
-# The output is a 1 * n_pixel matrix with the value as p-values
-perm_lasso <- function(x, y, n_perm) {
-  cv_lasso <- function(x, y) {
-    cv_fit <- cv.glmnet(x, y, alpha = 1)
-    best_lambda <- cv_fit$lambda.min
-    coefs <- coef(cv_fit, s = "lambda.min")[-1, 1]
-    return(coefs)
-  }
 
-  # get original coef estimates
-  orig_coefs <- cv_lasso(x, y)
-
-  # perform permutations
-  perm_coefs <- matrix(NA, n_perm, length(orig_coefs))
-
-  for (i in seq_len(n_perm)) {
-    y_perm <- sample(y)
-    perm_coefs[i, ] <- cv_lasso(x, y_perm)
-  }
-
-  # calculate p-values
-  p_vals <- matrix(colMeans(abs(perm_coefs) > abs(orig_coefs)), nrow = 1)
-  return(p_vals)
-}
 
 
 # This function is designed exclusively for parallel execution.
@@ -527,26 +580,7 @@ ggsave(
 #   1. positive eigenvalues only
 #   2. all eigenvalues
 
-exp_corr_mat <- function(n) {
-  dist_mat <- outer(seq_len(n), seq_len(n), function(x, y) abs(x - y))
-  corr_mat <- exp(-dist_mat / max(dist_mat))
-  return(corr_mat)
-}
 
-eig_decomp <- function(C) {
-  p <- ncol(C)
-  M <- diag(p) - matrix(1, p, p) / p
-  eig_data <- eigen(M %*% C %*% M, symmetric = TRUE)
-
-  order_idx <- order(eig_data$values, decreasing = TRUE)
-  eig_vecs <- eig_data$vectors[, order_idx]
-  eig_vals <- eig_data$values[order_idx]
-
-  return(list(
-    eigenvectors = eig_vecs,
-    eigenvalues = eig_vals
-  ))
-}
 
 
 
