@@ -597,16 +597,9 @@ while (m < 1) {
 
 rm(df, x, y, x_trans, i, m, res)
 
-
-
 freq_fsim <- function(i) {
   # simulate data
-  simulated_data <- generate_data(
-    na = na,
-    nb = nb,
-    n_pixel = n_pixel,
-    center_size = center_size
-  )
+  simulated_data <- generate_data(center_effect = center_effect)
   x <- simulated_data[, -1]
   y <- simulated_data[, 1]
 
@@ -617,28 +610,29 @@ freq_fsim <- function(i) {
   eig_comp <- eig_decomp(corr_mat)
 
   # eigen transpose in two ways
-  pos_eigenvalues <- eig_comp$eigenvalues > 0
-  x_trans_pos <- x %*% eig_comp$eigenvectors[, pos_eigenvalues]
-  x_trans <- x %*% eig_comp$eigenvectors
+  pos_eig_vals <- eig_comp$eigenvalues > 0
+  x_trans_pos <- x %*% eig_comp$eigenvectors[, pos_eig_vals]
+  x_trans_all <- x %*% eig_comp$eigenvectors
 
-  # Perform lasso regression on the transformed datasets
-  evals_pos <- perform_lasso(x_trans_pos[, 1:2], y, p_train)
-  evals <- perform_lasso(x_trans, y, p_train)
+  # fit lasso
+  pvals_pos <- perm_lasso(x_trans_pos, y, n_perm = 100)
+  pvals_all <- perm_lasso(x_trans_all, y, n_perm = 100)
 
-  # Combine results, assume evals and evals_pos are matrices or data frames
-  results <- cbind(evals_pos, evals)
+  # Combine results
+  results <- cbind(pvals_all, pvals_pos)
 
   return(results)
 }
 
-freq_objs <- c("exp_corr_mat", "eig_decomp", "perm_lasso", "n_perm")
 freq_pkgs <- c("glmnet")
+freq_objs <- c("exp_corr_mat", "eig_decomp", "perm_lasso")
 list_package <- c(gen_data_pkgs, freq_pkgs)
 
+# Run the function
 set.seed(42)
 tic()
-freq_pvals <- call_simWrapper(
-  n_sim = n_iter,
+freq_pvals <- simWrapper(
+  n_sim = 1,
   f_sim = freq_fsim,
   list_export = c(gen_data_objs, freq_objs, "list_package"),
   list_package = list_package
