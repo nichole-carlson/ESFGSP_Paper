@@ -573,6 +573,30 @@ ggsave(
 # Similar to LASSO model, evaluate model performance by perdiction accuracy
 # and p-values.
 
+# Generate a sample dataset. See how many eigenvectors will cause perfect sep.
+set.seed(121)
+df <- generate_data(center_effect = center_effect)
+x <- df[, -1]
+y <- df[, 1]
+corr_mat <- exp_corr_mat(ncol(x))
+eig_comp <- eig_decomp(corr_mat)
+
+i <- 2 # of positive eigenvectors to use
+m <- 0 # max AUC/accuracy
+res <- matrix(NA, nrow = 0, ncol = 4)
+while (m < 1) {
+  x_trans <- x %*% eig_comp$eigenvectors[, seq_len(i)]
+  res <- rbind(res, perform_lasso(x_trans, y, p_train = 0.8))
+  m <- max(res[i - 1, ])
+  i <- i + 1
+}
+#      min_acc min_auc 1se_acc 1se_auc
+# [1,]  0.4875     0.5  0.4875     0.5
+# [2,]  0.4875     0.5  0.4875     0.5   use 3 eigenvectors
+# [3,]  1.0000     1.0  1.0000     1.0
+
+rm(df, x, y, x_trans, i, m, res)
+
 
 
 freq_fsim <- function(i) {
