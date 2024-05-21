@@ -1,4 +1,3 @@
-##########################################################################
 # Simulate imaging data to see how models work
 
 # Defaultly do parallel
@@ -551,7 +550,7 @@ ggsave(file.path(image_path, "lasso_pvals_corr.png"), plot = image_lasso_pvals_c
 # Visualize the p-values from the outer area with histogram
 image_lasso_boxplot <- plot_boxplot(
   lasso_results$perc[e_indices],
-  lasso_results$perc_corr[e_indicies]
+  lasso_results$perc_corr[e_indices]
 )
 
 ggsave(
@@ -638,7 +637,34 @@ freq_pvals <- simWrapper(
   list_package = list_package
 )
 toc()
-save(
-  freq_pvals,
-  file = paste0("lasso_pvals", format(Sys.time(), "%y%m%d"), ".RData")
+# save(
+#   freq_pvals,
+#   file = paste0("freq_pvals_", format(Sys.time(), "%y%m%d"), ".RData")
+# )
+load(file = "freq_pvals_240520.RData")
+
+freq_pvals <- freq_pvals[, seq_len(256)]
+
+# Adjust p-values for multiple testing
+# Calculate the perc of p-values < 0.05 for each pixel
+freq_results <- calc_pval_adj(freq_pvals)
+
+# Visualize the p-values as an image. Each pixel is the number of significant
+# p-values across iterations.
+image_freq_pvals <- plot_matrix(freq_results$perc, c(0, 100))
+image_freq_pvals_corr <- plot_matrix(freq_results$perc_corr, c(0, 100))
+
+ggsave(file.path(image_path, "freq_pvals.png"), plot = image_freq_pvals)
+ggsave(file.path(image_path, "freq_pvals_corr.png"), plot = image_freq_pvals_corr)
+
+# Visualize the p-values from the outer area with histogram
+image_freq_boxplot <- plot_boxplot(
+  freq_results$perc[e_indices],
+  freq_results$perc_corr[e_indices]
+)
+
+ggsave(
+  file.path(image_path, "freq_boxplots.png"),
+  plot = image_freq_boxplot,
+  width = 8, height = 4, dpi = 300
 )
