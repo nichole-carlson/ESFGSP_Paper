@@ -533,7 +533,10 @@ lasso_pvals <- simWrapper(
   list_package = list_package
 )
 toc()
-# save(lasso_pvals, file = "lasso_pvals.RData")
+# save(
+#   freq_pvals,
+#   file = paste0("lasso_pvals_", format(Sys.time(), "%y%m%d"), ".RData")
+# )
 load(file = "lasso_pvals.RData")
 
 # Adjust p-values for multiple testing
