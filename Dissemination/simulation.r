@@ -147,7 +147,7 @@ generate_data <- function(
   return(cbind(group_ind, y))
 }
 
-gen_data_objs <- c("generate_data")
+gen_data_objs <- c("generate_data", "exp_corr_mat")
 gen_data_pkgs <- c("MASS")
 
 # 0.2 Functions for matrix visualization
@@ -212,7 +212,8 @@ plot_boxplot <- function(vec1, vec2, y_range = c()) {
       c(
         rep("Unadjusted", length(vec1)),
         rep("Adjusted", length(vec2))
-      )
+      ),
+      levels = c("Unadjusted", "Adjusted")
     )
   )
 
@@ -433,7 +434,7 @@ ggsave(file.path(image_path, "vbm_pvals_corr.png"), plot = image_vbm_pvals_corr)
 # Visualize the p-values from the outer area with histogram
 image_vbm_boxplot <- plot_boxplot(
   vbm_results$perc[e_indices],
-  vbm_results$perc_corr[e_indicies]
+  vbm_results$perc_corr[e_indices]
 )
 
 ggsave(
