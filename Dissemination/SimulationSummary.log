@@ -1,9 +1,9 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.25 (TeX Live 2023) (preloaded format=pdflatex 2023.12.11)  15 MAY 2024 21:58
+This is pdfTeX, Version 3.141592653-2.6-1.40.25 (TeX Live 2023) (preloaded format=pdflatex 2024.2.22)  23 MAY 2024 09:34
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
  %&-line parsing enabled.
-**/Users/siyangren/Documents/ra-cida/ESFGSP_Paper/Dissemination/SimulationSummary
+**/Users/siyangren/Documents/ra-cida/ESFGSP_Paper/Dissemination/SimulationSummary.tex
 (/Users/siyangren/Documents/ra-cida/ESFGSP_Paper/Dissemination/SimulationSummary.tex
 LaTeX2e <2022-11-01> patch level 1
 L3 programming layer <2023-02-22> (/usr/local/texlive/2023/texmf-dist/tex/latex/base/article.cls
@@ -172,62 +172,77 @@ File: umsb.fd 2013/01/14 v3.01 AMS symbols B
 <../Figures/ex_image_5c.png, id=1, 505.6491pt x 505.6491pt>
 File: ../Figures/ex_image_5c.png Graphic file (type png)
 <use ../Figures/ex_image_5c.png>
-Package pdftex.def Info: ../Figures/ex_image_5c.png  used on input line 33.
+Package pdftex.def Info: ../Figures/ex_image_5c.png  used on input line 29.
 (pdftex.def)             Requested size: 190.24818pt x 190.25061pt.
 <../Figures/ex_image_5.png, id=2, 505.6491pt x 505.6491pt>
 File: ../Figures/ex_image_5.png Graphic file (type png)
 <use ../Figures/ex_image_5.png>
-Package pdftex.def Info: ../Figures/ex_image_5.png  used on input line 39.
+Package pdftex.def Info: ../Figures/ex_image_5.png  used on input line 35.
 (pdftex.def)             Requested size: 190.24818pt x 190.25061pt.
 <../Figures/ex_image_4.png, id=3, 505.6491pt x 505.6491pt>
 File: ../Figures/ex_image_4.png Graphic file (type png)
 <use ../Figures/ex_image_4.png>
-Package pdftex.def Info: ../Figures/ex_image_4.png  used on input line 47.
+Package pdftex.def Info: ../Figures/ex_image_4.png  used on input line 43.
 (pdftex.def)             Requested size: 190.24818pt x 190.25061pt.
  [1
 
-{/usr/local/texlive/2023/texmf-var/fonts/map/pdftex/updmap/pdftex.map}]
+{/usr/local/texlive/2023/texmf-var/fonts/map/pdftex/updmap/pdftex.map} <../Figures/ex_image_5c.png> <../Figures/ex_image_5.png> <../Figures/ex_image_4.png>]
 </Users/siyangren/Documents/ra-cida/ESFGSP_Paper/Figures/vbm_pvals.png, id=17, 505.89pt x 505.89pt>
 File: /Users/siyangren/Documents/ra-cida/ESFGSP_Paper/Figures/vbm_pvals.png Graphic file (type png)
 <use /Users/siyangren/Documents/ra-cida/ESFGSP_Paper/Figures/vbm_pvals.png>
-Package pdftex.def Info: /Users/siyangren/Documents/ra-cida/ESFGSP_Paper/Figures/vbm_pvals.png  used on input line 64.
+Package pdftex.def Info: /Users/siyangren/Documents/ra-cida/ESFGSP_Paper/Figures/vbm_pvals.png  used on input line 63.
 (pdftex.def)             Requested size: 211.3883pt x 211.39165pt.
 </Users/siyangren/Documents/ra-cida/ESFGSP_Paper/Figures/vbm_pvals_corr.png, id=18, 505.89pt x 505.89pt>
 File: /Users/siyangren/Documents/ra-cida/ESFGSP_Paper/Figures/vbm_pvals_corr.png Graphic file (type png)
 <use /Users/siyangren/Documents/ra-cida/ESFGSP_Paper/Figures/vbm_pvals_corr.png>
-Package pdftex.def Info: /Users/siyangren/Documents/ra-cida/ESFGSP_Paper/Figures/vbm_pvals_corr.png  used on input line 71.
+Package pdftex.def Info: /Users/siyangren/Documents/ra-cida/ESFGSP_Paper/Figures/vbm_pvals_corr.png  used on input line 70.
 (pdftex.def)             Requested size: 211.3883pt x 211.39165pt.
- [2 <../Figures/ex_image_5c.png> <../Figures/ex_image_5.png> <../Figures/ex_image_4.png>]
-</Users/siyangren/Documents/ra-cida/ESFGSP_Paper/Figures/spvbm_coefs_april_3.png, id=22, 481.8pt x 466.74374pt>
-File: /Users/siyangren/Documents/ra-cida/ESFGSP_Paper/Figures/spvbm_coefs_april_3.png Graphic file (type png)
-<use /Users/siyangren/Documents/ra-cida/ESFGSP_Paper/Figures/spvbm_coefs_april_3.png>
-Package pdftex.def Info: /Users/siyangren/Documents/ra-cida/ESFGSP_Paper/Figures/spvbm_coefs_april_3.png  used on input line 94.
-(pdftex.def)             Requested size: 234.87749pt x 227.53844pt.
- [3 </Users/siyangren/Documents/ra-cida/ESFGSP_Paper/Figures/vbm_pvals.png> </Users/siyangren/Documents/ra-cida/ESFGSP_Paper/Figures/vbm_pvals_corr.png>]
-<../Figures/lasso_pvals.png, id=28, 505.6491pt x 505.6491pt>
-File: ../Figures/lasso_pvals.png Graphic file (type png)
-<use ../Figures/lasso_pvals.png>
-Package pdftex.def Info: ../Figures/lasso_pvals.png  used on input line 111.
-(pdftex.def)             Requested size: 211.3883pt x 211.39128pt.
-<../Figures/lasso_pvals_corr.png, id=29, 505.6491pt x 505.6491pt>
-File: ../Figures/lasso_pvals_corr.png Graphic file (type png)
-<use ../Figures/lasso_pvals_corr.png>
-Package pdftex.def Info: ../Figures/lasso_pvals_corr.png  used on input line 117.
-(pdftex.def)             Requested size: 211.3883pt x 211.39128pt.
- [4 </Users/siyangren/Documents/ra-cida/ESFGSP_Paper/Figures/spvbm_coefs_april_3.png>] [5 <../Figures/lasso_pvals.png> <../Figures/lasso_pvals_corr.png>] (./SimulationSummary.aux) ) 
+<../Figures/vbm_boxplots.png, id=19, 578.16pt x 289.08pt>
+File: ../Figures/vbm_boxplots.png Graphic file (type png)
+<use ../Figures/vbm_boxplots.png>
+Package pdftex.def Info: ../Figures/vbm_boxplots.png  used on input line 78.
+(pdftex.def)             Requested size: 328.82706pt x 164.4112pt.
+
+
+LaTeX Warning: `h' float specifier changed to `ht'.
+
+[2 </Users/siyangren/Documents/ra-cida/ESFGSP_Paper/Figures/vbm_pvals.png> </Users/siyangren/Documents/ra-cida/ESFGSP_Paper/Figures/vbm_pvals_corr.png>]
+</Users/siyangren/Documents/ra-cida/ESFGSP_Paper/Figures/lasso_pvals.png, id=23, 505.89pt x 505.89pt>
+File: /Users/siyangren/Documents/ra-cida/ESFGSP_Paper/Figures/lasso_pvals.png Graphic file (type png)
+<use /Users/siyangren/Documents/ra-cida/ESFGSP_Paper/Figures/lasso_pvals.png>
+Package pdftex.def Info: /Users/siyangren/Documents/ra-cida/ESFGSP_Paper/Figures/lasso_pvals.png  used on input line 125.
+(pdftex.def)             Requested size: 211.3883pt x 211.39165pt.
+</Users/siyangren/Documents/ra-cida/ESFGSP_Paper/Figures/lasso_pvals_corr.png, id=24, 505.89pt x 505.89pt>
+File: /Users/siyangren/Documents/ra-cida/ESFGSP_Paper/Figures/lasso_pvals_corr.png Graphic file (type png)
+<use /Users/siyangren/Documents/ra-cida/ESFGSP_Paper/Figures/lasso_pvals_corr.png>
+Package pdftex.def Info: /Users/siyangren/Documents/ra-cida/ESFGSP_Paper/Figures/lasso_pvals_corr.png  used on input line 132.
+(pdftex.def)             Requested size: 211.3883pt x 211.39165pt.
+
+
+LaTeX Warning: `h' float specifier changed to `ht'.
+
+<../Figures/lasso_boxplots.png, id=25, 578.16pt x 289.08pt>
+File: ../Figures/lasso_boxplots.png Graphic file (type png)
+<use ../Figures/lasso_boxplots.png>
+Package pdftex.def Info: ../Figures/lasso_boxplots.png  used on input line 140.
+(pdftex.def)             Requested size: 469.75499pt x 234.8769pt.
+
+LaTeX Warning: `h' float specifier changed to `ht'.
+
+[3{/usr/local/texlive/2023/texmf-dist/fonts/enc/dvips/cm-super/cm-super-ts1.enc} <../Figures/vbm_boxplots.png>] [4 </Users/siyangren/Documents/ra-cida/ESFGSP_Paper/Figures/lasso_pvals.png> </Users/siyangren/Documents/ra-cida/ESFGSP_Paper/Figures/lasso_pvals_corr.png> <../Figures/lasso_boxplots.png>] (./SimulationSummary.aux) ) 
 Here is how much of TeX's memory you used:
- 2318 strings out of 476025
- 38138 string characters out of 5790016
- 1855388 words of memory out of 5000000
- 22749 multiletter control sequences out of 15000+600000
- 520476 words of font info for 62 fonts, out of 8000000 for 9000
+ 2315 strings out of 476025
+ 38519 string characters out of 5790017
+ 1856388 words of memory out of 5000000
+ 22751 multiletter control sequences out of 15000+600000
+ 518044 words of font info for 54 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 57i,12n,62p,663b,296s stack positions out of 10000i,1000n,20000p,200000b,200000s
-</usr/local/texlive/2023/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb></usr/local/texlive/2023/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx8.pfb></usr/local/texlive/2023/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb></usr/local/texlive/2023/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi12.pfb></usr/local/texlive/2023/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi8.pfb></usr/local/texlive/2023/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb></usr/local/texlive/2023/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb></usr/local/texlive/2023/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/local/texlive/2023/texmf-dist/fonts/type1/public/amsfonts/cm/cmtt12.pfb>
-Output written on SimulationSummary.pdf (5 pages, 770489 bytes).
+ 57i,8n,62p,857b,300s stack positions out of 10000i,1000n,20000p,200000b,200000s
+</usr/local/texlive/2023/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb></usr/local/texlive/2023/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb></usr/local/texlive/2023/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi12.pfb></usr/local/texlive/2023/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi8.pfb></usr/local/texlive/2023/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb></usr/local/texlive/2023/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb></usr/local/texlive/2023/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/local/texlive/2023/texmf-dist/fonts/type1/public/amsfonts/cm/cmtt12.pfb></usr/local/texlive/2023/texmf-dist/fonts/type1/public/cm-super/sfrm1200.pfb>
+Output written on SimulationSummary.pdf (4 pages, 715741 bytes).
 PDF statistics:
- 75 PDF objects out of 1000 (max. 8388607)
- 40 compressed objects within 1 object stream
+ 72 PDF objects out of 1000 (max. 8388607)
+ 38 compressed objects within 1 object stream
  0 named destinations out of 1000 (max. 500000)
- 41 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 46 words of extra memory for PDF output out of 10000 (max. 10000000)
 

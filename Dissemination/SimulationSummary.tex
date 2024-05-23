@@ -12,15 +12,11 @@
 
 \section*{Data Generation}
 
-The dataset consists of 2,000 simulated images, each with a \(16 \times 16\) grid of 256 pixels, split evenly into groups A and B. For images in group A, the central \(8 \times 8\) region is subject to a \(\beta\) effect, which was adjusted visually to be noticeable yet minimal. Figure~\ref{fig:image1} displays an image without the \(\beta\) effect, Figure~\ref{fig:image2} shows the effect at a strength of 1.5, and Figure~\ref{fig:image3} at a strength of 2, with the latter chosen for subsequent analyses.
-
-The \(\beta\) matrix values are zero except in the central region, and the \texttt{group\_ind} vector classifies images into groups A (1) and B (0). Noise, \(\epsilon_i\), is added to each image, derived from a multivariate normal distribution with zero mean and a covariance structure based on an exponential correlation function with rate 1.
-
-For two pixels \(i, \ j\), their correlation are calculated as
+The dataset contains 2,000 simulated images, each with a \( 16 \times 16 \) grid of 256 pixels, divided evenly into groups A and B. Images in group A have a \( \beta \) effect in the central \( 8 \times 8 \) region. Figure~\ref{fig:image1} shows an image without the \( \beta \) effect. Figures~\ref{fig:image2} and \ref{fig:image3} display the \( \beta \) effect at strengths of 5 and 4 , respectively. The \( \beta \) matrix values are zero outside the central region. The \texttt{group\_ind} vector classifies images into groups A (1) and B (0). Noise, \( \epsilon_i \), is added to each image, drawn from a multivariate normal distribution with zero mean and an exponential correlation structure:
 \[
-    \exp \left(- \sqrt{(x_i - x_j)^2 + (y_i - y_j)^2}\right),
+    \exp \left(-\sqrt{\left(x_i-x_j\right)^2+\left(y_i-y_j\right)^2}\right)
 \]
-where \(x, y\) are their coordinates in the image.
+where \(x, y\) are pixel coordinates. The \(\beta\) effect at 5 is more noticeable than at 4 , which is why a strength of 5 is used for analyses.
 
 
 % To adapt the data for the input specifications of the \texttt{myresf\_vc} function, the dataset was transformed into a long format. In this format, the columns \texttt{x} and \texttt{y} denote the coordinates, while \texttt{pixel\_value} corresponds to the simulated $y$ values.
@@ -28,100 +24,127 @@ where \(x, y\) are their coordinates in the image.
 \begin{figure}[H]
     \centering
     % First Row
-    \begin{minipage}{0.45\textwidth}
+    \begin{minipage}[b]{0.45\textwidth}
         \centering
         \includegraphics[width=0.9\textwidth]{../Figures/ex_image_5c.png}
-        \caption{Example image without \(\beta\) effect}
+        \caption{Example image without \(\beta\) effect.}
         \label{fig:image1}
     \end{minipage}\hfill
-    \begin{minipage}{0.45\textwidth}
+    \begin{minipage}[b]{0.45\textwidth}
         \centering
         \includegraphics[width=0.9\textwidth]{../Figures/ex_image_5.png}
-        \caption{Example image with \(\beta = 5\)}
+        \caption{Example image with \(\beta = 5\).}
         \label{fig:image2}
     \end{minipage}
 
     % Second Row
-    \begin{minipage}{0.45\textwidth}
+    \begin{minipage}[b]{0.45\textwidth}
         \centering
         \includegraphics[width=0.9\textwidth]{../Figures/ex_image_4.png}
-        \caption{Example image with \(\beta = 4\)}
+        \caption{Example image with \(\beta = 4\).}
         \label{fig:image3}
-    \end{minipage}\hfill
-    \begin{minipage}{0.45\textwidth}
-        % left blank
     \end{minipage}
 \end{figure}
 
 \section*{VBM}
 
-In the VBM analysis, a Generalized Linear Model (GLM) was applied pixel-wise to assess group effects on pixel intensities across 100 iterations. For each iteration, the model generated effect size estimates and p-values for each pixel. These p-values were then corrected for multiple comparisons using the Bonferroni method. Figure~\ref{fig:vbm_pvals} depicts the frequency of significant p-values in across pixels, with pixels showing significant \(\beta\) in all 100 iterations appearing in black, and those never showing significance in white.
+In the VBM analysis, a Generalized Linear Model (GLM) was applied pixel-wise to assess group effects on pixel intensities across 1000 iterations. For each iteration, the model generated effect size estimates and p-values for each pixel. These p-values were then corrected for multiple comparisons using the Bonferroni method. Figure~\ref{fig:vbm_pvals} depicts the frequency of significant p-values in across pixels, with pixels showing significant \(\beta\) in all 100 iterations appearing in black, and those never showing significance in white.
 
-\begin{figure}[H]
+In the VBM analysis, a Generalized Linear Model (GLM) was applied pixel-wise to assess group effects on pixel intensities across 1000 iterations. For each iteration, the model generated effect size estimates and p-values for each pixel. These p-values were then corrected for multiple comparisons using the Bonferroni method.
+
+Figure~\ref{fig:vbm_pvals} shows the frequency of significant p-values across pixels, with pixels showing significant \( \beta \) in all 1000 iterations appearing in black, and those never showing significance in white.
+Figure~\ref{fig:vbm_pvals_corr} displays the percentage of significant p-values after multiple correction.
+Figure~\ref{fig:vbm_boxplots} presents a boxplot of the percentage of significant p-values in the outer (non-central) areas, with the left boxplot showing values before adjustment and the right boxplot showing values after adjustment.
+
+\begin{figure}[h]
     \centering
     % First figure
     \begin{minipage}[b]{0.45\textwidth}
         \includegraphics[width=\textwidth]{/Users/siyangren/Documents/ra-cida/ESFGSP_Paper/Figures/vbm_pvals.png}
-        \caption{\% of significant p-values across pixels in VBM analysis}
+        \caption{Percentage of significant p-values across pixels in VBM analysis.}
         \label{fig:vbm_pvals}
     \end{minipage}
     \hfill % This command adds a space between the two figures
     % Second figure
     \begin{minipage}[b]{0.45\textwidth}
         \includegraphics[width=\textwidth]{/Users/siyangren/Documents/ra-cida/ESFGSP_Paper/Figures/vbm_pvals_corr.png}
-        \caption{\% of significant p-values after correction across pixels in VBM analysis}
+        \caption{Percentage of significant p-values after correction across pixels in VBM analysis.}
         \label{fig:vbm_pvals_corr}
     \end{minipage}
 \end{figure}
 
-
-\section*{spVBM}
-
-The spVBM model is:
-\[
-    \begin{aligned}
-         & y_s^i=\sum_{k=1}^K x_{s, k}^i \beta_{s, k}^{S V C}+\mathbf{Z}^{\mathbf{i}} \mathbf{b}^{\mathbf{i}}+\varepsilon_s^i                                                                                                                      \\
-         & \beta_{s, k}^{S V C}=\beta_k+[\mathbf{E} \Gamma]_{s, k}                                                                                                                                                                                 \\
-         & \mathbf{b}^{\mathbf{i}} \sim \mathcal{N}(\mathbf{0}, G), \quad \varepsilon_i \sim \mathcal{N}\left(0, \sigma^2\right), \quad \Gamma_{, k} \sim \mathcal{N}\left(\mathbf{0}, \sigma_k^2 \boldsymbol{\Lambda}\left(\alpha_k\right)\right)
-    \end{aligned}
-\]
-\(y_s^i\) denote the spatial outcome for subject \(i\) voxel \(s\). \(\mathbf{Z}\) denote non-spatial subject-level covariates for non-spatial random effects.
-
-In our simulated data, this could be simplified to \(y_s^i = x_s^i \beta_s^{SVC} + (?) \). My question is, which term captures the exponential correlation structure in the model? \(G\) or \(\Gamma\)?
-
-\begin{figure}[H]
+\begin{figure}[h]
     \centering
-    \includegraphics[width=0.5\textwidth]{/Users/siyangren/Documents/ra-cida/ESFGSP_Paper/Figures/spvbm_coefs_april_3.png}
-    \caption{Estimated coefficients}
-    \label{fig:my_label}
+    \includegraphics[width=0.7\textwidth]{../Figures/vbm_boxplots.png}
+    \caption{Percentage of significant p-values in outer area before (left) and after (right) adjustment from the VBM analysis.}
+    \label{fig:vbm_boxplots}
 \end{figure}
+
+
+% \section*{spVBM}
+
+% The spVBM model is:
+% \[
+%     \begin{aligned}
+%          & y_s^i=\sum_{k=1}^K x_{s, k}^i \beta_{s, k}^{S V C}+\mathbf{Z}^{\mathbf{i}} \mathbf{b}^{\mathbf{i}}+\varepsilon_s^i                                                                                                                      \\
+%          & \beta_{s, k}^{S V C}=\beta_k+[\mathbf{E} \Gamma]_{s, k}                                                                                                                                                                                 \\
+%          & \mathbf{b}^{\mathbf{i}} \sim \mathcal{N}(\mathbf{0}, G), \quad \varepsilon_i \sim \mathcal{N}\left(0, \sigma^2\right), \quad \Gamma_{, k} \sim \mathcal{N}\left(\mathbf{0}, \sigma_k^2 \boldsymbol{\Lambda}\left(\alpha_k\right)\right)
+%     \end{aligned}
+% \]
+% \(y_s^i\) denote the spatial outcome for subject \(i\) voxel \(s\). \(\mathbf{Z}\) denote non-spatial subject-level covariates for non-spatial random effects.
+
+% In our simulated data, this could be simplified to \(y_s^i = x_s^i \beta_s^{SVC} + (?) \). My question is, which term captures the exponential correlation structure in the model? \(G\) or \(\Gamma\)?
+
+% \begin{figure}[H]
+%     \centering
+%     \includegraphics[width=0.5\textwidth]{/Users/siyangren/Documents/ra-cida/ESFGSP_Paper/Figures/spvbm_coefs_april_3.png}
+%     \caption{Estimated coefficients}
+%     \label{fig:my_label}
+% \end{figure}
 
 \section*{LASSO}
 
 A LASSO model was employed to predict group assignments using pixel values from images. In each iteration, 80\% of the data was used for training and the remaining 20\% for testing. The optimal \(\lambda\) parameters, \texttt{lambda\_min} and \texttt{lambda\_1se}, were determined via cross-validation within the training group. The model's performance was assessed on the test group using accuracy and AUC metrics.
 
-Initially, including all pixel values in the model led to perfect separation, indicating potential overfitting. To address this, the model construction began by incrementally adding one pixel from the image's edge and one from the center, evaluating if these additions achieved perfect accuracy. After integrating three pairs of pixels, totaling six pixels, the model achieved perfect separation.
+Initially, including all pixel values in the model led to perfect separation, indicating potential overfitting. To address this, the model construction began by incrementally adding one pixel from the image's edge and one from the center, evaluating if these additions achieved perfect accuracy. After integrating two pixels from each area, totaling four pixels, the model achieved perfect separation.
 
-Additionally, a permutation test was conducted to estimate p-values.
+Additionally, a permutation test was conducted to estimate p-values. Using all the pixels, 500 iterations were performed. Within each iteration, the outcome was permuted 100 times. The original coefficients were compared with the permuted coefficient estimates to simulate the p-values of each covariate/pixel.
 
-\begin{figure}[H]
+Figures~\ref{fig:lasso_pvals}, \ref{fig:lasso_pvals_corr}, and \ref{fig:lasso_boxplot} illustrate the results of the analysis:
+\begin{itemize}
+    \item Figure~\ref{fig:lasso_pvals} shows the p-values before multiple adjustment.
+    \item Figure~\ref{fig:lasso_pvals_corr} displays the p-values after multiple adjustment.
+    \item Figure~\ref{fig:lasso_boxplot} presents a boxplot of the percentage of significant p-values for the outer area before and after adjustment.
+\end{itemize}
+
+
+\begin{figure}[h]
     \centering
     % First figure
     \begin{minipage}[b]{0.45\textwidth}
-        \includegraphics[width=\textwidth]{../Figures/lasso_pvals.png}
-        \caption{\% of significant p-values across pixels in LASSO}
+        \includegraphics[width=\textwidth]{/Users/siyangren/Documents/ra-cida/ESFGSP_Paper/Figures/lasso_pvals.png}
+        \caption{Percentage of significant p-values across pixels in LASSO.}
+        \label{fig:lasso_pvals}
     \end{minipage}
     \hfill % This command adds a space between the two figures
     % Second figure
     \begin{minipage}[b]{0.45\textwidth}
-        \includegraphics[width=\textwidth]{../Figures/lasso_pvals_corr.png}
-        \caption{\% of significant p-values after correction across pixels in LASSO}
+        \includegraphics[width=\textwidth]{/Users/siyangren/Documents/ra-cida/ESFGSP_Paper/Figures/lasso_pvals_corr.png}
+        \caption{Percentage of significant p-values after correction across pixels in LASSO.}
+        \label{fig:lasso_pvals_corr}
     \end{minipage}
+\end{figure}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=\textwidth]{../Figures/lasso_boxplots.png}
+    \caption{Percentage of significant p-values in outer area before (left) and after (right) adjustment from the LASSO models.}
+    \label{fig:lasso_boxplot}
 \end{figure}
 
 
 \section*{Frequency}
 
-An empirical correlation matrix was computed from the \(2000 \times 256\) pixel matrix, followed by the extraction of eigenvectors and eigenvalues. The dataset X was then transformed using the eigenvectors corresponding to positive eigenvalues. A Lasso regression model was fitted on the transformed data to predict \texttt{group\_ind}. The significance of the model coefficients was assessed using p-values obtained from 1000 permutation tests.
+The exponential correlation matrix with rate 1 was used to calculate the eigenvectors and eigenvalues. The matrix appeared to be positive-definite, so all eigenvalues were positive. These eigenvectors were then used to transform the pixel values. A Lasso regression model was fitted on the transformed data to predict \texttt{group\_ind}. To assess the significance of the model coefficients, 100 permutation tests were conducted within each iteration to obtain p-values. This process was replicated 100 times.
 
 \end{document}
