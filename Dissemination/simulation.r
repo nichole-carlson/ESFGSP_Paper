@@ -537,7 +537,7 @@ toc()
 #   freq_pvals,
 #   file = paste0("lasso_pvals_", format(Sys.time(), "%y%m%d"), ".RData")
 # )
-load(file = "lasso_pvals.RData")
+load(file = "lasso_pvals_240522.RData")
 
 # Adjust p-values for multiple testing
 # Calculate the perc of p-values < 0.05 for each pixel
