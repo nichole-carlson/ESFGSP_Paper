@@ -49,31 +49,31 @@ A particular simulation context will be defined through specification of the fol
 
 \begin{enumerate}[(a)]
 	\item Predicting images $y_i$ from group $z_i$/Inferring group effect
-		\begin{enumerate}[(1)]
-			\item VBM
-			\item spVBM
-			\begin{enumerate}
-				\item Only positive eigenvalue eigenvectors?
-				\item Only a subset of eigenvectors?
-				\item Knots or exact computation?
-			\end{enumerate}
-		\end{enumerate}
+	      \begin{enumerate}[(1)]
+		      \item VBM
+		      \item spVBM
+		            \begin{enumerate}
+			            \item Only positive eigenvalue eigenvectors?
+			            \item Only a subset of eigenvectors?
+			            \item Knots or exact computation?
+		            \end{enumerate}
+	      \end{enumerate}
 	\item Predicting group $z_i$ from image $\tilde y_i$ using sparse logistic regression where $\tilde y_i$ is a transformation of the image $y_i$
-	\begin{enumerate}[(1)]
-		\item Voxels as covariates $\tilde y_i=y_i$
-		\item functional PCs as covariates
-		\item Frequency intensities as covariates (images after application of ESF or GSP transformation, e.g. $\tilde y_i=Q_{ESF}y_i$)
-			\begin{enumerate}
-				\item Only positive eigenvalue eigenvectors?
-				\item Only a subset of eigenvectors?
-				\item Knots or exact computation?
-			\end{enumerate}
-		\item One other method?
-	\end{enumerate}
+	      \begin{enumerate}[(1)]
+		      \item Voxels as covariates $\tilde y_i=y_i$
+		      \item functional PCs as covariates
+		      \item Frequency intensities as covariates (images after application of ESF or GSP transformation, e.g. $\tilde y_i=Q_{ESF}y_i$)
+		            \begin{enumerate}
+			            \item Only positive eigenvalue eigenvectors?
+			            \item Only a subset of eigenvectors?
+			            \item Knots or exact computation?
+		            \end{enumerate}
+		      \item One other method?
+	      \end{enumerate}
 	\item Inferring network
-		\begin{enumerate}
-			\item Do we have a specific methodology picked out to look at?
-		\end{enumerate}
+	      \begin{enumerate}
+		      \item Do we have a specific methodology picked out to look at?
+	      \end{enumerate}
 \end{enumerate}
 
 
@@ -84,30 +84,60 @@ The intention for this section is that the first simulation is ready to get star
 
 \begin{enumerate}
 	\item First simulation
-	\begin{enumerate}
-		\item[Data] Let $n_A=n_B=1000$ where $\beta$ is 1 for pixels in the center $8\times8$ pixel square and 0 elsewhere, $\Sigma=\Sigma_A=\Sigma_B$ is an exponential correlation matrix with rate 1. 
-		\item[PredictImage] Fit VBM and spVBM models predicting images $y_i$ from group $z_i$ using all eigenvectors from 16 knots. Report the same performance metrics as in Sarah's paper. Use an exponential network.
-		\item[PredictGroup] Train sparse logistic regression models on 800 observations (400 per group) predicting group $z_i$ from image covariates $\tilde y_i$ for the following transformations:
-		\begin{enumerate}
-			\item Voxels as covariates (no transformation)
-			\item all exact ESF frequencies as covariates (transformation from exponential network)
-			\item all exact GSP frequencies as covariates (transformation from exponential network, unnormalized Laplacian)
-			\item functional PCs as covariates (talk with Yue for details)
-		\end{enumerate}
-		Report test AUC, sensitivity, and specificity using remaining 200 observations. Report also which covariates were selected in the voxel, ESF frequency, and GSP frequency models.
-	\end{enumerate}
-	\item Effects: 
-	\begin{enumerate}
-		\item Sparse-in-voxel (like a circle effect) vs sparse-in-frequency effects. 
-		\begin{enumerate}
-			\item For sparse-in-voxel effects, ESF/GSP in PredictImage should outperform voxel-based while ESF/GSP in PredictGroup should underperform voxel-based
-			\item For sparse-in-frequency effects, voxel-based should underperform. If effects are on a small scale relative to resolution (negative eigenvalues), frequency approaches should vastly outperform everything, hopefully even under misspecification. If effects are on a large scale relative to resolution, we expect fPCA to still do fine while voxel-based analyses will still suffer for moderate strength effects.
-			\item Sharp boundaries vs soft boundaries; thinking about bias, eigenvector approximations, and which eigenvectors are incorporated into models
-		\end{enumerate}
-		\item For sparse-in-frequency effects, negative eigenvalue vs positive eigenvalue effects
-	\end{enumerate}
+	      \begin{enumerate}
+		      \item[Data] Let $n_A=n_B=1000$ where $\beta$ is 1 for pixels in the center $8\times8$ pixel square and 0 elsewhere, $\Sigma=\Sigma_A=\Sigma_B$ is an exponential correlation matrix with rate 1.
+		      \item[PredictImage] Fit VBM and spVBM models predicting images $y_i$ from group $z_i$ using all eigenvectors from 16 knots. Report the same performance metrics as in Sarah's paper. Use an exponential network.
+		      \item[PredictGroup] Train sparse logistic regression models on 800 observations (400 per group) predicting group $z_i$ from image covariates $\tilde y_i$ for the following transformations:
+			      \begin{enumerate}
+				      \item Voxels as covariates (no transformation)
+				      \item all exact ESF frequencies as covariates (transformation from exponential network)
+				      \item all exact GSP frequencies as covariates (transformation from exponential network, unnormalized Laplacian)
+				      \item functional PCs as covariates (talk with Yue for details)
+			      \end{enumerate}
+			      Report test AUC, sensitivity, and specificity using remaining 200 observations. Report also which covariates were selected in the voxel, ESF frequency, and GSP frequency models.
+	      \end{enumerate}
+	\item Effects:
+	      \begin{enumerate}
+		      \item Sparse-in-voxel (like a circle effect) vs sparse-in-frequency effects.
+		            \begin{enumerate}
+			            \item For sparse-in-voxel effects, ESF/GSP in PredictImage should outperform voxel-based while ESF/GSP in PredictGroup should underperform voxel-based
+			            \item For sparse-in-frequency effects, voxel-based should underperform. If effects are on a small scale relative to resolution (negative eigenvalues), frequency approaches should vastly outperform everything, hopefully even under misspecification. If effects are on a large scale relative to resolution, we expect fPCA to still do fine while voxel-based analyses will still suffer for moderate strength effects.
+			            \item Sharp boundaries vs soft boundaries; thinking about bias, eigenvector approximations, and which eigenvectors are incorporated into models
+		            \end{enumerate}
+		      \item For sparse-in-frequency effects, negative eigenvalue vs positive eigenvalue effects
+	      \end{enumerate}
 	\item What if networks differ by group or aren't quite spatial? In neuroimaging applications, we might reasonably expect networks to differ between healthy and disease cohorts. In geostatistical applications, our interest is more in accounting substantially for correlation than perfectly representing it. This begs a simulation in which both groups essentially have spatial correlation structure, but one additionally has a couple of shorts/wormholes in that structure. We would want the true effect $\beta$ to interact with that short in a meaningful way, and to see how ESF/GSP methods perform as they likely can't/won't account for the short. How many shorts and how strong until we've got a problem?
 	\item Inferring network simulations: Yue and William discussed a block spatial structure for these simulations representing our understanding of ROIs in the brain while also leveraging intuition available in spatial contexts. Brains tend to be well represented by ROI within which there is strong associations and among which there are weak associations. Thus, we will choose of a block network structure as a direct product of a strong spatial network (within ROI) and a weak complete network (among ROI). This structure may benefit from varying the number of voxels in a `ROI.'
+\end{enumerate}
+
+\newpage
+
+\section*{Alternative Simulations}
+
+\subsection*{Simulation 1}
+
+\begin{enumerate}
+	\item \textbf{Generate Covariate Matrix \( X \)}: Assume an image size of \(16 \times 16\) pixels. \( X \) has a shape of \(1000 \times 256\). Simulate each \( X_i \) from a multivariate normal distribution \( X_i \sim \mathcal{N}(0, W) \), where \( W(k, j) = \exp(-\text{dist}(k, j)) \).
+
+	\item \textbf{Define Coefficient Vector \( \beta \)}: Set \(\beta\) as a vector of length 256, where \(\beta_i = 0\) except for the center \(8 \times 8\) region, where \(\beta_i = 1\).
+
+	\item \textbf{Generate Response Variable \( y \)}: Generate \( y \sim \text{Binomial}(1, p) \), where \( p = 1 /  (1 + \exp(-\eta)) \), \( \eta = X \beta \).
+
+	\item \textbf{Evaluation}: Split the dataset into training (80\%) and test (20\%) sets. Fit a logistic LASSO model with cross-validation on the training set. Evaluate model performance on the test set using AUC. Visualize the identified pixels with the true non-zero coefficients in \(\beta\) to assess the model's accuracy in detecting the decisive region.
+\end{enumerate}
+
+\subsection*{Simulation 2}
+
+Simulation 2 differs from Simulation 1 by transforming the covariate matrix into the frequency space using eigenvectors and assuming a sparse coefficient vector in this transformed space.
+
+\begin{enumerate}
+	\item \textbf{Eigen Decomposition}: Assume the same correlation structure \( W \). Perform eigen decomposition on \( W \) to obtain eigenvectors \( V \), which is of shape \( 256 \times 256 \). Use all eigenvectors for transformation.
+
+	\item \textbf{Generate Covariate Matrix \( X \)}: Generate \( X \) with shape \( 1000 \times 256 \), where each \( X_i \) follows a multivariate normal distribution with a diagonal covariance matrix. Transform \( X \) using all eigenvectors to get \( X_{\text{trans}} = X V \).
+
+	\item \textbf{Assume Sparse Coefficient Vector \( b \) in the Frequency Space}: Set \( b \) as a sparse vector of length 256, where most entries are 0, and a few are non-zero. Compute \( \beta \) in the pixel space: \( \beta = V^T b \).
+
+	\item \textbf{Evaluation}: Generate \( y \) using \( X \) and \( \beta \) as in Simulation 1. Evaluate the model performance using AUC, following the same procedure as Simulation 1. Visualize the identified coefficients in \( b \) to assess the model's accuracy in detecting the decisive components in the frequency space.
 \end{enumerate}
 
 
