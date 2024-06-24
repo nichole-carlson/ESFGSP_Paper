@@ -2,51 +2,62 @@ library(MASS)
 library(glmnet)
 library(pROC)
 
+parent_dir <- "/Users/siyangren/Documents/ra-cida/ESFGSP_Paper/"
+fig_dir <- file.path(parent_dir, "Figures")
+
 # Define a base class for common functionality
-SimBase <- setRefClass(
-  "SimBase",
+sim_base <- setRefClass(
+  "sim_base",
   fields = list(
     img_size = "numeric",
     num_samples = "numeric",
-    X = "matrix",
+    x = "matrix",
     beta = "numeric",
     y = "numeric",
-    W = "matrix",
-    V = "matrix",
+    w = "matrix",
+    v = "matrix",
     seed = "numeric",
     coef_min = "matrix",
     coef_1se = "matrix"
   ),
   methods = list(
-    initialize = function(img_size = 16, num_samples = 1000, seed = 42) {
+    initialize = function(img_size = 16, num_samples = 1000, seed = 42, beta_effect) {
       .self$img_size <- img_size
       .self$num_samples <- num_samples
       .self$seed <- seed
       set.seed(.self$seed)
       .self$gen_cov_matrix()
+      .self$define_beta(beta_effect)
     },
+    # Assume an exponential correlation structure
     gen_cov_matrix = function() {
       coords <- expand.grid(1:img_size, 1:img_size)
       dist_matrix <- as.matrix(dist(coords))
-      .self$W <- exp(-dist_matrix)
+      .self$w <- exp(-dist_matrix)
     },
-    gen_X = function() {
+    gen_x = function() {
       stop("This method should be implemented by the subclass")
     },
-    define_beta = function() {
-      stop("This method should be implemented by the subclass")
+    define_beta = function(beta_effect) {
+      p <- .self$img_size^2
+      .self$beta <- rep(0, p)
+      center_idx <- as.vector(matrix(1:p, nrow = img_size)[5:12, 5:12])
+      .self$beta[center_idx] <- beta_effect
+    },
+    check_p = function() {
+      eta <- x %*% beta
+      p <- 1 / (1 + exp(-eta))
+      return(p)
     },
     gen_response = function() {
-      eta <- X %*% beta
-      p <- 1 / (1 + exp(-eta))
       .self$y <- rbinom(num_samples, 1, p)
     },
     fit_lasso = function() {
       train_idx <- sample(1:num_samples, size = floor(0.8 * num_samples))
       test_idx <- setdiff(1:num_samples, train_idx)
 
-      x_train <- X[train_idx, , drop = FALSE]
-      x_test <- X[-train_idx, , drop = FALSE]
+      x_train <- x[train_idx, , drop = FALSE]
+      x_test <- x[-train_idx, , drop = FALSE]
       y_train <- y[train_idx]
       y_test <- y[-train_idx]
 
@@ -98,63 +109,44 @@ SimBase <- setRefClass(
         xlab = "", ylab = "",
         col = gray.colors(256, start = 0, end = 1, rev = TRUE)
       )
-    },
-    run_simulation = function() {
-      .self$gen_X()
-      .self$define_beta()
-      .self$gen_response()
-      .self$fit_lasso()
     }
   )
 )
 
 # Define a class for Simulation 1
-Sim1 <- setRefClass(
-  "Sim1",
-  contains = "SimBase",
+sim1 <- setRefClass(
+  "sim1",
+  contains = "sim_base",
   methods = list(
-    gen_X = function() {
-      p <- img_size^2
-      .self$X <- mvrnorm(num_samples, mu = rep(0, p), Sigma = W)
+    initialize = function(img_size = 16, num_samples = 1000, seed = 42, beta_effect) {
+      callSuper(img_size, num_samples, seed, beta_effect)
+      .self$gen_x()
     },
-    define_beta = function() {
+    gen_x = function() {
       p <- img_size^2
-      .self$beta <- rep(0, p)
-      center_idx <- as.vector(matrix(1:p, nrow = img_size)[5:12, 5:12])
-      .self$beta[center_idx] <- 1
+      .self$x <- mvrnorm(num_samples, mu = rep(0, p), Sigma = w)
     }
   )
 )
 
-# Define a placeholder for Simulation 2
-Sim2 <- setRefClass(
-  "Sim2",
-  contains = "SimBase",
-  methods = list(
-    gen_X = function() {
-      p <- img_size^2
-      eigen_decomp <- eigen(W)
-      .self$V <- eigen_decomp$vectors
-      X_temp <- matrix(rnorm(num_samples * p), nrow = num_samples, ncol = p)
-      .self$X <- X_temp %*% V
-    },
-    define_beta = function() {
-      p <- img_size^2
-      b <- rep(0, p)
-      b[sample(1:p, size = 10)] <- 1
-      .self$beta <- t(V) %*% b
-    }
-  )
+
+compare_beta_effects <- function(beta_effects = seq(0.1, 1.0, by = 0.1)) {
+  par(mfrow = c(ceiling(length(beta_effects) / 2), 2))
+  for (beta_effect in beta_effects) {
+    sim1_obj <- sim1$new(beta_effect = beta_effect)
+    p <- sim1_obj$check_p()
+    title <- paste("beta_effect =", beta_effect)
+    hist(p,
+      breaks = 30, main = title, , xlim = c(0, 1),
+      xlab = "Probability p", col = "lightblue", border = "black"
+    )
+  }
+}
+
+# Run the function to compare different beta effects
+png(
+  file = file.path(fig_dir, "sim1_p_dist.png"),
+  width = 1600, height = 1200, res = 150
 )
-
-# Run Simulation 1
-sim1 <- Sim1$new()
-sim1$gen_response()
-lasso_coef1 <- sim1$fit_lasso()
-sim1$visualize_coef(lasso_coef1)
-
-# Placeholder for running Simulation 2
-# sim2 <- Sim2$new()
-# sim2$gen_response()
-# lasso_coef2 <- sim2$fit_lasso()
-# sim2$visualize_coef(lasso_coef2)
+compare_beta_effects(beta_effects = c(1, 0.2, 0.1, 0.05, 0.01))
+dev.off()
