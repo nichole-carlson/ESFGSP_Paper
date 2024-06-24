@@ -88,13 +88,13 @@ The intention for this section is that the first simulation is ready to get star
 		      \item[Data] Let $n_A=n_B=1000$ where $\beta$ is 1 for pixels in the center $8\times8$ pixel square and 0 elsewhere, $\Sigma=\Sigma_A=\Sigma_B$ is an exponential correlation matrix with rate 1.
 		      \item[PredictImage] Fit VBM and spVBM models predicting images $y_i$ from group $z_i$ using all eigenvectors from 16 knots. Report the same performance metrics as in Sarah's paper. Use an exponential network.
 		      \item[PredictGroup] Train sparse logistic regression models on 800 observations (400 per group) predicting group $z_i$ from image covariates $\tilde y_i$ for the following transformations:
-			      \begin{enumerate}
-				      \item Voxels as covariates (no transformation)
-				      \item all exact ESF frequencies as covariates (transformation from exponential network)
-				      \item all exact GSP frequencies as covariates (transformation from exponential network, unnormalized Laplacian)
-				      \item functional PCs as covariates (talk with Yue for details)
-			      \end{enumerate}
-			      Report test AUC, sensitivity, and specificity using remaining 200 observations. Report also which covariates were selected in the voxel, ESF frequency, and GSP frequency models.
+		            \begin{enumerate}
+			            \item Voxels as covariates (no transformation)
+			            \item all exact ESF frequencies as covariates (transformation from exponential network)
+			            \item all exact GSP frequencies as covariates (transformation from exponential network, unnormalized Laplacian)
+			            \item functional PCs as covariates (talk with Yue for details)
+		            \end{enumerate}
+		            Report test AUC, sensitivity, and specificity using remaining 200 observations. Report also which covariates were selected in the voxel, ESF frequency, and GSP frequency models.
 	      \end{enumerate}
 	\item Effects:
 	      \begin{enumerate}
@@ -121,7 +121,7 @@ The intention for this section is that the first simulation is ready to get star
 
 	\item \textbf{Define Coefficient Vector \( \beta \)}: Set \(\beta\) as a vector of length 256, where \(\beta_i = 0\) except for the center \(8 \times 8\) region, where \(\beta_i = 1\).
 
-	\item \textbf{Generate Response Variable \( y \)}: Generate \( y \sim \text{Binomial}(1, p) \), where \( p = 1 /  (1 + \exp(-\eta)) \), \( \eta = X \beta \).
+	\item \textbf{Generate Response Variable \( y \)}: Generate \( y \sim \text{Binomial}(1, p) \), where \( p = 1 /  (1 + \exp(-\eta)) \), and \( \eta = X \beta \). To ensure the generated probabilites \( p \) are appropriate for our simulation, we will create a histogram of \( p \). The distribution should be symmetric around 0.5, given there is no intercept term in the model. This step will help verify that the signal in the data is neither too weak nor too strong. This is because, since the coefficients \( \beta \) are mostly zeros except in the center region, and \( X \) is centered, \( \eta \) tends to be small and centered around zero.
 
 	\item \textbf{Evaluation}: Split the dataset into training (80\%) and test (20\%) sets. Fit a logistic LASSO model with cross-validation on the training set. Evaluate model performance on the test set using AUC. Visualize the identified pixels with the true non-zero coefficients in \(\beta\) to assess the model's accuracy in detecting the decisive region.
 \end{enumerate}
@@ -133,11 +133,11 @@ Simulation 2 differs from Simulation 1 by transforming the covariate matrix into
 \begin{enumerate}
 	\item \textbf{Eigen Decomposition}: Assume the same correlation structure \( W \). Perform eigen decomposition on \( W \) to obtain eigenvectors \( V \), which is of shape \( 256 \times 256 \). Use all eigenvectors for transformation.
 
-	\item \textbf{Generate Covariate Matrix \( X \)}: Generate \( X \) with shape \( 1000 \times 256 \), where each \( X_i \) follows a multivariate normal distribution with a diagonal covariance matrix. Transform \( X \) using all eigenvectors to get \( X_{\text{trans}} = X V \).
+	\item \textbf{Generate Covariate Matrix \( X \) in the Frequency Space}: Generate \( X \) with shape \( 1000 \times 256 \), where each \( X_i \) follows a multivariate normal distribution with a diagonal covariance matrix. Transform \( X \) using all eigenvectors to get \( X_{\text{trans}} = X V \).
 
 	\item \textbf{Assume Sparse Coefficient Vector \( b \) in the Frequency Space}: Set \( b \) as a sparse vector of length 256, where most entries are 0, and a few are non-zero. Compute \( \beta \) in the pixel space: \( \beta = V^T b \).
 
-	\item \textbf{Evaluation}: Generate \( y \) using \( X \) and \( \beta \) as in Simulation 1. Evaluate the model performance using AUC, following the same procedure as Simulation 1. Visualize the identified coefficients in \( b \) to assess the model's accuracy in detecting the decisive components in the frequency space.
+	\item \textbf{Evaluation}: Generate \( y \) using \( X \) and \( b \) as in Simulation 1. Evaluate the model performance using AUC, following the same procedure as Simulation 1. Visualize the identified coefficients in \( b \) to assess the model's accuracy in detecting the decisive components in the frequency space.
 \end{enumerate}
 
 
