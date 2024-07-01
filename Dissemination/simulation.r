@@ -1,4 +1,6 @@
 # Simulate imaging data to see how models work
+library(ggplot2)
+library(reshape2)
 
 # Defaultly do parallel
 # number of cores used = cores detected - 1
@@ -65,9 +67,9 @@
 # source("/Users/siyangren/Documents/ra-cida/spatial-filtering/code/resf_vc.R")
 # source("/Users/siyangren/Documents/ra-cida/spatial-filtering/code/mymeigen2D.R")
 
-parent_dir <- "/Users/siyangren/Documents/ra-cida/ESFGSP_Paper/Dissemination"
+# parent_dir <- "/Users/siyangren/Documents/ra-cida/ESFGSP_Paper/Dissemination"
 # image_path <- file.path(proj_path, "Figures")
-source(file.path(parent_dir, "simWrapper.r"))
+# source(file.path(parent_dir, "simWrapper.r"))
 
 # 0.1 Functions for data generation
 
@@ -150,22 +152,29 @@ source(file.path(parent_dir, "simWrapper.r"))
 # gen_data_objs <- c("generate_data", "exp_corr_mat")
 # gen_data_pkgs <- c("MASS")
 
-# 0.2 Functions for matrix visualization
-# Input should be a (256, ) vector, representing a 1D 16*16 image.
-plot_matrix <- function(vec, value_limits = c()) {
+# Function to plot a 1D vector as a 16x16 heatmap
+#
+# Args:
+#   vec: A numeric vector of length 256 representing a 1D 16x16 image.
+#   value_limits: An optional numeric vector of length 2 specifying the value limits for the color scale (default is NULL).
+#   title: A string specifying the title of the plot (default is "Heatmap").
+#
+# Returns:
+#   A ggplot2 object representing the heatmap.
+plot_heatmap <- function(vec, value_limits = NULL, title = "Heatmap") {
   # Convert 1D vector to 2D matrix
   mat <- matrix(vec, 16, 16, byrow = TRUE)
 
   # Convert the 2D matrix to a long data frame: x, y, value
   data_long <- reshape2::melt(mat)
 
-  # Ensure value_limits is of length 2
-  if (length(value_limits) != 2) {
+  # Ensure value_limits is of length 2 if provided
+  if (!is.null(value_limits) && length(value_limits) != 2) {
     stop("value_limits must be a vector of length 2, like c(low, high)")
   }
 
   # Create the plot using ggplot2
-  plot <- ggplot(data_long, aes(x = Var1, y = Var2, fill = value)) +
+  plot <- ggplot(data_long, aes(x = Var2, y = Var1, fill = value)) +
     geom_tile() +
     scale_fill_gradient(
       low = "white", high = "black",
@@ -177,10 +186,11 @@ plot_matrix <- function(vec, value_limits = c()) {
       plot.background = element_rect(fill = "white", colour = "white"),
       panel.background = element_rect(fill = "white", colour = "white")
     ) +
-    labs(x = "", y = "")
+    labs(x = "", y = "", title = title)
 
   return(plot)
 }
+
 
 # # # Decide the strength of center effect by visualization
 # # set.seed(121)
@@ -327,23 +337,52 @@ perm_lasso <- function(x, y, n_perm, seed = 42) {
 }
 
 # # 0.6 Functions for eigen decomposition
-# eig_decomp <- function(C) {
-#   p <- ncol(C)
-#   M <- diag(p) - matrix(1, p, p) / p
-#   eig_data <- eigen(M %*% C %*% M, symmetric = TRUE)
+eigen_decomp <- function(C) {
+  p <- ncol(C)
+  M <- diag(p) - matrix(1, p, p) / p
+  eig_data <- eigen(M %*% C %*% M, symmetric = TRUE)
 
-#   order_idx <- order(eig_data$values, decreasing = TRUE)
-#   eig_vecs <- eig_data$vectors[, order_idx]
-#   eig_vals <- eig_data$values[order_idx]
+  order_idx <- order(eig_data$values, decreasing = TRUE)
+  eig_vecs <- eig_data$vectors[, order_idx]
+  eig_vals <- eig_data$values[order_idx]
 
-#   return(list(
-#     eigenvectors = eig_vecs,
-#     eigenvalues = eig_vals
-#   ))
-# }
+  return(list(
+    vectors = eig_vecs,
+    values = eig_vals
+  ))
+}
 
-# 0.7 Functions for p-value adjustment and summary over iterations
-# Input should be a matrix, # of rows equals # of simulations
+
+# Function to calculate the percentages of significant p-values
+#
+# Args:
+#   pvals: A matrix of p-values with dimensions (n_sim, n_pixels).
+#   method: A string specifying the p-value adjustment method (default is "bonferroni").
+#   alpha: A numeric value specifying the significance threshold (default is 0.05).
+#
+# Returns:
+#   A list containing:
+#     - pvals: The original matrix of p-values.
+#     - pvals_adj: The matrix of adjusted p-values.
+#     - perc_orig: A vector of percentages of significant p-values (original) for each pixel.
+#     - perc_adj: A vector of percentages of significant p-values (adjusted) for each pixel.
+calc_sig_perc <- function(pvals, method = "bonferroni", alpha = 0.05) {
+  # Apply the specified p-value adjustment method across each row
+  pvals_adj <- t(apply(pvals, 1, p.adjust, method = method))
+
+  # Calculate the percentage of p-values < alpha for each column
+  perc_orig <- colSums(pvals < alpha) / nrow(pvals) * 100
+  perc_adj <- colSums(pvals_adj < alpha) / nrow(pvals) * 100
+
+  # Return a list with both percentages and the adjusted p-values
+  list(
+    pvals = pvals,
+    pvals_adj = pvals_adj,
+    perc_orig = perc_orig,
+    perc_adj = perc_adj
+  )
+}
+
 calc_pval_adj <- function(pvals) {
   # Apply Bonferroni correction across each row
   pvals_corr <- t(apply(pvals, 1, p.adjust, method = "bonferroni"))
