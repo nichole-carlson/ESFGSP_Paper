@@ -1,152 +1,105 @@
 library(MASS)
 library(glmnet)
 library(pROC)
+library(tictoc)
 
 parent_dir <- "/Users/siyangren/Documents/ra-cida/ESFGSP_Paper/"
+source(file.path(parent_dir, "Dissemination", "simulation.r"))
 fig_dir <- file.path(parent_dir, "Figures")
 
-# Define a base class for common functionality
-sim_base <- setRefClass(
-  "sim_base",
-  fields = list(
-    img_size = "numeric",
-    num_samples = "numeric",
-    x = "matrix",
-    beta = "numeric",
-    y = "numeric",
-    w = "matrix",
-    v = "matrix",
-    seed = "numeric",
-    coef_min = "matrix",
-    coef_1se = "matrix"
-  ),
-  methods = list(
-    initialize = function(img_size = 16, num_samples = 1000, seed = 42, beta_effect) {
-      .self$img_size <- img_size
-      .self$num_samples <- num_samples
-      .self$seed <- seed
-      set.seed(.self$seed)
-      .self$gen_cov_matrix()
-      .self$define_beta(beta_effect)
-    },
-    # Assume an exponential correlation structure
-    gen_cov_matrix = function() {
-      coords <- expand.grid(1:img_size, 1:img_size)
-      dist_matrix <- as.matrix(dist(coords))
-      .self$w <- exp(-dist_matrix)
-    },
-    gen_x = function() {
-      stop("This method should be implemented by the subclass")
-    },
-    define_beta = function(beta_effect) {
-      p <- .self$img_size^2
-      .self$beta <- rep(0, p)
-      center_idx <- as.vector(matrix(1:p, nrow = img_size)[5:12, 5:12])
-      .self$beta[center_idx] <- beta_effect
-    },
-    check_p = function() {
-      eta <- x %*% beta
-      p <- 1 / (1 + exp(-eta))
-      return(p)
-    },
-    gen_response = function() {
-      .self$y <- rbinom(num_samples, 1, p)
-    },
-    fit_lasso = function() {
-      train_idx <- sample(1:num_samples, size = floor(0.8 * num_samples))
-      test_idx <- setdiff(1:num_samples, train_idx)
 
-      x_train <- x[train_idx, , drop = FALSE]
-      x_test <- x[-train_idx, , drop = FALSE]
-      y_train <- y[train_idx]
-      y_test <- y[-train_idx]
-
-      cv_model <- cv.glmnet(x_train, y_train, family = "binomial", alpha = 1)
-      lambda_min <- cv_model$lambda.min
-      lambda_1se <- cv_model$lambda.1se
-
-      eval_perf <- function(l) {
-        model <- glmnet(x_train, y_train, alpha = 1, lambda = l, family = "binomial")
-        preds <- predict(model, newx = x_test, type = "response")[, 1]
-        preds_bin <- ifelse(preds > 0.5, 1, 0)
-
-        acc <- mean(preds_bin == y_test)
-        auc <- auc(roc(y_test, preds))
-
-        list(coefs = coef(model), acc = acc, auc = auc)
-      }
-
-      perf_min <- eval_perf(lambda_min)
-      perf_1se <- eval_perf(lambda_1se)
-
-      # Print performance metrics
-      cat("Performance at lambda.min:\n")
-      cat("Accuracy:", perf_min["acc"], "\n")
-      cat("AUC:", perf_min["auc"], "\n")
-
-      cat("Performance at lambda.1se:\n")
-      cat("Accuracy:", perf_1se["acc"], "\n")
-      cat("AUC:", perf_1se["auc"], "\n")
-
-      .self$coef_min <- perf_min$coefs
-      .self$coef_1se <- perf_1se$coefs
-    },
-    visualize_coef = function(lambda = "min") {
-      coefs <- if (lambda == "min") coef_min else coef_1se
-      beta_matrix <- matrix(beta, nrow = img_size)
-      lasso_matrix <- matrix(coefs[-1], nrow = img_size)
-
-      par(mfrow = c(1, 2))
-      image(
-        1:img_size, 1:img_size, beta_matrix,
-        main = "True Coefficients",
-        xlab = "", ylab = "",
-        col = gray.colors(256, start = 0, end = 1, rev = TRUE)
-      )
-      image(
-        1:img_size, 1:img_size, lasso_matrix,
-        main = paste("LASSO Coefficients (", lambda, ")", sep = ""),
-        xlab = "", ylab = "",
-        col = gray.colors(256, start = 0, end = 1, rev = TRUE)
-      )
-    }
-  )
-)
-
-# Define a class for Simulation 1
-sim1 <- setRefClass(
-  "sim1",
-  contains = "sim_base",
-  methods = list(
-    initialize = function(img_size = 16, num_samples = 1000, seed = 42, beta_effect) {
-      callSuper(img_size, num_samples, seed, beta_effect)
-      .self$gen_x()
-    },
-    gen_x = function() {
-      p <- img_size^2
-      .self$x <- mvrnorm(num_samples, mu = rep(0, p), Sigma = w)
-    }
-  )
-)
-
-
-compare_beta_effects <- function(beta_effects = seq(0.1, 1.0, by = 0.1)) {
-  par(mfrow = c(ceiling(length(beta_effects) / 2), 2))
-  for (beta_effect in beta_effects) {
-    sim1_obj <- sim1$new(beta_effect = beta_effect)
-    p <- sim1_obj$check_p()
-    title <- paste("beta_effect =", beta_effect)
-    hist(p,
-      breaks = 30, main = title, , xlim = c(0, 1),
-      xlab = "Probability p", col = "lightblue", border = "black"
-    )
-  }
+# Define the covariance matrix generation function
+gen_cov_matrix <- function(img_size) {
+  coords <- expand.grid(1:img_size, 1:img_size)
+  dist_matrix <- as.matrix(dist(coords))
+  w <- exp(-dist_matrix)
+  return(w)
 }
 
-# Run the function to compare different beta effects
-png(
-  file = file.path(fig_dir, "sim1_p_dist.png"),
-  width = 1600, height = 1200, res = 150
+# Define the beta vector generation function
+define_beta <- function(img_size, beta_effect) {
+  p <- img_size^2
+  beta <- rep(0, p)
+  center_idx <- as.vector(matrix(1:p, nrow = img_size)[5:12, 5:12])
+  beta[center_idx] <- beta_effect
+  return(beta)
+}
+
+# Define the X matrix generation function
+gen_x <- function(num_samples, img_size, w) {
+  p <- img_size^2
+  x <- mvrnorm(num_samples, mu = rep(0, p), Sigma = w)
+  return(x)
+}
+
+# Define the response variable generation function
+gen_response <- function(x, beta) {
+  eta <- x %*% beta
+  p <- 1 / (1 + exp(-eta))
+  y <- rbinom(nrow(x), 1, p)
+  return(y)
+}
+
+
+# compare_beta_effects <- function(beta_effects = seq(0.1, 1.0, by = 0.1)) {
+#   par(mfrow = c(ceiling(length(beta_effects) / 2), 2))
+#   for (beta_effect in beta_effects) {
+#     sim1_obj <- sim1$new(beta_effect = beta_effect)
+#     p <- sim1_obj$check_p()
+#     title <- paste("beta_effect =", beta_effect)
+#     hist(p,
+#       breaks = 30, main = title, , xlim = c(0, 1),
+#       xlab = "Probability p", col = "lightblue", border = "black"
+#     )
+#   }
+# }
+
+# # Run the function to compare different beta effects
+# png(
+#   file = file.path(fig_dir, "sim1_p_dist.png"),
+#   width = 1600, height = 1200, res = 150
+# )
+# compare_beta_effects(beta_effects = c(1, 0.2, 0.1, 0.05, 0.01))
+# dev.off()
+
+
+# Run simulation 1 for 100 times.
+# For each iteration:
+#   - Split into train and test dataset, calculate AUC and accuracy, estimated
+#     coefficients under lambda.min and lambda.1se
+#   - Perform permutation test. Estimate p-values for pixels
+
+
+# Main simulation function
+simulate_lasso <- function(i, img_size, num_samples, beta_effect, p_train, n_perm, seed) {
+  perf_metrics <- matrix(NA, nrow = 1, ncol = 4)
+  perm_pvals <- matrix(NA, nrow = 1, ncol = img_size^2)
+
+  set.seed(seed + i)
+  w <- gen_cov_matrix(img_size)
+  beta <- define_beta(img_size, beta_effect)
+  x <- gen_x(num_samples, img_size, w)
+  y <- gen_response(x, beta)
+  lasso_results <- perform_lasso(x, y, p_train, seed = seed + i)
+  perf_metrics[1, ] <- lasso_results
+
+  p_vals <- perm_lasso(x, y, n_perm, seed = seed + i)
+  perm_pvals[1, ] <- p_vals
+
+  return(cbind(perf_metrics, perm_pvals))
+}
+
+
+tic()
+sim_output_1 <- simWrapper(
+  n_sim = 100,
+  f_sim = function(i) simulate_lasso(i, img_size = 16, num_samples = 1000, beta_effect = 0.1, p_train = 0.8, n_perm = 100, seed = 42),
+  list_export = c("gen_cov_matrix", "define_beta", "gen_x", "gen_response", "simulate_lasso", "perform_lasso", "perm_lasso"),
+  list_package = c("MASS", "glmnet", "pROC", "foreach", "doParallel")
 )
-compare_beta_effects(beta_effects = c(1, 0.2, 0.1, 0.05, 0.01))
-dev.off()
+toc()
+
+save(
+  sim_output_1,
+  file = file.path(dirname(parent_dir), "Simulations", "sim_1_output.RData")
+)
