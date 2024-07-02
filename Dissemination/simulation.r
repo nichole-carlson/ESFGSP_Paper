@@ -383,23 +383,6 @@ calc_sig_perc <- function(pvals, method = "bonferroni", alpha = 0.05) {
   )
 }
 
-calc_pval_adj <- function(pvals) {
-  # Apply Bonferroni correction across each row
-  pvals_corr <- t(apply(pvals, 1, p.adjust, method = "bonferroni"))
-
-  # Calculate the percentage of p-values < 0.05 for each column
-  perc_orig <- colSums(pvals < 0.05) / nrow(pvals) * 100
-  perc_corr <- colSums(pvals_corr < 0.05) / nrow(pvals) * 100
-
-  # Return a list with both percentages
-  list(
-    pvals = pvals,
-    pvals_corr = pvals_corr,
-    perc = perc_orig,
-    perc_corr = perc_corr
-  )
-}
-
 
 # # Model 1: VBM --------------------------------------------------------
 
