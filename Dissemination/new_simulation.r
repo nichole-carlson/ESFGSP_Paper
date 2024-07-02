@@ -9,9 +9,9 @@ library(gridExtra)
 
 current_dir <- getwd()
 parent_dir <- dirname(current_dir)
+fig_dir <- file.path(parent_dir, "Figures")
 source("simulation.r")
 source("simWrapper.r")
-fig_dir <- file.path(parent_dir, "Figures")
 
 
 # General function to generate a covariance matrix
@@ -70,23 +70,28 @@ simulate_1 <- function(i, size, num_samples, effect, p_train, n_perm, seed) {
   cbind(perform_metrics, p_vals)
 }
 
-# # Function to compare beta effects for Simulation 1
-# compare_beta_effects_sim1 <- function(effects, size = 16, num_samples = 1000, seed = 42) {
-#   par(mfrow = c(ceiling(length(effects) / 2), 2))
-#   set.seed(seed)
-#   w <- generate_cov_matrix(size)
-#   for (effect in effects) {
-#     beta <- define_beta(size, effect)
-#     x <- generate_X(num_samples, size, w)
-#     p <- generate_probs(x, beta)
-#     hist(p,
-#       breaks = 30, main = paste("Effect =", effect), xlim = c(0, 1),
-#       xlab = "Probability p", col = "lightblue", border = "black"
-#     )
-#   }
-# }
+# Function to compare beta effects for Simulation 1
+compare_beta_effects_sim1 <- function(effects, size = 16, num_samples = 1000, seed = 42) {
+  par(mfrow = c(ceiling(length(effects) / 2), 2))
+  set.seed(seed)
+  w <- generate_cov_matrix(size)
+  for (effect in effects) {
+    beta <- define_beta(size, effect)
+    x <- generate_X(num_samples, size, w)
+    p <- generate_probs(x, beta)
+    hist(p,
+      breaks = 30, main = paste("Effect =", effect), xlim = c(0, 1),
+      xlab = "Probability p", col = "lightblue", border = "black"
+    )
+  }
+}
 
-# compare_beta_effects_sim1(c(1, 0.2, 0.1, 0.05, 0.01))
+png(
+  file = file.path(fig_dir, "sim1_p_dist.png"),
+  width = 1600, height = 1200, res = 150
+)
+compare_beta_effects_sim1(c(1, 0.2, 0.1, 0.05, 0.01))
+dev.off()
 
 # Run Simulation 1
 # For each iteration:
@@ -106,29 +111,37 @@ sim1_output <- simWrapper(
 )
 toc()
 
-# Save Simulation 1 results
-save(
-  sim1_output,
-  file = file.path(parent_dir, "Simulations", paste0("sim1_", format(Sys.time(), "%y%m%d"), ".RData"))
-)
+# # Save Simulation 1 results
+# save(
+#   sim1_output,
+#   file = file.path(parent_dir, "Simulations", paste0("sim1_", format(Sys.time(), "%y%m%d"), ".RData"))
+# )
+load(file = file.path(current_dir, "Simulations", "sim1_240701.RData"))
 
 # # Generate summary stats for ACC and AUCs
-# acc_auc_sim1 <- as.data.frame(sim1_output[, 1:4])
-# colnames(acc_auc_sim1) <- c("min_acc", "min_auc", "1se_acc", "1se_auc")
-# table1(~ min_acc + min_auc + `1se_acc` + `1se_auc`, data = acc_auc_sim1)
+acc_auc_sim1 <- as.data.frame(sim1_output[, 1:4])
+colnames(acc_auc_sim1) <- c("min_acc", "min_auc", "1se_acc", "1se_auc")
+table1(~ min_acc + min_auc + `1se_acc` + `1se_auc`, data = acc_auc_sim1)
 
 # # Calculate significance percentages for Simulation 1
-# pvals_matrix_sim1 <- sim1_output[, -(1:4)]
-# sig_perc_sim1 <- calc_sig_perc(pvals_matrix_sim1, method = "bonferroni", alpha = 0.05)
+pvals_matrix_sim1 <- sim1_output[, -(1:4)]
+sig_perc_sim1 <- calc_sig_perc(pvals_matrix_sim1, method = "bonferroni", alpha = 0.05)
 
-# # Create plots for Simulation 1
-# beta_sim1 <- define_beta(16, 0.1)
-# plot_beta_sim1 <- plot_heatmap(beta_sim1)
-# plot_orig_sim1 <- plot_heatmap(sig_perc_sim1$perc_orig, c(0, 100))
-# plot_adj_sim1 <- plot_heatmap(sig_perc_sim1$perc_adj, c(0, 100))
+# Create plots for Simulation 1
+beta_sim1 <- define_beta(16, 0.1)
+plot_beta_sim1 <- plot_heatmap(beta_sim1)
+plot_orig_sim1 <- plot_heatmap(sig_perc_sim1$perc_orig, c(0, 100))
+plot_adj_sim1 <- plot_heatmap(sig_perc_sim1$perc_adj, c(0, 100))
 
-# # Arrange plots for formal presentation for Simulation 1
-# grid.arrange(plot_beta_sim1, plot_orig_sim1, plot_adj_sim1, ncol = 2)
+# Arrange plots for formal presentation for Simulation 1
+sim1_heatmap <- grid.arrange(
+  plot_beta_sim1, plot_orig_sim1, plot_adj_sim1,
+  ncol = 2
+)
+ggsave(
+  filename = file.path(current_dir, "Figures", "sim1_heatmap.png"),
+  plot = sim1_heatmap, width = 10, height = 8
+)
 
 # Function for Simulation 2
 simulate_2 <- function(i, size, num_samples, sparsity, effect, p_train, n_perm, seed) {
@@ -144,21 +157,25 @@ simulate_2 <- function(i, size, num_samples, sparsity, effect, p_train, n_perm, 
 }
 
 # # Function to compare beta effects for Simulation 2
-# compare_beta_effects_sim2 <- function(effects, size = 16, num_samples = 1000, sparsity = 0.1, seed = 42) {
-#   par(mfrow = c(ceiling(length(effects) / 2), 2))
-#   set.seed(seed)
-#   w <- generate_cov_matrix(size)
-#   V <- eigen_decomp(w)$vectors
-#   for (effect in effects) {
-#     b <- generate_sparse_vector(size^2, sparsity, effect, seed)
-#     x <- generate_X(num_samples, size, diag(size^2))
-#     p <- generate_probs(x, b)
-#     hist(p, breaks = 30, main = paste("Effect =", effect), xlim = c(0, 1), xlab = "Probability p", col = "lightblue", border = "black")
-#   }
-# }
+compare_beta_effects_sim2 <- function(effects, size = 16, num_samples = 1000, sparsity = 0.1, seed = 42) {
+  par(mfrow = c(ceiling(length(effects) / 2), 2))
+  set.seed(seed)
+  w <- generate_cov_matrix(size)
+  V <- eigen_decomp(w)$vectors
+  for (effect in effects) {
+    b <- generate_sparse_vector(size^2, sparsity, effect, seed)
+    x <- generate_X(num_samples, size, diag(size^2))
+    p <- generate_probs(x, b)
+    hist(p, breaks = 30, main = paste("Effect =", effect), xlim = c(0, 1), xlab = "Probability p", col = "lightblue", border = "black")
+  }
+}
 
-# compare_beta_effects_sim2(c(1, 0.8, 0.6, 0.4, 0.2, 0.1))
-
+png(
+  file = file.path(fig_dir, "sim2_p_dist.png"),
+  width = 1600, height = 1200, res = 150
+)
+compare_beta_effects_sim2(c(1, 0.8, 0.6, 0.4, 0.2, 0.1))
+dev.off()
 
 # Run Simulation 2
 tic()
@@ -174,26 +191,34 @@ sim2_output <- simWrapper(
 toc()
 
 # Save Simulation 2 results
-save(
-  sim2_output,
-  file = file.path(parent_dir, "Simulations", paste0("sim2_", format(Sys.time(), "%y%m%d"), ".RData"))
+# save(
+#   sim2_output,
+#   file = file.path(parent_dir, "Simulations", paste0("sim2_", format(Sys.time(), "%y%m%d"), ".RData"))
+# )
+load(file = file.path(current_dir, "Simulations", "sim2_240701.RData"))
+
+# Generate summary stats for ACC and AUCs for Simulation 2
+acc_auc_sim2 <- as.data.frame(sim2_output[, 1:4])
+colnames(acc_auc_sim2) <- c("min_acc", "min_auc", "1se_acc", "1se_auc")
+table1(~ min_acc + min_auc + `1se_acc` + `1se_auc`, data = acc_auc_sim2)
+
+# Calculate significance percentages for Simulation 2
+pvals_matrix_sim2 <- sim2_output[, -(1:4)]
+sig_perc_sim2 <- calc_sig_perc(pvals_matrix_sim2, method = "bonferroni", alpha = 0.05)
+
+
+# Create plots for Simulation 2
+b_sim2 <- generate_sparse_vector(16^2, 0.1, 0.4, 42)
+plot_beta_sim2 <- plot_heatmap(b_sim2)
+plot_orig_sim2 <- plot_heatmap(sig_perc_sim2$perc_orig, c(0, 100))
+plot_adj_sim2 <- plot_heatmap(sig_perc_sim2$perc_adj, c(0, 100))
+
+# Arrange plots for formal presentation for Simulation 2
+sim2_heatmap <- grid.arrange(
+  plot_beta_sim2, plot_orig_sim2, plot_adj_sim2,
+  ncol = 2
 )
-
-# # Generate summary stats for ACC and AUCs for Simulation 2
-# acc_auc_sim2 <- as.data.frame(sim2_output[, 1:4])
-# colnames(acc_auc_sim2) <- c("min_acc", "min_auc", "1se_acc", "1se_auc")
-# table1(~ min_acc + min_auc + `1se_acc` + `1se_auc`, data = acc_auc_sim2)
-
-# # Calculate significance percentages for Simulation 2
-# pvals_matrix_sim2 <- sim2_output[, -(1:4)]
-# sig_perc_sim2 <- calc_sig_perc(pvals_matrix_sim2, method = "bonferroni", alpha = 0.05)
-
-
-# # Create plots for Simulation 2
-# b_sim2 <- generate_sparse_vector(16^2, 0.1, 0.4, 42)
-# plot_beta_sim2 <- plot_heatmap(b_sim2)
-# plot_orig_sim2 <- plot_heatmap(sig_perc_sim2$perc_orig, c(0, 100))
-# plot_adj_sim2 <- plot_heatmap(sig_perc_sim2$perc_adj, c(0, 100))
-
-# # Arrange plots for formal presentation for Simulation 2
-# grid.arrange(plot_beta_sim2, plot_orig_sim2, plot_adj_sim2, ncol = 2)
+ggsave(
+  filename = file.path(current_dir, "Figures", "sim2_heatmap.png"),
+  plot = sim2_heatmap, width = 10, height = 8
+)
