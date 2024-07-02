@@ -96,7 +96,7 @@ simulate_1 <- function(i, size, num_samples, effect, p_train, n_perm, seed) {
 
 tic()
 sim1_output <- simWrapper(
-  n_sim = 4,
+  n_sim = 500,
   f_sim = function(i) simulate_1(i, size = 16, num_samples = 1000, effect = 0.1, p_train = 0.8, n_perm = 100, seed = 42),
   list_export = c(
     "generate_cov_matrix", "define_beta", "generate_X", "generate_probs",
@@ -163,7 +163,7 @@ simulate_2 <- function(i, size, num_samples, sparsity, effect, p_train, n_perm, 
 # Run Simulation 2
 tic()
 sim2_output <- simWrapper(
-  n_sim = 4,
+  n_sim = 500,
   f_sim = function(i) simulate_2(i, size = 16, num_samples = 1000, sparsity = 0.1, effect = 0.4, p_train = 0.8, n_perm = 100, seed = 42),
   list_export = c(
     "generate_cov_matrix", "eigen_decomp", "generate_sparse_vector", "generate_X", "generate_probs", "generate_response", "perform_lasso",
