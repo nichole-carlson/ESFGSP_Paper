@@ -147,4 +147,57 @@ Figures~\ref{fig:lasso_pvals}, \ref{fig:lasso_pvals_corr}, and \ref{fig:lasso_bo
 
 The exponential correlation matrix with rate 1 was used to calculate the eigenvectors and eigenvalues. The matrix appeared to be positive-definite, so all eigenvalues were positive. These eigenvectors were then used to transform the pixel values. A Lasso regression model was fitted on the transformed data to predict \texttt{group\_ind}. To assess the significance of the model coefficients, 100 permutation tests were conducted within each iteration to obtain p-values. This process was replicated 100 times.
 
+\clearpage
+
+\section*{Simulation 1}
+
+Simulation 1 involves generating a \( 1000 \times 256 \) covariate matrix \(X\) from a multivariate normal distribution with an exponential correlation structure. A coefficient vector \(\beta\) is defined with non-zero values only in the central \( 8 \times 8 \) region. The response variable \(y\) is generated from a binomial distribution with probabilities derived from \(\eta = X\beta\). The non-zero values of \(\beta\) were chosen to make \(p = \frac{1}{1 + \exp(-\eta)}\) distribute evenly across 0 to 1. The dataset is split into training (80\%) and test (20\%) sets, and a logistic LASSO model is fitted with cross-validation. This process was repeated 500 times. Model performance is evaluated using accuracy and AUC over iterations. Within each iteration, a permutation test was run 100 times to calculate the p-values for all pixels, and the percentage of getting a significant p-value was calculated for each pixel. The identified important pixels are compared to the true non-zero coefficients in \(\beta\).
+
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{../Figures/sim1_p_dist.png}
+    \caption{The distribution of \(p\) at different \(\beta\) values. \(\beta = 0.1\) was chosen for model fitting as it gives the most evenly distributed values.}
+    \label{fig:sim1_p_dist}
+\end{figure}
+
+Figure~\ref{fig:sim1_p_dist} above shows the distribution of \(p\) for different values of \(\beta\). The choice of \(\beta = 0.1\) ensures an even spread of probabilities.
+
+When using the \(\lambda\) given the lowest deviance and the lowest deviance plus 1 standard error, the average prediction accuracy on the test set is 72.5\% (min-max: 61.0\% - 82.0\%) and 72.2\% (59.0\% - 82.0\%). The corresponding AUC is 0.80 (SD=0.03) and 0.80 (SD=0.04). This indicates that the model is reasonably accurate and has a good discriminative ability.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{../Figures/sim1_heatmap.png}
+    \caption{Heatmap of the actual \(\beta\) values, the percentage of getting a significant p-value for each pixel, and the percentage of getting a significant p-value after multiple comparisons adjustment.}
+    \label{fig:sim1_heatmap}
+\end{figure}
+
+Figure~\ref{fig:sim1_heatmap} illustrates the true \(\beta\) values, the percentage of significant p-values, and the adjusted significance post-multiple comparisons. The results show that due to the correlation structure in \( X \), the LASSO model struggles to pinpoint the exact pixels with non-zero coefficients, resulting in diffuse significant p-values rather than precise identification.
+
+
+\section*{Simulation 2}
+
+Simulation 2 differs from Simulation 1 by transforming the covariate matrix into the frequency space using eigenvectors and assuming a sparse coefficient vector in this transformed space. The covariate matrix in the frequency space is generated with a multivariate normal distribution with diagonal values equal to 1 and all other values equal to 0. The coefficient vector index with non-zero values was randomly decided and 10\% elements are non-zero. The value of non-zero values was chosen similarly to Simulation 1.
+
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{../Figures/sim2_p_dist.png}
+    \caption{Distribution of \(p\) values in the frequency space when the non-zero value equals 0.4, showing a relatively balanced distribution.}
+    \label{fig:sim2_p_dist}
+\end{figure}
+
+Figure~\ref{fig:sim2_p_dist} shows that when the non-zero value equals 0.4, the distribution of \(p\) values is relatively balanced, making it a suitable choice for the model.
+
+Since the correlation between covariates was resolved by eigen-transpose, both accuracy and AUC are better than Simulation 1. The accuracy using the lowest deviance \(\lambda\) is 74.9\% (min-max, 66.0\% - 83.5\%), and 75.1\% (min-max, 65.5\% - 84.5\%) for \(\lambda\) for lowest deviance plus 1 standard error. The corresponding average AUC is 0.83 (SD 0.03) and 0.83 (SD 0.03). These results demonstrate that transforming the data into the frequency space can enhance model performance by reducing collinearity among covariates.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{../Figures/sim2_heatmap.png}
+    \caption{Heatmap of the coefficient vector in the frequency space, the percentage of getting a significant p-value for each pixel, and the percentage of getting a significant p-value after multiple comparisons adjustment.}
+    \label{fig:sim2_heatmap}
+\end{figure}
+
+The heatmap for Simulation 2 (Figure~\ref{fig:sim2_heatmap}) shows the coefficient vector in the frequency space, significant p-values, and adjusted p-values. Despite the improvement in model performance, the heatmap reveals that the model still faces challenges in precisely identifying all non-zero coefficients.
+
 \end{document}
