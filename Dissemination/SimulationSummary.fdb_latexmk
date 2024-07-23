@@ -1,5 +1,5 @@
 # Fdb version 4
-["pdflatex"] 1720012778 "/Users/siyangren/Documents/ra-cida/ESFGSP_Paper/Dissemination/SimulationSummary.tex" "SimulationSummary.pdf" "SimulationSummary" 1720012783 0
+["pdflatex"] 1721769937 "/Users/siyangren/Documents/ra-cida/ESFGSP_Paper/Dissemination/SimulationSummary.tex" "SimulationSummary.pdf" "SimulationSummary" 1721769942 0
   "../Figures/ex_image_4.png" 1715840086 38169 c93d22702bceb6ae09174a224519597a ""
   "../Figures/ex_image_5.png" 1715840086 38156 6d5019267318114f508d1ff98c41279d ""
   "../Figures/ex_image_5c.png" 1715840086 38128 2a95a187b7bef9c858f0c7d6efe95a5c ""
@@ -9,7 +9,7 @@
   "../Figures/sim2_heatmap.png" 1719927967 91876 c3e8828d03feb7e8c16a737281385f64 ""
   "../Figures/sim2_p_dist.png" 1719927471 105410 9c51b561310bc29009a229a85fbdbb2a ""
   "../Figures/vbm_boxplots.png" 1716470183 47101 702acb9fd1b9be11e5cc6c3d8f5b4de6 ""
-  "/Users/siyangren/Documents/ra-cida/ESFGSP_Paper/Dissemination/SimulationSummary.tex" 1720012777 14336 d8b50a9eff5c375c0b392d3b263a1f54 ""
+  "/Users/siyangren/Documents/ra-cida/ESFGSP_Paper/Dissemination/SimulationSummary.tex" 1721769937 16665 4e69021894b9f6a99827ef4c8848c926 ""
   "/Users/siyangren/Documents/ra-cida/ESFGSP_Paper/Figures/lasso_pvals.png" 1716326738 41866 aff78af7abcd7bece19f91e6a152e963 ""
   "/Users/siyangren/Documents/ra-cida/ESFGSP_Paper/Figures/lasso_pvals_corr.png" 1716326739 41565 a3b1fcd848b6efa16db54ebda06e38b8 ""
   "/Users/siyangren/Documents/ra-cida/ESFGSP_Paper/Figures/vbm_pvals.png" 1713462360 40548 bd37a2c9db4f3abaf2657157d03974d1 ""
@@ -72,8 +72,8 @@
   "/usr/local/texlive/2023/texmf-var/fonts/map/pdftex/updmap/pdftex.map" 1708666395 4623355 b8cad38412faebe1ce5b780a45db67bd ""
   "/usr/local/texlive/2023/texmf-var/web2c/pdftex/pdflatex.fmt" 1708666169 7883463 6234e7e5418d3598a5570aa3c54e707e ""
   "/usr/local/texlive/2023/texmf.cnf" 1678822455 577 1b2b1af17af2508fb20dd85783af4050 ""
-  "SimulationSummary.aux" 1720012782 3132 f20dc9c0d59508574f2ee0f7203fe672 "pdflatex"
-  "SimulationSummary.tex" 1720012777 14336 d8b50a9eff5c375c0b392d3b263a1f54 ""
+  "SimulationSummary.aux" 1721769942 3132 8aab658bc8371aaa9488c6d58e3a40a9 "pdflatex"
+  "SimulationSummary.tex" 1721769937 16665 4e69021894b9f6a99827ef4c8848c926 ""
   (generated)
   "SimulationSummary.aux"
   "SimulationSummary.log"

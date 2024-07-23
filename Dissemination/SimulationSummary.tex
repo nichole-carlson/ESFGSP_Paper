@@ -151,7 +151,7 @@ The exponential correlation matrix with rate 1 was used to calculate the eigenve
 
 \section*{Simulation 1}
 
-Simulation 1 involves generating a \( 1000 \times 256 \) covariate matrix \(X\) from a multivariate normal distribution with an exponential correlation structure. A coefficient vector \(\beta\) is defined with non-zero values only in the central \( 8 \times 8 \) region. The response variable \(y\) is generated from a binomial distribution with probabilities derived from \(\eta = X\beta\). The non-zero values of \(\beta\) were chosen to make \(p = \frac{1}{1 + \exp(-\eta)}\) distribute evenly across 0 to 1. The dataset is split into training (80\%) and test (20\%) sets, and a logistic LASSO model is fitted with cross-validation. This process was repeated 500 times. Model performance is evaluated using accuracy and AUC over iterations. Within each iteration, a permutation test was run 100 times to calculate the p-values for all pixels, and the percentage of getting a significant p-value was calculated for each pixel. The identified important pixels are compared to the true non-zero coefficients in \(\beta\).
+
 
 
 \begin{figure}[H]
@@ -174,6 +174,27 @@ When using the \(\lambda\) given the lowest deviance and the lowest deviance plu
 
 Figure~\ref{fig:sim1_heatmap} illustrates the true \(\beta\) values, the percentage of significant p-values, and the adjusted significance post-multiple comparisons. The results show that due to the correlation structure in \( X \), the LASSO model struggles to pinpoint the exact pixels with non-zero coefficients, resulting in diffuse significant p-values rather than precise identification.
 
+
+\clearpage
+
+\section*{Methods}
+
+In this study, we conducted two simulations to evaluate the performace of LASSO models in identifying important features in high-dimensional data. The first simulation assumes sparsity of the features in the pixel space, while the second simulation assumes sparsity in the frequency space.
+
+The pixel space refers to the original high-dimensional space where each dimension represents a pixel in an image. In this space, features are directly observed and may have inherent correlations. Conversely, the frequency space is a transformed version of the pixel space, obtained through techniques like eigen decomposition.
+
+In both simulations, we generated a covariate matrix \( X \) of dimensions \( 1000 \times 256 \), where each row represents an observation and each column represents a feature. The correlation structure of the features was modeled using an exponential correlation matrix \( W \) of size \( 256 \times 256 \). By performing eigen decomposition on \( W \), we obtained the eigenvectors \( V \), which allows us to transform the covariate matrix into the frequency space as \( X_{\text{freq}} = X V^T \). Similarlay, the coefficient vector \( \beta \) in the pixel space was transformed to \( b \) in the frequency space as \( \beta = V^T b \).
+
+
+In the first simulation, we assume sparsity in the coefficient vectors in the pixel space. The coefficient vector \( \beta \) was specified to have non-zero values exclusively within a central \( 8 \times 8 \) region. The response variable \( y \) was drawn from a binomial distribution with success probabilities determined by \( \eta = X \beta \). The non-zero coefficients in \( \beta \) were chosen such that the probability \( p = \frac{1}{1 + \exp(-\eta)} \) was uniformly distributed across interval \( [0, 1] \).
+
+In the second simulation, we assume sparsity in the coefficient vectors in the frequency space. The covariate matrix \( X_{\text{freq}} \) followed a multivariate normal distribution with a diagonal covariate matrix. We defined a sparse coefficient vector \( b \) in the frequency space, where most of the 256 entries were zero and a randomly 10\% were non-zero. The response variable \( y \) was generated similarly to the first simulation, ensuring \( p = \frac{1}{1 + \exp(-\eta)} \) was evenly distributed.
+
+For both simulations, we fit two models: one using the covariates in the pixel space and another using the covariates in the frequency space. Each dataset, generated in size \( 1000 \times 256 \) and representing images of \( 16 \times 16 \) pixels, was split into training (80\%) and test (20\%) sets. The regularization parameter \( \lambda \) was tuned using cross-validation with the default binomial deviance metric. The dataset was divided into 10 folds, with the model trained and validated iteratively across these folds, varying \( \lambda \). The optimal \( \lambda \) was chosen based on the lowest average binomial deviance.
+
+After selecting the optimal \( \lambda \), model performance was evaluated using accuracy and AUC metrics. Additionally, a permutation test was conducted 100 times to calculate p-values for each covariate. Across all iterations, we calculated the mean and standard deviation of the metrics, as well as the percentage of significant p-values for each covariate.
+
+\section*{Results}
 
 \section*{Simulation 2}
 
