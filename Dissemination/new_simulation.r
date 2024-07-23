@@ -14,6 +14,30 @@ source("simulation.r")
 source("simWrapper.r")
 
 
+# ----- Simulation Plan -----
+# - X, 1000 * 256, represents the covariate matrix in the pixel space; It was
+# generated following multivariate normal distribution with an exponential
+# correlation structure, denoted as W. Using eigen decomposition, we can get
+# the eigenvectors V from W. Both V and W are 256 * 256.
+
+# - Beta is the corresponding coefficient vector in the pixel space. It should
+# be (256, ).
+
+# - X_freq = X %*% V^T is the covariate matrix in the frequency space. It is
+# also 1000 * 256.
+
+# - b is the coefficient vector in the frequency space. beta = V^T %*% b.
+
+# We do two simulations: the first one assumes sparsity in beta, and the
+# second one assumes sparsity in b. For beta, we transform it back to 16*16,
+# making all areas except the central 8*8 to be zero. The values in the central
+# area will be decided later. For b, we randomly assign 10% values to be
+# non-zero. For each simulation, we will fit two models: one using X as
+# covariates, another using X_freq as covariates.
+
+
+
+
 # General function to generate a covariance matrix
 generate_cov_matrix <- function(size) {
   coords <- expand.grid(1:size, 1:size)
