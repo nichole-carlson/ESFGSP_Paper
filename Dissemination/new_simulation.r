@@ -28,58 +28,115 @@ source("simWrapper.r")
 
 # - b is the coefficient vector in the frequency space. beta = V^T %*% b.
 
-# We do two simulations: the first one assumes sparsity in beta, and the
-# second one assumes sparsity in b. For beta, we transform it back to 16*16,
-# making all areas except the central 8*8 to be zero. The values in the central
-# area will be decided later. For b, we randomly assign 10% values to be
-# non-zero. For each simulation, we will fit two models: one using X as
-# covariates, another using X_freq as covariates.
+# We do two simulations:
+#   - the first one assumes sparsity in beta. When transforming beta back to
+#     16 * 16, we make all areas except the central 8*8 to be zero. The values
+#     in the central area will be decided later.
+#   - the second one assumes sparsity in b. We randomly assign 10% values to be
+#     non-zero.
+# We will fit two models for each simulation: using X as covariates, and using
+# X_freq as covariates.
 
 
 
+# Generate an exponential correlation matrix for a square matrix with n_pixels
+# Args:
+#   n_pixels: Integer. The number of pixels (or elements) in the matrix.
+# Returns:
+#   A matrix where each element represents the correlation between two points,
+#   based on the exponential decay of the Euclidean distance between them.
+gen_exp_corr_matrix <- function(n_pixels) {
+  num_col <- sqrt(n_pixels)
 
-# General function to generate a covariance matrix
-generate_cov_matrix <- function(size) {
-  coords <- expand.grid(1:size, 1:size)
-  dist_matrix <- as.matrix(dist(coords))
-  exp(-dist_matrix)
+  # Function to calculate the Euclidean distance between two points in a 2D grid
+  # Args:
+  #   i: Integer. Index of the first point in 1D.
+  #   j: Integer. Index of the second point in 1D.
+  # Returns:
+  #   Numeric. The Euclidean distance between the two points.
+  calc_dist <- function(i, j) {
+    row_i <- (i - 1) %/% num_col
+    col_i <- (i - 1) %% num_col
+    row_j <- (j - 1) %/% num_col
+    col_j <- (j - 1) %% num_col
+    sqrt((row_i - row_j)^2 + (col_i - col_j)^2)
+  }
+
+  # Generate the correlation matrix using the vectorized distance function
+  outer(
+    1:n_pixels, 1:n_pixels,
+    Vectorize(function(i, j) exp(-calc_dist(i, j)))
+  )
 }
 
-# General function to generate a sparse coefficient vector
-generate_sparse_vector <- function(length, sparsity_level = 0.1, effect = 0.1, seed) {
+# Generate a sparse coefficient vector
+# Args:
+#   len: Integer. The length of the coefficient vector.
+#   sparsity: Numeric. Proportion of non-zero elements in the vector. Default is 0.1.
+#   effect: Numeric. The effect size assigned to non-zero elements. Default is 0.1.
+#   seed: Integer. Random seed for reproducibility.
+# Returns:
+#   A numeric vector of specified length with a specified proportion of non-zero elements.
+create_sparse_vec <- function(len, sparsity = 0.1, effect = 0.1, seed) {
   set.seed(seed)
-  vec <- rep(0, length)
-  non_zero_indices <- sample(1:length, size = floor(length * sparsity_level), replace = FALSE)
-  vec[non_zero_indices] <- effect
+  vec <- rep(0, len)
+  non_zero_idx <- sample(1:len, size = floor(len * sparsity), replace = FALSE)
+  vec[non_zero_idx] <- effect
   vec
 }
 
-# Define beta for simulation 1 with the center as the black region
-define_beta <- function(img_size, beta_effect) {
+# Define beta for simulation with the center as the black region
+# Args:
+#   img_size: Integer. The dimension of the square image (number of rows/columns).
+#   beta_effect: Numeric. The effect size assigned to the center region.
+# Returns:
+#   A numeric vector of length img_size^2 with the center region set to beta_effect.
+define_center_beta <- function(img_size, beta_effect) {
   p <- img_size^2
   beta <- rep(0, p)
-  center_start <- (img_size - 8) / 2 + 1
-  center_end <- (img_size + 8) / 2
-  center_idx <- as.vector(matrix(1:p, nrow = img_size)[center_start:center_end, center_start:center_end])
-  beta[center_idx] <- beta_effect
+  ctr_start <- (img_size - 8) / 2 + 1
+  ctr_end <- (img_size + 8) / 2
+  ctr_idx <- as.vector(matrix(1:p, nrow = img_size)[
+    ctr_start:ctr_end,
+    ctr_start:ctr_end
+  ])
+  beta[ctr_idx] <- beta_effect
   return(beta)
 }
 
-# General function to generate the X matrix
-generate_X <- function(num_samples, size, cov_matrix) {
-  mvrnorm(num_samples, mu = rep(0, size^2), Sigma = cov_matrix)
+
+# Generate the X matrix
+# Args:
+#   n_samples: Integer. The number of samples (rows) to generate.
+#   img_size: Integer. The dimension of the square image (number of rows/columns).
+#   cov_matrix: Matrix. The covariance matrix used for generating
+#   multivariate normal samples.
+# Returns:
+#   A matrix of generated samples, with n_samples rows and img_size^2 columns.
+gen_X_matrix <- function(n_samples, img_size, cov_matrix) {
+  mvrnorm(n_samples, mu = rep(0, img_size^2), Sigma = cov_matrix)
 }
 
-# General function to generate probabilities
-generate_probs <- function(x, coefficients) {
-  eta <- x %*% coefficients
+# Generate probabilities
+# Args:
+#   x_matrix: Matrix. The design matrix of predictor variables.
+#   coeffs: Numeric vector. The coefficient vector.
+# Returns:
+#   A numeric vector of probabilities for each sample.
+calc_probs <- function(x_matrix, coeffs) {
+  eta <- x_matrix %*% coeffs
   1 / (1 + exp(-eta))
 }
 
-# General function to generate response variables
-generate_response <- function(x, coefficients) {
-  p <- generate_probs(x, coefficients)
-  rbinom(nrow(x), 1, p)
+# Generate response variables
+# Args:
+#   x_matrix: Matrix. The design matrix of predictor variables.
+#   coeffs: Numeric vector. The coefficient vector.
+# Returns:
+#   A numeric vector of binary response variables generated using the probabilities.
+gen_responses <- function(x_matrix, coeffs) {
+  p <- calc_probs(x_matrix, coeffs)
+  rbinom(nrow(x_matrix), 1, p)
 }
 
 # Function for Simulation 1
