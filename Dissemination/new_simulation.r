@@ -110,7 +110,6 @@ eigen_decomp <- function(mat) {
 #   seed: Integer. Random seed for reproducibility.
 # Returns:
 #   A numeric vector with specified sparsity and effect size.
-
 gen_b <- function(len, sparsity, effect_size, seed) {
   set.seed(seed)
   vec <- rep(0, len)
@@ -125,7 +124,6 @@ gen_b <- function(len, sparsity, effect_size, seed) {
 #   effect_size: Numeric. Effect size assigned to the center region.
 # Returns:
 #   A numeric vector with the center region set to the effect size.
-
 gen_beta <- function(img_size, effect_size) {
   len <- img_size^2
   beta <- rep(0, len)
@@ -220,13 +218,82 @@ png(
 compare_b_effects(c(1, 0.8, 0.6, 0.4, 0.2, 0.1))
 dev.off()
 
+
+
+
+# ----- Simulations -----
+
+# parameters
 beta_effect_size <- 0.1
 b_effect_size <- 0.4
+sparsity <- 0.1
+
+simulate_data <- function(img_size, n_samples, beta = NULL, b = NULL, seed = NULL) {
+  if (!is.null(seed)) {
+    set.seed(seed)
+  }
+
+  len <- img_size^2
+  W <- gen_exp_corr(len)
+  V <- eigen_decomp(W)$vectors
+  W_freq <- t(V) %*% W %*% V
+
+  x_freq <- gen_x(n_samples, W_freq)
+  x <- x_freq %*% t(V)
+
+  if (!is.null(beta) && !is.null(b)) {
+    warning("Both 'beta' and 'b' are provided. Using 'beta'.")
+    use_b <- FALSE
+  } else {
+    use_b <- is.null(beta)
+  }
+
+  if (use_b) {
+    y <- gen_y(x_freq, b)
+    message("Using 'b' for generating 'y'.")
+  } else {
+    y <- gen_y(x, beta)
+    message("Using 'beta' for generating 'y'.")
+  }
+
+  result <- list(x = x, x_freq = x_freq, y = y)
+  return(result)
+}
+
+simulated_data_list
+
+# Function for Simulation 1
+simulate_1 <- function(i, size, n_samples, effect, p_train, n_perm, seed) {
+  set.seed(seed + i)
+  w <- generate_cov_matrix(size)
+  beta <- define_beta(size, effect)
+  x <- generate_X(n_samples, size, w)
+  y <- generate_response(x, beta)
+  perform_metrics <- perform_lasso(x, y, p_train, seed = seed + i)
+  p_vals <- perm_lasso(x, y, n_perm, seed = seed + i)
+  cbind(perform_metrics, p_vals)
+}
 
 
-# ----- Simulation Functions -----
 
 
+# Run Simulation 1
+# For each iteration:
+#   - Split into train and test dataset, calculate AUC and accuracy, estimated
+#     coefficients under lambda.min and lambda.1se
+#   - Perform permutation test. Estimate p-values for pixels
+
+tic()
+sim1_output <- simWrapper(
+  n_sim = 500,
+  f_sim = function(i) simulate_1(i, size = 16, n_samples = 1000, effect = 0.1, p_train = 0.8, n_perm = 100, seed = 42),
+  list_export = c(
+    "generate_cov_matrix", "define_beta", "generate_X", "generate_probs",
+    "generate_response", "simulate_1", "perform_lasso", "perm_lasso"
+  ),
+  list_package = c("MASS", "glmnet", "pROC", "foreach", "doParallel")
+)
+toc()
 
 # Perform a single simulation run
 # Args:
@@ -330,49 +397,7 @@ models_sim2 <- run_simulation_2(img_size, n_samples, sparsity, effect_size, n_si
 
 
 
-# ----- Simulation 1 -----
 
-w <- generate_exp_corr_matrix(256)
-v <- perform_eigen_decomp(w)$vectors
-beta <- define_center_beta(16, 0.1)
-b <- v %*% beta
-
-x <- gen_X_matrix(1000, 16, w)
-x_freq <- x %*% t(v)
-y <- generate_response(x, beta)
-
-# Function for Simulation 1
-simulate_1 <- function(i, size, n_samples, effect, p_train, n_perm, seed) {
-  set.seed(seed + i)
-  w <- generate_cov_matrix(size)
-  beta <- define_beta(size, effect)
-  x <- generate_X(n_samples, size, w)
-  y <- generate_response(x, beta)
-  perform_metrics <- perform_lasso(x, y, p_train, seed = seed + i)
-  p_vals <- perm_lasso(x, y, n_perm, seed = seed + i)
-  cbind(perform_metrics, p_vals)
-}
-
-
-
-
-# Run Simulation 1
-# For each iteration:
-#   - Split into train and test dataset, calculate AUC and accuracy, estimated
-#     coefficients under lambda.min and lambda.1se
-#   - Perform permutation test. Estimate p-values for pixels
-
-tic()
-sim1_output <- simWrapper(
-  n_sim = 500,
-  f_sim = function(i) simulate_1(i, size = 16, n_samples = 1000, effect = 0.1, p_train = 0.8, n_perm = 100, seed = 42),
-  list_export = c(
-    "generate_cov_matrix", "define_beta", "generate_X", "generate_probs",
-    "generate_response", "simulate_1", "perform_lasso", "perm_lasso"
-  ),
-  list_package = c("MASS", "glmnet", "pROC", "foreach", "doParallel")
-)
-toc()
 
 # # Save Simulation 1 results
 # save(
