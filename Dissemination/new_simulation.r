@@ -110,8 +110,10 @@ eigen_decomp <- function(mat) {
 #   seed: Integer. Random seed for reproducibility.
 # Returns:
 #   A numeric vector with specified sparsity and effect size.
-gen_b <- function(len, sparsity, effect_size, seed) {
-  set.seed(seed)
+gen_b <- function(len, sparsity, effect_size, seed = NULL) {
+  if (!is.null(seed)) {
+    set.seed(seed)
+  }
   vec <- rep(0, len)
   nz_idx <- sample(seq_len(len), size = floor(len * sparsity), replace = FALSE)
   vec[nz_idx] <- effect_size
@@ -224,9 +226,13 @@ dev.off()
 # ----- Simulations -----
 
 # parameters
+n_samples <- 1000
+n_sim <- 500
+img_size <- 16
 beta_effect_size <- 0.1
 b_effect_size <- 0.4
 sparsity <- 0.1
+seed <- 42
 
 simulate_data <- function(img_size, n_samples, beta = NULL, b = NULL, seed = NULL) {
   if (!is.null(seed)) {
@@ -260,7 +266,18 @@ simulate_data <- function(img_size, n_samples, beta = NULL, b = NULL, seed = NUL
   return(result)
 }
 
-simulated_data_list
+set.seed(seed)
+beta <- gen_beta(img_size, beta_effect_size)
+b <- gen_b(img_size^2, sparsity, b_effect_size)
+
+sim1_data_list <- lapply(1:n_sim, function(i) {
+  simulate_data(img_size, n_samples, beta = beta)
+})
+
+sim2_data_list <- lapply(1:n_sim, function(i) {
+  simulate_data(img_size, n_samples, b = b)
+})
+
 
 # Function for Simulation 1
 simulate_1 <- function(i, size, n_samples, effect, p_train, n_perm, seed) {
@@ -273,6 +290,7 @@ simulate_1 <- function(i, size, n_samples, effect, p_train, n_perm, seed) {
   p_vals <- perm_lasso(x, y, n_perm, seed = seed + i)
   cbind(perform_metrics, p_vals)
 }
+
 
 
 
