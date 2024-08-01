@@ -145,7 +145,7 @@ gen_beta <- function(img_size, effect_size) {
 #   cov_matrix: Matrix. Covariance matrix.
 # Returns:
 #   A matrix of samples with n_samples rows and img_size^2 columns.
-gen_samples <- function(n_samples, cov_matrix) {
+gen_x <- function(n_samples, cov_matrix) {
   n_pixels <- nrow(cov_matrix)
   samples <- mvrnorm(n_samples, mu = rep(0, n_pixels), Sigma = cov_matrix)
   if (n_samples == 1) {
@@ -153,6 +153,18 @@ gen_samples <- function(n_samples, cov_matrix) {
   }
   return(samples)
 }
+
+# Generate binary response variables
+# Args:
+#   x_mat: Matrix. Design matrix of predictor variables.
+#   coefs: Numeric vector. Coefficient vector.
+# Returns:
+#   A numeric vector of binary response variables.
+gen_y <- function(x_mat, coefs) {
+  probs <- 1 / (1 + exp(-(x_mat %*% coefs)))
+  rbinom(nrow(x_mat), 1, probs)
+}
+
 
 
 # ----- Choose beta effect size and b effect size -----
@@ -168,7 +180,7 @@ compare_beta_effects <- function(effects, n_samples = 1000, seed = 42) {
 
   for (effect in effects) {
     beta <- gen_beta(img_size = 16, effect_size = effect)
-    x_freq <- gen_samples(n_samples, W_freq)
+    x_freq <- gen_x(n_samples, W_freq)
     x <- x_freq %*% t(V)
     p <- 1 / (1 + exp(-(x %*% beta)))
     hist(p,
@@ -195,7 +207,7 @@ compare_b_effects <- function(effects, n_samples = 1000, sparsity = 0.1, seed = 
 
   for (effect in effects) {
     b <- gen_b(len = 256, sparsity, effect, seed)
-    x_freq <- gen_samples(n_samples, W_freq)
+    x_freq <- gen_x(n_samples, W_freq)
     p <- 1 / (1 + exp(-(x_freq %*% b)))
     hist(p, breaks = 30, main = paste("Effect =", effect), xlim = c(0, 1), xlab = "Probability p", col = "lightblue", border = "black")
   }
@@ -208,6 +220,8 @@ png(
 compare_b_effects(c(1, 0.8, 0.6, 0.4, 0.2, 0.1))
 dev.off()
 
+beta_effect_size <- 0.1
+b_effect_size <- 0.4
 
 
 # ----- Simulation Functions -----
@@ -223,7 +237,7 @@ dev.off()
 #   A list containing the design matrix, frequency space design matrix,
 #   and responses.
 run_single_sim <- function(img_size, n_samples, beta_vec, seed) {
-  x <- gen_samples(n_samples, img_size, cov_matrix)
+  x <- gen_x(n_samples, img_size, cov_matrix)
   x_freq <- x %*% eig_vecs
   responses <- gen_responses(x, beta)
   return(list(x = x, x_freq = x_freq, responses = responses))
@@ -231,28 +245,6 @@ run_single_sim <- function(img_size, n_samples, beta_vec, seed) {
 
 
 
-
-# Calculate probabilities using logistic function
-# Args:
-#   x_mat: Matrix. Design matrix of predictor variables.
-#   coeffs: Numeric vector. Coefficient vector.
-# Returns:
-#   A numeric vector of probabilities for each sample.
-calc_probs <- function(x_mat, coeffs) {
-  eta <- x_mat %*% coeffs
-  1 / (1 + exp(-eta))
-}
-
-# Generate binary response variables
-# Args:
-#   x_mat: Matrix. Design matrix of predictor variables.
-#   coeffs: Numeric vector. Coefficient vector.
-# Returns:
-#   A numeric vector of binary response variables.
-gen_responses <- function(x_mat, coeffs) {
-  probs <- calc_probs(x_mat, coeffs)
-  rbinom(nrow(x_mat), 1, probs)
-}
 
 
 
