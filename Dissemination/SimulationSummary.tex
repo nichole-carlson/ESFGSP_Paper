@@ -183,7 +183,12 @@ In this study, we conducted two simulations to evaluate the performace of LASSO 
 
 The pixel space refers to the original high-dimensional space where each dimension represents a pixel in an image. In this space, features are directly observed and may have inherent correlations. Conversely, the frequency space is a transformed version of the pixel space, obtained through techniques like eigen decomposition.
 
-In both simulations, we generated a covariate matrix \( X \) of dimensions \( 1000 \times 256 \), where each row represents an observation and each column represents a feature. The correlation structure of the features was modeled using an exponential correlation matrix \( W \) of size \( 256 \times 256 \). By performing eigen decomposition on \( W \), we obtained the eigenvectors \( V \), which allows us to transform the covariate matrix into the frequency space as \( X_{\text{freq}} = X V^T \). Similarlay, the coefficient vector \( \beta \) in the pixel space was transformed to \( b \) in the frequency space as \( \beta = V^T b \).
+Suppose \( X \) is a column vector representing 256 pixels. Its covariance matrix, \( \Sigma \), is defined to have an exponential correlation structure, where \( W_{i j}=-\exp (\operatorname{dist}(i, j)) \). Here, \( \operatorname{dist}(i, j) \) is the distance between the pixels \( i \) and \( j \) in a \( 16 \times 16 \) matrix.
+
+Let \( V \) be the matrix of eigenvectors of \( \Sigma \), with each column representing an eigenvector. We can transform the random vector \( X \) into the frequency space by \( X_{\text {freq }}=V^T X \). The covariance matrix of \( X_{\text {freq }} \) is given by \( \operatorname{cov}\left(X_{\mathrm{freq}}\right)=V^T \Sigma V \), which is a diagonal matrix.
+
+For the simulations, in each iteration, we randomly generate \( X_{\text {freq }} \) from a multivariate normal distribution with the covariance matrix \(\ operatorname{cov}\left(X_{\text {freq }}\right) \). We repeat this process 1000 times. Then, we calculate \( X \) as \( X=V X_{\text {freq }} \).
+
 
 
 In the first simulation, we assume sparsity in the coefficient vectors in the pixel space. The coefficient vector \( \beta \) was specified to have non-zero values exclusively within a central \( 8 \times 8 \) region. The response variable \( y \) was drawn from a binomial distribution with success probabilities determined by \( \eta = X \beta \). The non-zero coefficients in \( \beta \) were chosen such that the probability \( p = \frac{1}{1 + \exp(-\eta)} \) was uniformly distributed across interval \( [0, 1] \).
