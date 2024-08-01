@@ -14,7 +14,7 @@
 
 The dataset contains 2,000 simulated images, each with a \( 16 \times 16 \) grid of 256 pixels, divided evenly into groups A and B. Images in group A have a \( \beta \) effect in the central \( 8 \times 8 \) region. Figure~\ref{fig:image1} shows an image without the \( \beta \) effect. Figures~\ref{fig:image2} and \ref{fig:image3} display the \( \beta \) effect at strengths of 5 and 4 , respectively. The \( \beta \) matrix values are zero outside the central region. The \texttt{group\_ind} vector classifies images into groups A (1) and B (0). Noise, \( \epsilon_i \), is added to each image, drawn from a multivariate normal distribution with zero mean and an exponential correlation structure:
 \[
-    \exp \left(-\sqrt{\left(x_i-x_j\right)^2+\left(y_i-y_j\right)^2}\right)
+  \exp \left(-\sqrt{\left(x_i-x_j\right)^2+\left(y_i-y_j\right)^2}\right)
 \]
 where \(x, y\) are pixel coordinates. The \(\beta\) effect at 5 is more noticeable than at 4 , which is why a strength of 5 is used for analyses.
 
@@ -22,28 +22,28 @@ where \(x, y\) are pixel coordinates. The \(\beta\) effect at 5 is more noticeab
 % To adapt the data for the input specifications of the \texttt{myresf\_vc} function, the dataset was transformed into a long format. In this format, the columns \texttt{x} and \texttt{y} denote the coordinates, while \texttt{pixel\_value} corresponds to the simulated $y$ values.
 
 \begin{figure}[H]
+  \centering
+  % First Row
+  \begin{minipage}[b]{0.45\textwidth}
     \centering
-    % First Row
-    \begin{minipage}[b]{0.45\textwidth}
-        \centering
-        \includegraphics[width=0.9\textwidth]{../Figures/ex_image_5c.png}
-        \caption{Example image without \(\beta\) effect.}
-        \label{fig:image1}
-    \end{minipage}\hfill
-    \begin{minipage}[b]{0.45\textwidth}
-        \centering
-        \includegraphics[width=0.9\textwidth]{../Figures/ex_image_5.png}
-        \caption{Example image with \(\beta = 5\).}
-        \label{fig:image2}
-    \end{minipage}
+    \includegraphics[width=0.9\textwidth]{../Figures/ex_image_5c.png}
+    \caption{Example image without \(\beta\) effect.}
+    \label{fig:image1}
+  \end{minipage}\hfill
+  \begin{minipage}[b]{0.45\textwidth}
+    \centering
+    \includegraphics[width=0.9\textwidth]{../Figures/ex_image_5.png}
+    \caption{Example image with \(\beta = 5\).}
+    \label{fig:image2}
+  \end{minipage}
 
-    % Second Row
-    \begin{minipage}[b]{0.45\textwidth}
-        \centering
-        \includegraphics[width=0.9\textwidth]{../Figures/ex_image_4.png}
-        \caption{Example image with \(\beta = 4\).}
-        \label{fig:image3}
-    \end{minipage}
+  % Second Row
+  \begin{minipage}[b]{0.45\textwidth}
+    \centering
+    \includegraphics[width=0.9\textwidth]{../Figures/ex_image_4.png}
+    \caption{Example image with \(\beta = 4\).}
+    \label{fig:image3}
+  \end{minipage}
 \end{figure}
 
 \section*{VBM}
@@ -57,27 +57,27 @@ Figure~\ref{fig:vbm_pvals_corr} displays the percentage of significant p-values 
 Figure~\ref{fig:vbm_boxplots} presents a boxplot of the percentage of significant p-values in the outer (non-central) areas, with the left boxplot showing values before adjustment and the right boxplot showing values after adjustment.
 
 \begin{figure}[h]
-    \centering
-    % First figure
-    \begin{minipage}[b]{0.45\textwidth}
-        \includegraphics[width=\textwidth]{/Users/siyangren/Documents/ra-cida/ESFGSP_Paper/Figures/vbm_pvals.png}
-        \caption{Percentage of significant p-values across pixels in VBM analysis.}
-        \label{fig:vbm_pvals}
-    \end{minipage}
-    \hfill % This command adds a space between the two figures
-    % Second figure
-    \begin{minipage}[b]{0.45\textwidth}
-        \includegraphics[width=\textwidth]{/Users/siyangren/Documents/ra-cida/ESFGSP_Paper/Figures/vbm_pvals_corr.png}
-        \caption{Percentage of significant p-values after correction across pixels in VBM analysis.}
-        \label{fig:vbm_pvals_corr}
-    \end{minipage}
+  \centering
+  % First figure
+  \begin{minipage}[b]{0.45\textwidth}
+    \includegraphics[width=\textwidth]{/Users/siyangren/Documents/ra-cida/ESFGSP_Paper/Figures/vbm_pvals.png}
+    \caption{Percentage of significant p-values across pixels in VBM analysis.}
+    \label{fig:vbm_pvals}
+  \end{minipage}
+  \hfill % This command adds a space between the two figures
+  % Second figure
+  \begin{minipage}[b]{0.45\textwidth}
+    \includegraphics[width=\textwidth]{/Users/siyangren/Documents/ra-cida/ESFGSP_Paper/Figures/vbm_pvals_corr.png}
+    \caption{Percentage of significant p-values after correction across pixels in VBM analysis.}
+    \label{fig:vbm_pvals_corr}
+  \end{minipage}
 \end{figure}
 
 \begin{figure}[h]
-    \centering
-    \includegraphics[width=0.7\textwidth]{../Figures/vbm_boxplots.png}
-    \caption{Percentage of significant p-values in outer area before (left) and after (right) adjustment from the VBM analysis.}
-    \label{fig:vbm_boxplots}
+  \centering
+  \includegraphics[width=0.7\textwidth]{../Figures/vbm_boxplots.png}
+  \caption{Percentage of significant p-values in outer area before (left) and after (right) adjustment from the VBM analysis.}
+  \label{fig:vbm_boxplots}
 \end{figure}
 
 
@@ -112,34 +112,34 @@ Additionally, a permutation test was conducted to estimate p-values. Using all t
 
 Figures~\ref{fig:lasso_pvals}, \ref{fig:lasso_pvals_corr}, and \ref{fig:lasso_boxplot} illustrate the results of the analysis:
 \begin{itemize}
-    \item Figure~\ref{fig:lasso_pvals} shows the p-values before multiple adjustment.
-    \item Figure~\ref{fig:lasso_pvals_corr} displays the p-values after multiple adjustment.
-    \item Figure~\ref{fig:lasso_boxplot} presents a boxplot of the percentage of significant p-values for the outer area before and after adjustment.
+  \item Figure~\ref{fig:lasso_pvals} shows the p-values before multiple adjustment.
+  \item Figure~\ref{fig:lasso_pvals_corr} displays the p-values after multiple adjustment.
+  \item Figure~\ref{fig:lasso_boxplot} presents a boxplot of the percentage of significant p-values for the outer area before and after adjustment.
 \end{itemize}
 
 
 \begin{figure}[h]
-    \centering
-    % First figure
-    \begin{minipage}[b]{0.45\textwidth}
-        \includegraphics[width=\textwidth]{/Users/siyangren/Documents/ra-cida/ESFGSP_Paper/Figures/lasso_pvals.png}
-        \caption{Percentage of significant p-values across pixels in LASSO.}
-        \label{fig:lasso_pvals}
-    \end{minipage}
-    \hfill % This command adds a space between the two figures
-    % Second figure
-    \begin{minipage}[b]{0.45\textwidth}
-        \includegraphics[width=\textwidth]{/Users/siyangren/Documents/ra-cida/ESFGSP_Paper/Figures/lasso_pvals_corr.png}
-        \caption{Percentage of significant p-values after correction across pixels in LASSO.}
-        \label{fig:lasso_pvals_corr}
-    \end{minipage}
+  \centering
+  % First figure
+  \begin{minipage}[b]{0.45\textwidth}
+    \includegraphics[width=\textwidth]{/Users/siyangren/Documents/ra-cida/ESFGSP_Paper/Figures/lasso_pvals.png}
+    \caption{Percentage of significant p-values across pixels in LASSO.}
+    \label{fig:lasso_pvals}
+  \end{minipage}
+  \hfill % This command adds a space between the two figures
+  % Second figure
+  \begin{minipage}[b]{0.45\textwidth}
+    \includegraphics[width=\textwidth]{/Users/siyangren/Documents/ra-cida/ESFGSP_Paper/Figures/lasso_pvals_corr.png}
+    \caption{Percentage of significant p-values after correction across pixels in LASSO.}
+    \label{fig:lasso_pvals_corr}
+  \end{minipage}
 \end{figure}
 
 \begin{figure}[h]
-    \centering
-    \includegraphics[width=\textwidth]{../Figures/lasso_boxplots.png}
-    \caption{Percentage of significant p-values in outer area before (left) and after (right) adjustment from the LASSO models.}
-    \label{fig:lasso_boxplot}
+  \centering
+  \includegraphics[width=\textwidth]{../Figures/lasso_boxplots.png}
+  \caption{Percentage of significant p-values in outer area before (left) and after (right) adjustment from the LASSO models.}
+  \label{fig:lasso_boxplot}
 \end{figure}
 
 
@@ -151,14 +151,11 @@ The exponential correlation matrix with rate 1 was used to calculate the eigenve
 
 \section*{Simulation 1}
 
-
-
-
 \begin{figure}[H]
-    \centering
-    \includegraphics[width=\textwidth]{../Figures/sim1_p_dist.png}
-    \caption{The distribution of \(p\) at different \(\beta\) values. \(\beta = 0.1\) was chosen for model fitting as it gives the most evenly distributed values.}
-    \label{fig:sim1_p_dist}
+  \centering
+  \includegraphics[width=\textwidth]{../Figures/sim1_p_dist.png}
+  \caption{The distribution of \(p\) at different \(\beta\) values. \(\beta = 0.1\) was chosen for model fitting as it gives the most evenly distributed values.}
+  \label{fig:sim1_p_dist}
 \end{figure}
 
 Figure~\ref{fig:sim1_p_dist} above shows the distribution of \(p\) for different values of \(\beta\). The choice of \(\beta = 0.1\) ensures an even spread of probabilities.
@@ -166,14 +163,38 @@ Figure~\ref{fig:sim1_p_dist} above shows the distribution of \(p\) for different
 When using the \(\lambda\) given the lowest deviance and the lowest deviance plus 1 standard error, the average prediction accuracy on the test set is 72.5\% (min-max: 61.0\% - 82.0\%) and 72.2\% (59.0\% - 82.0\%). The corresponding AUC is 0.80 (SD=0.03) and 0.80 (SD=0.04). This indicates that the model is reasonably accurate and has a good discriminative ability.
 
 \begin{figure}[H]
-    \centering
-    \includegraphics[width=\textwidth]{../Figures/sim1_heatmap.png}
-    \caption{Heatmap of the actual \(\beta\) values, the percentage of getting a significant p-value for each pixel, and the percentage of getting a significant p-value after multiple comparisons adjustment.}
-    \label{fig:sim1_heatmap}
+  \centering
+  \includegraphics[width=\textwidth]{../Figures/sim1_heatmap.png}
+  \caption{Heatmap of the actual \(\beta\) values, the percentage of getting a significant p-value for each pixel, and the percentage of getting a significant p-value after multiple comparisons adjustment.}
+  \label{fig:sim1_heatmap}
 \end{figure}
 
 Figure~\ref{fig:sim1_heatmap} illustrates the true \(\beta\) values, the percentage of significant p-values, and the adjusted significance post-multiple comparisons. The results show that due to the correlation structure in \( X \), the LASSO model struggles to pinpoint the exact pixels with non-zero coefficients, resulting in diffuse significant p-values rather than precise identification.
 
+\section*{Simulation 2}
+
+Simulation 2 differs from Simulation 1 by transforming the covariate matrix into the frequency space using eigenvectors and assuming a sparse coefficient vector in this transformed space. The covariate matrix in the frequency space is generated with a multivariate normal distribution with diagonal values equal to 1 and all other values equal to 0. The coefficient vector index with non-zero values was randomly decided and 10\% elements are non-zero. The value of non-zero values was chosen similarly to Simulation 1.
+
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{../Figures/sim2_p_dist.png}
+  \caption{Distribution of \(p\) values in the frequency space when the non-zero value equals 0.4, showing a relatively balanced distribution.}
+  \label{fig:sim2_p_dist}
+\end{figure}
+
+Figure~\ref{fig:sim2_p_dist} shows that when the non-zero value equals 0.4, the distribution of \(p\) values is relatively balanced, making it a suitable choice for the model.
+
+Since the correlation between covariates was resolved by eigen-transpose, both accuracy and AUC are better than Simulation 1. The accuracy using the lowest deviance \(\lambda\) is 74.9\% (min-max, 66.0\% - 83.5\%), and 75.1\% (min-max, 65.5\% - 84.5\%) for \(\lambda\) for lowest deviance plus 1 standard error. The corresponding average AUC is 0.83 (SD 0.03) and 0.83 (SD 0.03). These results demonstrate that transforming the data into the frequency space can enhance model performance by reducing collinearity among covariates.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{../Figures/sim2_heatmap.png}
+  \caption{Heatmap of the coefficient vector in the frequency space, the percentage of getting a significant p-value for each pixel, and the percentage of getting a significant p-value after multiple comparisons adjustment.}
+  \label{fig:sim2_heatmap}
+\end{figure}
+
+The heatmap for Simulation 2 (Figure~\ref{fig:sim2_heatmap}) shows the coefficient vector in the frequency space, significant p-values, and adjusted p-values. Despite the improvement in model performance, the heatmap reveals that the model still faces challenges in precisely identifying all non-zero coefficients.
 
 \clearpage
 
@@ -183,17 +204,15 @@ In this study, we conducted two simulations to evaluate the performace of LASSO 
 
 The pixel space refers to the original high-dimensional space where each dimension represents a pixel in an image. In this space, features are directly observed and may have inherent correlations. Conversely, the frequency space is a transformed version of the pixel space, obtained through techniques like eigen decomposition.
 
-Suppose \( X \) is a column vector representing 256 pixels. Its covariance matrix, \( \Sigma \), is defined to have an exponential correlation structure, where \( W_{i j}=-\exp (\operatorname{dist}(i, j)) \). Here, \( \operatorname{dist}(i, j) \) is the distance between the pixels \( i \) and \( j \) in a \( 16 \times 16 \) matrix.
+Suppose \( X \) is a column vector representing 256 pixels. Its covariance matrix, \( \Sigma \), is defined to have an exponential correlation structure, where \( \Sigma_{i j}=-\exp (\operatorname{dist}(i, j)) \). Here, \( \operatorname{dist}(i, j) \) is the distance between the pixels \( i \) and \( j \) in a \( 16 \times 16 \) matrix.
 
 Let \( V \) be the matrix of eigenvectors of \( \Sigma \), with each column representing an eigenvector. We can transform the random vector \( X \) into the frequency space by \( X_{\text {freq }}=V^T X \). The covariance matrix of \( X_{\text {freq }} \) is given by \( \operatorname{cov}\left(X_{\mathrm{freq}}\right)=V^T \Sigma V \), which is a diagonal matrix.
 
 For the simulations, in each iteration, we randomly generate \( X_{\text {freq }} \) from a multivariate normal distribution with the covariance matrix \(\ operatorname{cov}\left(X_{\text {freq }}\right) \). We repeat this process 1000 times. Then, we calculate \( X \) as \( X=V X_{\text {freq }} \).
 
-
-
 In the first simulation, we assume sparsity in the coefficient vectors in the pixel space. The coefficient vector \( \beta \) was specified to have non-zero values exclusively within a central \( 8 \times 8 \) region. The response variable \( y \) was drawn from a binomial distribution with success probabilities determined by \( \eta = X \beta \). The non-zero coefficients in \( \beta \) were chosen such that the probability \( p = \frac{1}{1 + \exp(-\eta)} \) was uniformly distributed across interval \( [0, 1] \).
 
-In the second simulation, we assume sparsity in the coefficient vectors in the frequency space. The covariate matrix \( X_{\text{freq}} \) followed a multivariate normal distribution with a diagonal covariate matrix. We defined a sparse coefficient vector \( b \) in the frequency space, where most of the 256 entries were zero and a randomly 10\% were non-zero. The response variable \( y \) was generated similarly to the first simulation, ensuring \( p = \frac{1}{1 + \exp(-\eta)} \) was evenly distributed.
+In the second simulation, we assume sparsity in the coefficient vectors in the frequency space. We defined a sparse coefficient vector \( b \) in the frequency space, where most of the 256 entries were zero and a randomly 10\% were non-zero. The response variable \( y \) was generated similarly to the first simulation, ensuring \( p = \frac{1}{1 + \exp(-\eta)} \) was evenly distributed.
 
 For both simulations, we fit two models: one using the covariates in the pixel space and another using the covariates in the frequency space. Each dataset, generated in size \( 1000 \times 256 \) and representing images of \( 16 \times 16 \) pixels, was split into training (80\%) and test (20\%) sets. The regularization parameter \( \lambda \) was tuned using cross-validation with the default binomial deviance metric. The dataset was divided into 10 folds, with the model trained and validated iteratively across these folds, varying \( \lambda \). The optimal \( \lambda \) was chosen based on the lowest average binomial deviance.
 
@@ -201,29 +220,6 @@ After selecting the optimal \( \lambda \), model performance was evaluated using
 
 \section*{Results}
 
-\section*{Simulation 2}
 
-Simulation 2 differs from Simulation 1 by transforming the covariate matrix into the frequency space using eigenvectors and assuming a sparse coefficient vector in this transformed space. The covariate matrix in the frequency space is generated with a multivariate normal distribution with diagonal values equal to 1 and all other values equal to 0. The coefficient vector index with non-zero values was randomly decided and 10\% elements are non-zero. The value of non-zero values was chosen similarly to Simulation 1.
-
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=\textwidth]{../Figures/sim2_p_dist.png}
-    \caption{Distribution of \(p\) values in the frequency space when the non-zero value equals 0.4, showing a relatively balanced distribution.}
-    \label{fig:sim2_p_dist}
-\end{figure}
-
-Figure~\ref{fig:sim2_p_dist} shows that when the non-zero value equals 0.4, the distribution of \(p\) values is relatively balanced, making it a suitable choice for the model.
-
-Since the correlation between covariates was resolved by eigen-transpose, both accuracy and AUC are better than Simulation 1. The accuracy using the lowest deviance \(\lambda\) is 74.9\% (min-max, 66.0\% - 83.5\%), and 75.1\% (min-max, 65.5\% - 84.5\%) for \(\lambda\) for lowest deviance plus 1 standard error. The corresponding average AUC is 0.83 (SD 0.03) and 0.83 (SD 0.03). These results demonstrate that transforming the data into the frequency space can enhance model performance by reducing collinearity among covariates.
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=\textwidth]{../Figures/sim2_heatmap.png}
-    \caption{Heatmap of the coefficient vector in the frequency space, the percentage of getting a significant p-value for each pixel, and the percentage of getting a significant p-value after multiple comparisons adjustment.}
-    \label{fig:sim2_heatmap}
-\end{figure}
-
-The heatmap for Simulation 2 (Figure~\ref{fig:sim2_heatmap}) shows the coefficient vector in the frequency space, significant p-values, and adjusted p-values. Despite the improvement in model performance, the heatmap reveals that the model still faces challenges in precisely identifying all non-zero coefficients.
 
 \end{document}
