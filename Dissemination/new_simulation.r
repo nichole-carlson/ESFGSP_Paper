@@ -188,17 +188,15 @@ dev.off()
 # Function to compare b effects for Simulation 2
 compare_b_effects <- function(effects, n_samples = 1000, sparsity = 0.1, seed = 42) {
   par(mfrow = c(ceiling(length(effects) / 2), 2))
-  set.seed(seed)
 
   W <- gen_exp_corr(256)
   V <- eigen_decomp(W)$vectors
   W_freq <- t(V) %*% W %*% V
 
   for (effect in effects) {
-    b <- gen_b(len = 256, sparsity = sparsity, effect_size = effect, seed = seed)
-    b <- generate_sparse_vector(size^2, sparsity, effect, seed)
-    x <- generate_X(n_samples, size, diag(size^2))
-    p <- generate_probs(x, b)
+    b <- gen_b(len = 256, sparsity, effect, seed)
+    x_freq <- gen_samples(n_samples, W_freq)
+    p <- 1 / (1 + exp(-(x_freq %*% b)))
     hist(p, breaks = 30, main = paste("Effect =", effect), xlim = c(0, 1), xlab = "Probability p", col = "lightblue", border = "black")
   }
 }
@@ -207,7 +205,7 @@ png(
   file = file.path(fig_dir, "sim2_p_dist.png"),
   width = 1600, height = 1200, res = 150
 )
-compare_beta_effects_sim2(c(1, 0.8, 0.6, 0.4, 0.2, 0.1))
+compare_b_effects(c(1, 0.8, 0.6, 0.4, 0.2, 0.1))
 dev.off()
 
 
