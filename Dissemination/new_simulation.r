@@ -33,6 +33,12 @@
 # Permutation test (100 iterations) for p-values.
 # Calculate mean, std deviation, and significant p-values percentage.
 
+# Matrix notation
+# If X is a 256*1 matrix, V is the matrix of eigenvectors, with each column
+# representing an eigenvector, then we know from the content above that
+# X_freq = t(V) %*% X, which is also a 256*1 matrix. Suppose know we generate
+# 1000 samples of X, and let X_mat to be a 1000*256 matrix, with each row
+# as a X, then X_freq_mat = t( t(V) %*% t(X_mat) ) = X_mat %*% V.
 
 # Load required libraries
 library(MASS)
@@ -45,8 +51,7 @@ library(reshape2)
 library(gridExtra)
 
 # Set directories
-current_dir <- getwd()
-parent_dir <- dirname(current_dir)
+parent_dir <- "/Users/siyangren/Documents/ra-cida/ESFGSP_Paper"
 fig_dir <- file.path(parent_dir, "Figures")
 source("simulation.r")
 source("simWrapper.r")
@@ -56,6 +61,9 @@ source("simWrapper.r")
 # ----- Define Functions -----
 
 # Generate an exponential correlation matrix
+# Suppose the pixels can construct a squared image. Calculate the correlation
+# between all pairs of pixels based on their location in the image.
+
 # Args:
 #   n_pixels: Integer. The number of pixels (or elements) in the matrix.
 # Returns:
@@ -82,9 +90,19 @@ gen_exp_corr <- function(n_pixels) {
   outer(1:n_pixels, 1:n_pixels, Vectorize(function(i, j) exp(-calc_dist(i, j))))
 }
 
+# Eigen decomposition of a covariance matrix. Decreasingly order by eigenvalues
+eigen_decomp <- function(mat) {
+  eig_res <- eigen(mat, symmetric = TRUE)
+
+  ord_idx <- order(eig_res$values, decreasing = TRUE)
+  eig_vecs <- eig_res$vectors[, ord_idx]
+  eig_vals <- eig_res$values[ord_idx]
+
+  return(list(vectors = eig_vecs, values = eig_vals))
+}
 
 
-# Generate a sparse coefficient vector
+# Generate a sparse coefficient vector in the freq space
 # Args:
 #   len: Integer. Length of the coefficient vector.
 #   sparsity: Numeric. Proportion of non-zero elements. Default is 0.1.
@@ -92,26 +110,28 @@ gen_exp_corr <- function(n_pixels) {
 #   seed: Integer. Random seed for reproducibility.
 # Returns:
 #   A numeric vector with specified sparsity and effect size.
-gen_sparse_vec <- function(len, sparsity = 0.1, effect_size = 0.1, seed) {
+
+gen_b <- function(len, sparsity = 0.1, effect_size = 0.1, seed) {
   set.seed(seed)
   vec <- rep(0, len)
-  nz_idx <- sample(1:len, size = floor(len * sparsity), replace = FALSE)
+  nz_idx <- sample(seq_len(len), size = floor(len * sparsity), replace = FALSE)
   vec[nz_idx] <- effect_size
-  vec
+  return(vec)
 }
 
-# Define beta for simulation with central region having effect
+# Generate a sparse coefficient vector in the pixel space
 # Args:
 #   img_size: Integer. Dimension of the square image (rows/columns).
 #   effect_size: Numeric. Effect size assigned to the center region.
 # Returns:
 #   A numeric vector with the center region set to the effect size.
-define_center_beta <- function(img_size, effect_size) {
-  p <- img_size^2
-  beta <- rep(0, p)
+
+gen_beta <- function(img_size, effect_size) {
+  len <- img_size^2
+  beta <- rep(0, len)
   ctr_start <- (img_size - 8) / 2 + 1
   ctr_end <- (img_size + 8) / 2
-  ctr_idx <- as.vector(matrix(1:p, nrow = img_size)[
+  ctr_idx <- as.vector(matrix(1:len, nrow = img_size)[
     ctr_start:ctr_end,
     ctr_start:ctr_end
   ])
@@ -133,6 +153,64 @@ gen_samples <- function(n_samples, cov_matrix) {
   }
   return(samples)
 }
+
+
+# ----- Choose beta effect size and b effect size -----
+
+# Function to compare beta effects for Simulation 1
+compare_beta_effects <- function(effects, n_samples = 1000, seed = 42) {
+  par(mfrow = c(ceiling(length(effects) / 2), 2))
+  set.seed(seed)
+
+  W <- gen_exp_corr(256)
+  V <- eigen_decomp(W)$vectors
+  W_freq <- t(V) %*% W %*% V
+
+  for (effect in effects) {
+    beta <- gen_beta(img_size = 16, effect_size = effect)
+    x_freq <- gen_samples(n_samples, W_freq)
+    x <- x_freq %*% t(V)
+    p <- 1 / (1 + exp(-(x %*% beta)))
+    hist(p,
+      breaks = 30, main = paste("Effect =", effect), xlim = c(0, 1),
+      xlab = "Probability p", col = "lightblue", border = "black"
+    )
+  }
+}
+
+png(
+  file = file.path(fig_dir, "sim1_p_dist.png"),
+  width = 1600, height = 1200, res = 150
+)
+compare_beta_effects(c(1, 0.2, 0.1, 0.05, 0.01))
+dev.off()
+
+# Function to compare b effects for Simulation 2
+
+
+
+
+# ----- Simulation Functions -----
+
+
+
+# Perform a single simulation run
+# Args:
+#   img_size: Integer. Dimension of the square image (rows/columns).
+#   n_samples: Integer. Number of samples (rows).
+#   seed: Integer. Random seed for reproducibility.
+# Returns:
+#   A list containing the design matrix, frequency space design matrix,
+#   and responses.
+run_single_sim <- function(img_size, n_samples, beta_vec, seed) {
+  x <- gen_samples(n_samples, img_size, cov_matrix)
+  x_freq <- x %*% eig_vecs
+  responses <- gen_responses(x, beta)
+  return(list(x = x, x_freq = x_freq, responses = responses))
+}
+
+
+
 
 # Calculate probabilities using logistic function
 # Args:
@@ -157,24 +235,7 @@ gen_responses <- function(x_mat, coeffs) {
 }
 
 
-# ----- Simulation Functions -----
 
-# Perform a single simulation run
-# Args:
-#   img_size: Integer. Dimension of the square image (rows/columns).
-#   n_samples: Integer. Number of samples (rows).
-#   cov_matrix: Matrix. Covariance matrix.
-#   eig_vecs: Matrix. Eigenvectors of the covariance matrix.
-#   beta: Numeric vector. Coefficient vector in pixel space or frequency space.
-# Returns:
-#   A list containing the design matrix, frequency space design matrix,
-#   and responses.
-run_single_sim <- function(img_size, n_samples, cov_matrix, eig_vecs, beta) {
-  x <- gen_samples(n_samples, img_size, cov_matrix)
-  x_freq <- x %*% eig_vecs
-  responses <- gen_responses(x, beta)
-  return(list(x = x, x_freq = x_freq, responses = responses))
-}
 
 # Run multiple simulations
 # Args:
@@ -269,39 +330,19 @@ x_freq <- x %*% t(v)
 y <- generate_response(x, beta)
 
 # Function for Simulation 1
-simulate_1 <- function(i, size, num_samples, effect, p_train, n_perm, seed) {
+simulate_1 <- function(i, size, n_samples, effect, p_train, n_perm, seed) {
   set.seed(seed + i)
   w <- generate_cov_matrix(size)
   beta <- define_beta(size, effect)
-  x <- generate_X(num_samples, size, w)
+  x <- generate_X(n_samples, size, w)
   y <- generate_response(x, beta)
   perform_metrics <- perform_lasso(x, y, p_train, seed = seed + i)
   p_vals <- perm_lasso(x, y, n_perm, seed = seed + i)
   cbind(perform_metrics, p_vals)
 }
 
-# Function to compare beta effects for Simulation 1
-compare_beta_effects_sim1 <- function(effects, size = 16, num_samples = 1000, seed = 42) {
-  par(mfrow = c(ceiling(length(effects) / 2), 2))
-  set.seed(seed)
-  w <- generate_cov_matrix(size)
-  for (effect in effects) {
-    beta <- define_beta(size, effect)
-    x <- generate_X(num_samples, size, w)
-    p <- generate_probs(x, beta)
-    hist(p,
-      breaks = 30, main = paste("Effect =", effect), xlim = c(0, 1),
-      xlab = "Probability p", col = "lightblue", border = "black"
-    )
-  }
-}
 
-png(
-  file = file.path(fig_dir, "sim1_p_dist.png"),
-  width = 1600, height = 1200, res = 150
-)
-compare_beta_effects_sim1(c(1, 0.2, 0.1, 0.05, 0.01))
-dev.off()
+
 
 # Run Simulation 1
 # For each iteration:
@@ -312,7 +353,7 @@ dev.off()
 tic()
 sim1_output <- simWrapper(
   n_sim = 500,
-  f_sim = function(i) simulate_1(i, size = 16, num_samples = 1000, effect = 0.1, p_train = 0.8, n_perm = 100, seed = 42),
+  f_sim = function(i) simulate_1(i, size = 16, n_samples = 1000, effect = 0.1, p_train = 0.8, n_perm = 100, seed = 42),
   list_export = c(
     "generate_cov_matrix", "define_beta", "generate_X", "generate_probs",
     "generate_response", "simulate_1", "perform_lasso", "perm_lasso"
@@ -354,11 +395,11 @@ ggsave(
 )
 
 # Function for Simulation 2
-simulate_2 <- function(i, size, num_samples, sparsity, effect, p_train, n_perm, seed) {
+simulate_2 <- function(i, size, n_samples, sparsity, effect, p_train, n_perm, seed) {
   set.seed(seed + i)
   w <- generate_cov_matrix(size)
   v <- eigen_decomp(w)$vectors
-  x <- generate_X(num_samples, size, diag(size^2))
+  x <- generate_X(n_samples, size, diag(size^2))
   b <- generate_sparse_vector(size^2, sparsity, effect, seed)
   y <- generate_response(x, b)
   perform_metrics <- perform_lasso(x, y, p_train, seed = seed + i)
@@ -367,14 +408,14 @@ simulate_2 <- function(i, size, num_samples, sparsity, effect, p_train, n_perm, 
 }
 
 # # Function to compare beta effects for Simulation 2
-compare_beta_effects_sim2 <- function(effects, size = 16, num_samples = 1000, sparsity = 0.1, seed = 42) {
+compare_beta_effects_sim2 <- function(effects, size = 16, n_samples = 1000, sparsity = 0.1, seed = 42) {
   par(mfrow = c(ceiling(length(effects) / 2), 2))
   set.seed(seed)
   w <- generate_cov_matrix(size)
   V <- eigen_decomp(w)$vectors
   for (effect in effects) {
     b <- generate_sparse_vector(size^2, sparsity, effect, seed)
-    x <- generate_X(num_samples, size, diag(size^2))
+    x <- generate_X(n_samples, size, diag(size^2))
     p <- generate_probs(x, b)
     hist(p, breaks = 30, main = paste("Effect =", effect), xlim = c(0, 1), xlab = "Probability p", col = "lightblue", border = "black")
   }
@@ -391,7 +432,7 @@ dev.off()
 tic()
 sim2_output <- simWrapper(
   n_sim = 500,
-  f_sim = function(i) simulate_2(i, size = 16, num_samples = 1000, sparsity = 0.1, effect = 0.4, p_train = 0.8, n_perm = 100, seed = 42),
+  f_sim = function(i) simulate_2(i, size = 16, n_samples = 1000, sparsity = 0.1, effect = 0.4, p_train = 0.8, n_perm = 100, seed = 42),
   list_export = c(
     "generate_cov_matrix", "eigen_decomp", "generate_sparse_vector", "generate_X", "generate_probs", "generate_response", "perform_lasso",
     "perm_lasso", "simulate_2"
