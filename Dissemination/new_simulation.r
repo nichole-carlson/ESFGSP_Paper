@@ -1,3 +1,40 @@
+# ----- Simulation Plan -----
+
+# Two simulations: sparsity in pixel and frequency spaces.
+
+# Setup
+# X: a column vector representing 256 pixels in the pixel space. Its covariance
+# matrix, Sigma, follows an exponential correlation structure. Suppose i and j
+# are two pixels in X, Sigma_ij = -exp(dist(i, j)), where dist(i, j) are
+# calculated based on their location in the 16*16 matrix.
+
+# Let V be the matrix of eigenvectors of Sigma, with each column representing
+# an eigenvector. X_freq = t(V) %*% X, representing X in the frequency space.
+# Its covariance matrix is t(V) %*% Sigma %*% V, which is a diagonal matrix.
+
+# Simulations
+#   In each iteration, randomly generate X_freq, a vector, from a multivariate
+# normal distribution with the covariance matrix equals to t(V) %*% Sigma %*% V.
+# We repeat this process 1000 times. Then we calculate X = V %*% X_freq.
+#   In simulation 1, we assume sparsity in beta, the coefficient vector for X.
+# When converting the (256, ) vector into a 16*16 matrix, it should only have
+# non-zero values in the central 8*8 region.
+#   In simulation 2, we assume sparsity in b, the coefficient vector for X_freq.
+# Most of its 256 entries will be zero, with a randomly 10% be non-zero.
+
+# Model Fitting
+# Fit LASSO models using pixel and frequency space covariates.
+# Split data: 80% training, 20% test.
+# Tune lambda via 10-fold cross-validation.
+# Optimal lambda: lowest average binomial deviance.
+
+# Evaluation
+# Metrics: accuracy and AUC.
+# Permutation test (100 iterations) for p-values.
+# Calculate mean, std deviation, and significant p-values percentage.
+
+
+# Load required libraries
 library(MASS)
 library(glmnet)
 library(pROC)
@@ -7,6 +44,7 @@ library(ggplot2)
 library(reshape2)
 library(gridExtra)
 
+# Set directories
 current_dir <- getwd()
 parent_dir <- dirname(current_dir)
 fig_dir <- file.path(parent_dir, "Figures")
@@ -14,84 +52,61 @@ source("simulation.r")
 source("simWrapper.r")
 
 
-# ----- Simulation Plan -----
-# - X, 1000 * 256, represents the covariate matrix in the pixel space; It was
-# generated following multivariate normal distribution with an exponential
-# correlation structure, denoted as W. Using eigen decomposition, we can get
-# the eigenvectors V from W. Both V and W are 256 * 256.
 
-# - Beta is the corresponding coefficient vector in the pixel space. It should
-# be (256, ).
+# ----- Define Functions -----
 
-# - X_freq = X %*% V^T is the covariate matrix in the frequency space. It is
-# also 1000 * 256.
-
-# - b is the coefficient vector in the frequency space. beta = V^T %*% b.
-
-# We do two simulations:
-#   - the first one assumes sparsity in beta. When transforming beta back to
-#     16 * 16, we make all areas except the central 8*8 to be zero. The values
-#     in the central area will be decided later.
-#   - the second one assumes sparsity in b. We randomly assign 10% values to be
-#     non-zero.
-# We will fit two models for each simulation: using X as covariates, and using
-# X_freq as covariates.
-
-
-
-# Generate an exponential correlation matrix for a square matrix with n_pixels
+# Generate an exponential correlation matrix
 # Args:
 #   n_pixels: Integer. The number of pixels (or elements) in the matrix.
 # Returns:
 #   A matrix where each element represents the correlation between two points,
 #   based on the exponential decay of the Euclidean distance between them.
-gen_exp_corr_matrix <- function(n_pixels) {
-  num_col <- sqrt(n_pixels)
+gen_exp_corr <- function(n_pixels) {
+  n_cols <- sqrt(n_pixels)
 
-  # Function to calculate the Euclidean distance between two points in a 2D grid
+  # Calculate Euclidean distance between two points in a 2D grid
   # Args:
   #   i: Integer. Index of the first point in 1D.
   #   j: Integer. Index of the second point in 1D.
   # Returns:
   #   Numeric. The Euclidean distance between the two points.
   calc_dist <- function(i, j) {
-    row_i <- (i - 1) %/% num_col
-    col_i <- (i - 1) %% num_col
-    row_j <- (j - 1) %/% num_col
-    col_j <- (j - 1) %% num_col
+    row_i <- (i - 1) %/% n_cols
+    col_i <- (i - 1) %% n_cols
+    row_j <- (j - 1) %/% n_cols
+    col_j <- (j - 1) %% n_cols
     sqrt((row_i - row_j)^2 + (col_i - col_j)^2)
   }
 
   # Generate the correlation matrix using the vectorized distance function
-  outer(
-    1:n_pixels, 1:n_pixels,
-    Vectorize(function(i, j) exp(-calc_dist(i, j)))
-  )
+  outer(1:n_pixels, 1:n_pixels, Vectorize(function(i, j) exp(-calc_dist(i, j))))
 }
+
+
 
 # Generate a sparse coefficient vector
 # Args:
-#   len: Integer. The length of the coefficient vector.
-#   sparsity: Numeric. Proportion of non-zero elements in the vector. Default is 0.1.
-#   effect: Numeric. The effect size assigned to non-zero elements. Default is 0.1.
+#   len: Integer. Length of the coefficient vector.
+#   sparsity: Numeric. Proportion of non-zero elements. Default is 0.1.
+#   effect_size: Numeric. Effect size of non-zero elements. Default is 0.1.
 #   seed: Integer. Random seed for reproducibility.
 # Returns:
-#   A numeric vector of specified length with a specified proportion of non-zero elements.
-create_sparse_vec <- function(len, sparsity = 0.1, effect = 0.1, seed) {
+#   A numeric vector with specified sparsity and effect size.
+gen_sparse_vec <- function(len, sparsity = 0.1, effect_size = 0.1, seed) {
   set.seed(seed)
   vec <- rep(0, len)
-  non_zero_idx <- sample(1:len, size = floor(len * sparsity), replace = FALSE)
-  vec[non_zero_idx] <- effect
+  nz_idx <- sample(1:len, size = floor(len * sparsity), replace = FALSE)
+  vec[nz_idx] <- effect_size
   vec
 }
 
-# Define beta for simulation with the center as the black region
+# Define beta for simulation with central region having effect
 # Args:
-#   img_size: Integer. The dimension of the square image (number of rows/columns).
-#   beta_effect: Numeric. The effect size assigned to the center region.
+#   img_size: Integer. Dimension of the square image (rows/columns).
+#   effect_size: Numeric. Effect size assigned to the center region.
 # Returns:
-#   A numeric vector of length img_size^2 with the center region set to beta_effect.
-define_center_beta <- function(img_size, beta_effect) {
+#   A numeric vector with the center region set to the effect size.
+define_center_beta <- function(img_size, effect_size) {
   p <- img_size^2
   beta <- rep(0, p)
   ctr_start <- (img_size - 8) / 2 + 1
@@ -100,44 +115,158 @@ define_center_beta <- function(img_size, beta_effect) {
     ctr_start:ctr_end,
     ctr_start:ctr_end
   ])
-  beta[ctr_idx] <- beta_effect
+  beta[ctr_idx] <- effect_size
   return(beta)
 }
 
-
-# Generate the X matrix
+# Generate a matrix of samples from a multivariate normal distribution
 # Args:
-#   n_samples: Integer. The number of samples (rows) to generate.
-#   img_size: Integer. The dimension of the square image (number of rows/columns).
-#   cov_matrix: Matrix. The covariance matrix used for generating
-#   multivariate normal samples.
+#   n_samples: Integer. Number of samples (rows).
+#   cov_matrix: Matrix. Covariance matrix.
 # Returns:
-#   A matrix of generated samples, with n_samples rows and img_size^2 columns.
-gen_X_matrix <- function(n_samples, img_size, cov_matrix) {
-  mvrnorm(n_samples, mu = rep(0, img_size^2), Sigma = cov_matrix)
+#   A matrix of samples with n_samples rows and img_size^2 columns.
+gen_samples <- function(n_samples, cov_matrix) {
+  n_pixels <- nrow(cov_matrix)
+  samples <- mvrnorm(n_samples, mu = rep(0, n_pixels), Sigma = cov_matrix)
+  if (n_samples == 1) {
+    samples <- matrix(samples, nrow = 1)
+  }
+  return(samples)
 }
 
-# Generate probabilities
+# Calculate probabilities using logistic function
 # Args:
-#   x_matrix: Matrix. The design matrix of predictor variables.
-#   coeffs: Numeric vector. The coefficient vector.
+#   x_mat: Matrix. Design matrix of predictor variables.
+#   coeffs: Numeric vector. Coefficient vector.
 # Returns:
 #   A numeric vector of probabilities for each sample.
-calc_probs <- function(x_matrix, coeffs) {
-  eta <- x_matrix %*% coeffs
+calc_probs <- function(x_mat, coeffs) {
+  eta <- x_mat %*% coeffs
   1 / (1 + exp(-eta))
 }
 
-# Generate response variables
+# Generate binary response variables
 # Args:
-#   x_matrix: Matrix. The design matrix of predictor variables.
-#   coeffs: Numeric vector. The coefficient vector.
+#   x_mat: Matrix. Design matrix of predictor variables.
+#   coeffs: Numeric vector. Coefficient vector.
 # Returns:
-#   A numeric vector of binary response variables generated using the probabilities.
-gen_responses <- function(x_matrix, coeffs) {
-  p <- calc_probs(x_matrix, coeffs)
-  rbinom(nrow(x_matrix), 1, p)
+#   A numeric vector of binary response variables.
+gen_responses <- function(x_mat, coeffs) {
+  probs <- calc_probs(x_mat, coeffs)
+  rbinom(nrow(x_mat), 1, probs)
 }
+
+
+# ----- Simulation Functions -----
+
+# Perform a single simulation run
+# Args:
+#   img_size: Integer. Dimension of the square image (rows/columns).
+#   n_samples: Integer. Number of samples (rows).
+#   cov_matrix: Matrix. Covariance matrix.
+#   eig_vecs: Matrix. Eigenvectors of the covariance matrix.
+#   beta: Numeric vector. Coefficient vector in pixel space or frequency space.
+# Returns:
+#   A list containing the design matrix, frequency space design matrix,
+#   and responses.
+run_single_sim <- function(img_size, n_samples, cov_matrix, eig_vecs, beta) {
+  x <- gen_samples(n_samples, img_size, cov_matrix)
+  x_freq <- x %*% eig_vecs
+  responses <- gen_responses(x, beta)
+  return(list(x = x, x_freq = x_freq, responses = responses))
+}
+
+# Run multiple simulations
+# Args:
+#   n_sim: Integer. Number of simulations to run.
+#   img_size: Integer. Dimension of the square image (rows/columns).
+#   n_samples: Integer. Number of samples (rows) for each simulation.
+#   beta: Numeric vector. Coefficient vector in pixel space or frequency space.
+#   seed: Integer. Seed for reproducibility.
+# Returns:
+#   A list containing the results of each simulation.
+run_all_sims <- function(n_sim, img_size, n_samples, cov_matrix, eig_vecs, beta, seed = 123) {
+  set.seed(seed)
+  results <- vector("list", n_sim)
+  for (i in 1:n_sim) {
+    results[[i]] <- run_single_sim(img_size, n_samples, cov_matrix, eig_vecs, beta)
+  }
+  return(results)
+}
+
+# Fit models
+# Args:
+#   data: List. Contains x_mat, x_freq_mat, and responses.
+# Returns:
+#   A list containing fitted models using x_mat and x_freq_mat.
+fit_models <- function(data) {
+  x_mat <- data$x_mat
+  x_freq_mat <- data$x_freq_mat
+  y <- data$responses
+
+  model_x <- glmnet(x_mat, y, family = "binomial")
+  model_x_freq <- glmnet(x_freq_mat, y, family = "binomial")
+
+  return(list(model_x = model_x, model_x_freq = model_x_freq))
+}
+
+# Run Simulation 1
+run_simulation_1 <- function(img_size, n_samples, beta_effect, n_sim, seed) {
+  cov_matrix <- gen_exp_corr(img_size^2)
+  eig_vecs <- eigen(cov_matrix)$vectors
+  beta <- define_center_beta(img_size, beta_effect)
+  b <- t(eig_vecs) %*% beta
+
+  sim_results <- run_all_sims(n_sim, img_size, n_samples, cov_matrix, eig_vecs, beta, seed)
+
+  models <- lapply(sim_results, fit_models)
+
+  return(models)
+}
+
+
+# Run Simulation 2
+run_simulation_2 <- function(img_size, n_samples, sparsity, effect_size, n_sim, seed) {
+  cov_matrix <- diag(img_size^2)
+  eig_vecs <- eigen(cov_matrix)$vectors
+  b <- gen_sparse_vec(img_size^2, sparsity, effect_size, seed)
+
+  sim_results <- run_all_sims(n_sim, img_size, n_samples, cov_matrix, eig_vecs, b, seed)
+
+  models <- lapply(sim_results, fit_models)
+
+  return(models)
+}
+
+# ----- Run Simulations -----
+
+# Parameters
+img_size <- 16
+n_samples <- 1000
+beta_effect <- 0.1
+sparsity <- 0.1
+effect_size <- 0.1
+n_sim <- 2
+seed <- 123
+
+# Run Simulation 1
+models_sim1 <- run_simulation_1(img_size, n_samples, beta_effect, n_sim, seed)
+
+# Run Simulation 2
+models_sim2 <- run_simulation_2(img_size, n_samples, sparsity, effect_size, n_sim, seed)
+
+
+
+# ----- Simulation 1 -----
+
+w <- generate_exp_corr_matrix(256)
+v <- perform_eigen_decomp(w)$vectors
+beta <- define_center_beta(16, 0.1)
+b <- v %*% beta
+
+x <- gen_X_matrix(1000, 16, w)
+x_freq <- x %*% t(v)
+y <- generate_response(x, beta)
 
 # Function for Simulation 1
 simulate_1 <- function(i, size, num_samples, effect, p_train, n_perm, seed) {
