@@ -40,6 +40,9 @@
 # 1000 samples of X, and let X_mat to be a 1000*256 matrix, with each row
 # as a X, then X_freq_mat = t( t(V) %*% t(X_mat) ) = X_mat %*% V.
 
+# If beta and b are both 256*1 matrix, then t(X) %*% beta = t(X_freq) %*% b.
+# t(X_freq) %*% b = t(X) %*% V %*% b. So beta = V %*% b
+
 # Load required libraries
 library(MASS)
 library(glmnet)
@@ -166,6 +169,46 @@ gen_y <- function(x_mat, coefs) {
 }
 
 
+# Function to plot a 1D vector as a 16x16 heatmap
+#
+# Args:
+#   vec: A numeric vector of length 256 representing a 1D 16x16 image.
+#   value_limits: An optional numeric vector of length 2 specifying the value limits for the color scale (default is NULL).
+#   title: A string specifying the title of the plot (default is "Heatmap").
+#
+# Returns:
+#   A ggplot2 object representing the heatmap.
+plot_heatmap <- function(vec, value_limits = NULL) {
+  # Convert 1D vector to 2D matrix
+  len <- length(vec)
+  img_size <- as.integer(sqrt(len))
+  mat <- matrix(vec, img_size, img_size, byrow = TRUE)
+
+  # Convert the 2D matrix to a long data frame: x, y, value
+  data_long <- reshape2::melt(mat)
+
+  # Ensure value_limits is of length 2 if provided
+  if (!is.null(value_limits) && length(value_limits) != 2) {
+    stop("value_limits must be a vector of length 2, like c(low, high)")
+  }
+
+  # Create the plot using ggplot2
+  plot <- ggplot(data_long, aes(x = Var2, y = Var1, fill = value)) +
+    geom_tile() +
+    scale_fill_gradient(
+      low = "white", high = "black",
+      limits = value_limits,
+      oob = scales::squish
+    ) +
+    theme_minimal() +
+    theme(
+      plot.background = element_rect(fill = "white", colour = "white"),
+      panel.background = element_rect(fill = "white", colour = "white")
+    ) +
+    labs(x = "", y = "")
+
+  return(plot)
+}
 
 # ----- Choose beta effect size and b effect size -----
 
@@ -221,6 +264,111 @@ compare_b_effects(c(1, 0.8, 0.6, 0.4, 0.2, 0.1))
 dev.off()
 
 
+# ----- Functions for Simulation -----
+
+# Perform Lasso Regression with Cross-Validation
+#
+# This function performs Lasso regression on the provided dataset using
+# cross-validation to identify the optimal lambda values. It evaluates the
+# model's performance using both the minimum lambda value (lambda.min) and the
+# lambda value within one standard error of the minimum (lambda.1se).
+#
+# Arguments:
+# - x: A matrix of predictor variables.
+# - y: A vector of response variables.
+# - p_train: A numeric value between 0 and 1 representing the proportion of
+#   data to be used for training.
+# - seed: An optional seed for reproducibility.
+#
+# Return:
+# A matrix containing the accuracy and AUC for models with lambda.min and lambda.1se.
+
+perform_lasso <- function(x, y, p_train, seed = NULL) {
+  if (!is.null(seed)) {
+    set.seed(seed)
+  }
+  # Split the dataset
+  n <- nrow(x)
+  train_idx <- sample(seq_len(n), size = floor(n * p_train))
+
+  x_train <- x[train_idx, , drop = FALSE]
+  x_test <- x[-train_idx, , drop = FALSE]
+  y_train <- y[train_idx]
+  y_test <- y[-train_idx]
+
+  # Perform cross-validation to find the optimal lambda values
+  cv_model <- cv.glmnet(x_train, y_train, alpha = 1, family = "binomial")
+  lambda_min <- cv_model$lambda.min
+  lambda_1se <- cv_model$lambda.1se
+
+  # Function to evaluate model performance
+  eval_perf <- function(l) {
+    mod <- glmnet(x_train, y_train, alpha = 1, lambda = l, family = "binomial")
+    preds <- predict(mod, newx = x_test, type = "response")[, 1]
+    preds_bin <- ifelse(preds > 0.5, 1, 0)
+
+    acc <- mean(preds_bin == y_test)
+    auc <- pROC::auc(pROC::roc(y_test, preds))
+
+    c(acc = acc, AUC = auc)
+  }
+
+  # Get performance metrics for both lambda.min and lambda.1se
+  perf_min <- eval_perf(lambda_min)
+  perf_1se <- eval_perf(lambda_1se)
+
+  # Combine results into a coherent matrix
+  results <- c(perf_min, perf_1se)
+  results <- matrix(results, nrow = 1)
+  colnames(results) <- c("min_acc", "min_auc", "1se_acc", "1se_auc")
+
+  return(results)
+}
+
+# Perform Permutation Test for Lasso Regression
+#
+# This function performs a permutation test for Lasso regression on the provided
+# dataset. It estimates the significance of the model coefficients by comparing
+# the original coefficients to those obtained from permuted response variables.
+#
+# Arguments:
+# - x: A matrix of predictor variables.
+# - y: A vector of response variables.
+# - n_perm: An integer representing the number of permutations to perform.
+# - seed: An optional seed for reproducibility.
+#
+# Return:
+# A 1 * n_pixel matrix containing the p-values for each coefficient based on
+# the permutation test.
+
+perm_lasso <- function(x, y, n_perm, seed = NULL) {
+  if (!is.null(seed)) {
+    set.seed(seed)
+  }
+
+  cv_lasso <- function(x, y) {
+    cv_fit <- cv.glmnet(x, y, alpha = 1)
+    best_lambda <- cv_fit$lambda.min
+    coefs <- coef(cv_fit, s = "lambda.min")[-1, 1]
+    return(coefs)
+  }
+
+  # get original coef estimates
+  orig_coefs <- cv_lasso(x, y)
+
+  # perform permutations
+  perm_coefs <- matrix(NA, n_perm, length(orig_coefs))
+
+  for (i in seq_len(n_perm)) {
+    y_perm <- sample(y)
+    perm_coefs[i, ] <- cv_lasso(x, y_perm)
+  }
+
+  # calculate p-values
+  p_vals <- matrix(colMeans(abs(perm_coefs) > abs(orig_coefs)), nrow = 1)
+  return(p_vals)
+}
+
 
 
 # ----- Simulations -----
@@ -234,15 +382,54 @@ b_effect_size <- 0.4
 sparsity <- 0.1
 seed <- 42
 
+W <- gen_exp_corr(img_size^2)
+V <- eigen_decomp(W)$vectors
+W_freq <- t(V) %*% W %*% V
+
+set.seed(seed)
+beta <- gen_beta(img_size, beta_effect_size)
+b <- gen_b(img_size^2, sparsity, b_effect_size)
+
+# Visualize beta and b
+# when assigning sparsity to beta
+p1 <- plot_heatmap(beta)
+p2 <- plot_heatmap(t(V) %*% beta)
+# when assigning sparsity to b
+p3 <- plot_heatmap(b)
+p4 <- plot_heatmap(V %*% b)
+combined_plot <- grid.arrange(p1, p2, p3, p4, ncol = 2)
+ggsave(
+  file.path(fig_dir, paste0("coef_heatmaps_", format(Sys.Date(), "%y%m%d"), ".png")),
+  combined_plot
+)
+rm(p1, p2, p3, p4, combined_plot)
+
+
+# Simulate Data with Exponential Correlation Structure
+#
+# This function generates simulated data with an exponential correlation
+# structure. The generated data includes both spatial domain data and its
+# corresponding frequency domain representation, as well as the response variable y.
+#
+# Arguments:
+# - img_size: Integer. The size of the image (length of one side), used to
+#   determine the dimensionality of the data.
+# - n_samples: Integer. The number of samples to generate.
+# - beta: Numeric matrix or NULL. The coefficients to apply in the
+#   spatial domain. If both `beta` and `b` are provided, `beta` will be used.
+# - b: Numeric vector or NULL. The coefficients to apply in the frequency
+#   domain. Used if `beta` is not provided.
+# - seed: Integer or NULL. An optional seed for reproducibility.
+#
+# Returns:
+# A list containing:
+# - x: Numeric matrix. The generated data in the spatial domain.
+# - x_freq: Numeric matrix. The generated data in the frequency domain.
+# - y: Numeric vector. The response variable generated using the specified effects.
 simulate_data <- function(img_size, n_samples, beta = NULL, b = NULL, seed = NULL) {
   if (!is.null(seed)) {
     set.seed(seed)
   }
-
-  len <- img_size^2
-  W <- gen_exp_corr(len)
-  V <- eigen_decomp(W)$vectors
-  W_freq <- t(V) %*% W %*% V
 
   x_freq <- gen_x(n_samples, W_freq)
   x <- x_freq %*% t(V)
@@ -266,18 +453,56 @@ simulate_data <- function(img_size, n_samples, beta = NULL, b = NULL, seed = NUL
   return(result)
 }
 
-set.seed(seed)
-beta <- gen_beta(img_size, beta_effect_size)
-b <- gen_b(img_size^2, sparsity, b_effect_size)
-
+tic()
 sim1_data_list <- lapply(1:n_sim, function(i) {
   simulate_data(img_size, n_samples, beta = beta)
 })
+toc()
 
+tic()
 sim2_data_list <- lapply(1:n_sim, function(i) {
   simulate_data(img_size, n_samples, b = b)
 })
+toc()
 
+# save(
+#   sim1_data_list, sim2_data_list,
+#   file = file.path(fig_dir, paste0("simulated_data_", format(Sys.Date(), "%y%m%d"), ".RData"))
+# )
+load(file = file.path(fig_dir, "simulated_data_240802.RData"))
+
+
+# Function to visualize the simulated data
+visualize_simulated_data <- function(sim_data) {
+  x <- sim_data$x
+  x_freq <- sim_data$x_freq
+  y <- sim_data$y
+
+  # Calculate mean differences based on y assignment
+  mean_diff_x <- colMeans(x[y == 1, ]) - colMeans(x[y == 0, ])
+  mean_diff_x_freq <- colMeans(x_freq[y == 1, ]) - colMeans(x_freq[y == 0, ])
+
+  # Define the common range for both heatmaps
+  common_range <- range(mean_diff_x, mean_diff_x_freq)
+
+  # Generate heatmaps
+  p1 <- plot_heatmap(mean_diff_x, common_range)
+  p2 <- plot_heatmap(mean_diff_x_freq, common_range)
+
+  # Arrange and display plots side by side
+  grid.arrange(p1, p2, ncol = 2)
+}
+
+# Extract data from the first simulation and visualize
+ggsave(
+  file.path(fig_dir, paste0("group_mean_image_", format(Sys.Date(), "%y%m%d"), ".png")),
+  visualize_simulated_data(sim1_data_list[[1]])
+)
+
+
+
+
+# ----- End of current code -----
 
 # Function for Simulation 1
 simulate_1 <- function(i, size, n_samples, effect, p_train, n_perm, seed) {
@@ -290,9 +515,6 @@ simulate_1 <- function(i, size, n_samples, effect, p_train, n_perm, seed) {
   p_vals <- perm_lasso(x, y, n_perm, seed = seed + i)
   cbind(perform_metrics, p_vals)
 }
-
-
-
 
 
 # Run Simulation 1
@@ -313,105 +535,6 @@ sim1_output <- simWrapper(
 )
 toc()
 
-# Perform a single simulation run
-# Args:
-#   img_size: Integer. Dimension of the square image (rows/columns).
-#   n_samples: Integer. Number of samples (rows).
-#   seed: Integer. Random seed for reproducibility.
-# Returns:
-#   A list containing the design matrix, frequency space design matrix,
-#   and responses.
-run_single_sim <- function(img_size, n_samples, beta_vec, seed) {
-  x <- gen_x(n_samples, img_size, cov_matrix)
-  x_freq <- x %*% eig_vecs
-  responses <- gen_responses(x, beta)
-  return(list(x = x, x_freq = x_freq, responses = responses))
-}
-
-
-
-
-
-
-
-# Run multiple simulations
-# Args:
-#   n_sim: Integer. Number of simulations to run.
-#   img_size: Integer. Dimension of the square image (rows/columns).
-#   n_samples: Integer. Number of samples (rows) for each simulation.
-#   beta: Numeric vector. Coefficient vector in pixel space or frequency space.
-#   seed: Integer. Seed for reproducibility.
-# Returns:
-#   A list containing the results of each simulation.
-run_all_sims <- function(n_sim, img_size, n_samples, cov_matrix, eig_vecs, beta, seed = 123) {
-  set.seed(seed)
-  results <- vector("list", n_sim)
-  for (i in 1:n_sim) {
-    results[[i]] <- run_single_sim(img_size, n_samples, cov_matrix, eig_vecs, beta)
-  }
-  return(results)
-}
-
-# Fit models
-# Args:
-#   data: List. Contains x_mat, x_freq_mat, and responses.
-# Returns:
-#   A list containing fitted models using x_mat and x_freq_mat.
-fit_models <- function(data) {
-  x_mat <- data$x_mat
-  x_freq_mat <- data$x_freq_mat
-  y <- data$responses
-
-  model_x <- glmnet(x_mat, y, family = "binomial")
-  model_x_freq <- glmnet(x_freq_mat, y, family = "binomial")
-
-  return(list(model_x = model_x, model_x_freq = model_x_freq))
-}
-
-# Run Simulation 1
-run_simulation_1 <- function(img_size, n_samples, beta_effect, n_sim, seed) {
-  cov_matrix <- gen_exp_corr(img_size^2)
-  eig_vecs <- eigen(cov_matrix)$vectors
-  beta <- define_center_beta(img_size, beta_effect)
-  b <- t(eig_vecs) %*% beta
-
-  sim_results <- run_all_sims(n_sim, img_size, n_samples, cov_matrix, eig_vecs, beta, seed)
-
-  models <- lapply(sim_results, fit_models)
-
-  return(models)
-}
-
-
-# Run Simulation 2
-run_simulation_2 <- function(img_size, n_samples, sparsity, effect_size, n_sim, seed) {
-  cov_matrix <- diag(img_size^2)
-  eig_vecs <- eigen(cov_matrix)$vectors
-  b <- gen_sparse_vec(img_size^2, sparsity, effect_size, seed)
-
-  sim_results <- run_all_sims(n_sim, img_size, n_samples, cov_matrix, eig_vecs, b, seed)
-
-  models <- lapply(sim_results, fit_models)
-
-  return(models)
-}
-
-# ----- Run Simulations -----
-
-# Parameters
-img_size <- 16
-n_samples <- 1000
-beta_effect <- 0.1
-sparsity <- 0.1
-effect_size <- 0.1
-n_sim <- 2
-seed <- 123
-
-# Run Simulation 1
-models_sim1 <- run_simulation_1(img_size, n_samples, beta_effect, n_sim, seed)
-
-# Run Simulation 2
-models_sim2 <- run_simulation_2(img_size, n_samples, sparsity, effect_size, n_sim, seed)
 
 
 
