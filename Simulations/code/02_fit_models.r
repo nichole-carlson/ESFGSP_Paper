@@ -18,6 +18,7 @@ code_dir <- file.path(simulation_dir, "code")
 results_dir <- file.path(simulation_dir, "results", "figures")
 
 source(file.path(code_dir, "01_simulate_data.r"))
+source(file.path(code_dir, "simWrapper.r"))
 
 
 # ----- Define Functions for Model Fitting -----
