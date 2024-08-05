@@ -357,18 +357,18 @@ visualize_coefs <- function(img_size, beta_effect, b_effect, b_sparsity, seed = 
 # )
 
 # Simulate x and y for two sparsity patterns
-tic()
-cat("Simulating Data for", n_sim, "iterations ... \n")
-simulated_data <- simulate_data(
-  n_sim = n_sim,
-  n_samples = n_samples,
-  img_size = img_size,
-  beta_effect = beta_effect,
-  b_effect = b_effect,
-  b_sparsity = b_sparsity,
-  seed = seed
-)
-toc()
+# tic()
+# cat("Simulating Data for", n_sim, "iterations ... \n")
+# simulated_data <- simulate_data(
+#   n_sim = n_sim,
+#   n_samples = n_samples,
+#   img_size = img_size,
+#   beta_effect = beta_effect,
+#   b_effect = b_effect,
+#   b_sparsity = b_sparsity,
+#   seed = seed
+# )
+# toc()
 
 # Function to visualize the simulated data
 visualize_simulated_data <- function(sim_data) {
