@@ -310,13 +310,13 @@ compare_b_effects <- function(effects, n_samples = 1000, sparsity = 0.1, seed = 
 # ----- Run Simulations -----
 
 # Global settings
-n_sim <- 500
-n_samples <- 1000
-img_size <- 16
-beta_effect <- 0.1
-b_effect <- 0.4
-b_sparsity <- 0.1
-seed <- 42
+# n_sim <- 500
+# n_samples <- 1000
+# img_size <- 16
+# beta_effect <- 0.1
+# b_effect <- 0.4
+# b_sparsity <- 0.1
+# seed <- 42
 
 
 # Visualize beta and b using selected effect size
