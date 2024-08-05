@@ -1,6 +1,11 @@
 rm(list = ls())
 
-source("01_simulate_data.r")
+simulation_dir <- "/Users/siyangren/Documents/ra-cida/ESFGSP_Paper/Simulations"
+code_dir <- file.path(simulation_dir, "code")
+results_dir <- file.path(simulation_dir, "results", "figures")
+
+source(file.path(code_dir, "01_simulate_data.r"))
+
 
 # Load required libraries
 library(glmnet)
