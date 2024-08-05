@@ -184,16 +184,34 @@ plot_heatmap <- function(vec, value_limits = NULL) {
   return(plot)
 }
 
-generate_x_and_x_freq <- function(n_samples, img_size) {
+gen_meta_data <- function(img_size) {
   n_pixels <- img_size^2
+
   W <- gen_exp_corr(n_pixels) # correlation matrix for x
   V <- eigen(W)$vectors
   W_freq <- t(V) %*% W %*% V # correlation matrix for x_freq
 
-  x_freq <- gen_x(n_samples, W_freq)
-  x <- x_freq %*% t(V)
+  list(x_cov = W, eig_vecs = V, x_freq_cov = W_freq)
+}
 
-  list(x = x, x_freq = x_freq, V = V)
+simulate_xy_freq <- function(n_iter, n_samples, img_size, freq_coefs) {
+  meta_data <- gen_meta_data(img_size)
+  x_freq_cov <- meta_data$x_freq_cov
+  eig_vecs <- meta_data$eig_vecs
+
+  results <- list()
+
+  for (i in seq_len(n_iter)) {
+    if (i %% 10 == 0) {
+      cat("Simulating", i, "of", n_iter, "iterations \n")
+    }
+    x_freq <- gen_x(n_samples, x_freq_cov)
+    x <- x_freq %*% t(eig_vecs)
+    y <- gen_y(x_freq, freq_coefs)
+    results[[i]] <- list(x = x, x_freq = x_freq, y = y)
+  }
+
+  results
 }
 
 run_simulation1 <- function(n_iter, n_samples, img_size, beta_effect_size, seed = NULL) {
@@ -201,25 +219,24 @@ run_simulation1 <- function(n_iter, n_samples, img_size, beta_effect_size, seed 
     set.seed(seed)
   }
 
-  # run generate_x_and_x_freq function one time to get V, beta and b
-  res <- generate_x_and_x_freq(n_samples, img_size)
-  V <- res$V
-  beta <- gen_beta(img_size, beta_effect_size)
-  b <- beta_to_b(beta, V)
+  # calculate meta data, W, V, W_freq
+  meta_data <- gen_meta_data(img_size)
+  x_freq_cov <- meta_data$x_freq_cov
+  eig_vecs <- meta_data$eig_vecs
 
-  result <- list(
-    coefs = list(beta = beta, b = b, V = V),
-    data = list()
+  # generate coefs on pixel space
+  beta <- gen_beta(img_size, beta_effect_size)
+  b <- beta_to_b(beta, eig_vecs)
+
+  # run simulation on freq space
+  simulated_data <- simulate_xy_freq(n_iter, n_samples, img_size, b)
+
+  results <- list(
+    meta_data = c(meta_data, list(beta = beta, b = b)),
+    data = simulated_data
   )
 
-  for (i in seq_len(n_iter)) {
-    res <- generate_x_and_x_freq(n_samples, img_size)
-    x <- res$x
-    x_freq <- res$x_freq
-    y <- gen_y(x_freq, b)
-
-    result$data[[i]] <- list(x = x, x_freq = x_freq, y = y)
-  }
+  return(results)
 }
 
 run_simulation2 <- function(n_iter, n_samples, img_size, b_effect_size, sparsity, seed = NULL) {
@@ -227,24 +244,24 @@ run_simulation2 <- function(n_iter, n_samples, img_size, b_effect_size, sparsity
     set.seed(seed)
   }
 
-  res <- generate_x_and_x_freq(n_samples, img_size)
-  V <- res$V
-  b <- gen_b(img_size^2, sparsity, b_effect_size)
-  beta <- b_to_beta(b, V)
+  # calculate meta data, W, V, W_freq
+  meta_data <- gen_meta_data(img_size)
+  x_freq_cov <- meta_data$x_freq_cov
+  eig_vecs <- meta_data$eig_vecs
 
-  result <- list(
-    coefs = list(beta = beta, b = b, V = V),
-    data = list()
+  # generate coefs on pixel space
+  b <- gen_b(img_size^2, sparsity, b_effect_size)
+  beta <- b_to_beta(b, eig_vecs)
+
+  # run simulation on freq space
+  simulated_data <- simulate_xy_freq(n_iter, n_samples, img_size, b)
+
+  results <- list(
+    meta_data = c(meta_data, list(beta = beta, b = b)),
+    data = simulated_data
   )
 
-  for (i in seq_len(n_iter)) {
-    res <- generate_x_and_x_freq(n_samples, img_size)
-    x <- res$x
-    x_freq <- res$x_freq
-    y <- gen_y(x_freq, b)
-
-    result$data[[i]] <- list(x = x, x_freq = x_freq, y = y)
-  }
+  return(results)
 }
 
 
@@ -255,8 +272,9 @@ compare_beta_effects <- function(effects, n_samples = 1000, seed = 42) {
   par(mfrow = c(ceiling(length(effects) / 2), 2))
   set.seed(seed)
 
-  res <- generate_x_and_x_freq(n_samples, img_size = 256)
-  x <- res$x
+  meta <- gen_meta_data(img_size = 16)
+  x_cov <- meta$x_cov
+  x <- gen_x(n_samples, x_cov)
 
   for (effect in effects) {
     beta <- gen_beta(img_size = 16, effect_size = effect)
@@ -279,8 +297,9 @@ compare_beta_effects <- function(effects, n_samples = 1000, seed = 42) {
 compare_b_effects <- function(effects, n_samples = 1000, sparsity = 0.1, seed = 42) {
   par(mfrow = c(ceiling(length(effects) / 2), 2))
 
-  res <- generate_x_and_x_freq(n_samples, img_size = 256)
-  x_freq <- res$x_freq
+  meta <- gen_meta_data(img_size = 16)
+  x_freq_cov <- meta$x_freq_cov
+  x_freq <- gen_x(n_samples, x_freq_cov)
 
   for (effect in effects) {
     b <- gen_b(len = 256, sparsity, effect, seed)
