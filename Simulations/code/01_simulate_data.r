@@ -82,10 +82,7 @@ gen_exp_corr <- function(n_pixels) {
 #   seed: Integer. Random seed for reproducibility.
 # Returns:
 #   A numeric vector with specified sparsity and effect size.
-gen_b <- function(len, sparsity, effect_size, seed = NULL) {
-  if (!is.null(seed)) {
-    set.seed(seed)
-  }
+gen_b <- function(len, sparsity, effect_size) {
   vec <- rep(0, len)
   nz_idx <- sample(seq_len(len), size = floor(len * sparsity), replace = FALSE)
   vec[nz_idx] <- effect_size
@@ -187,68 +184,67 @@ plot_heatmap <- function(vec, value_limits = NULL) {
   return(plot)
 }
 
-# Function to simulate data in both spatial and frequency domains
-#
-# Args:
-# - n_sim: Integer. The number of simulations to run.
-# - n_samples: Integer. The number of samples to generate per simulation.
-# - img_size: Integer. The size of the image (length of one side), used to
-#   determine the dimensionality of the data.
-# - beta_effect: Numeric. The effect size for generating coefficients in the
-#   spatial domain.
-# - b_effect: Numeric. The effect size for generating coefficients in the
-#   frequency domain.
-# - b_sparsity: Numeric. The sparsity level of the coefficients in the
-#   frequency domain.
-# - seed: Integer or NULL. An optional seed for reproducibility.
-#
-# Returns:
-# A list containing:
-# - sim1: A list with:
-#   - x: Numeric matrix. The generated data in the spatial domain for the
-#     first set of simulations.
-#   - x_freq: Numeric matrix. The generated data in the frequency domain for
-#     the first set of simulations.
-#   - y: Numeric vector. The response variable generated using the specified
-#     effects in the spatial domain.
-# - sim2: A list with:
-#   - x: Numeric matrix. The generated data in the spatial domain for the
-#     second set of simulations.
-#   - x_freq: Numeric matrix. The generated data in the frequency domain for
-#     the second set of simulations.
-#   - y: Numeric vector. The response variable generated using the specified
-#     effects in the frequency domain.
-simulate_data <- function(n_sim, n_samples, img_size, beta_effect, b_effect,
-                          b_sparsity, seed = NULL) {
+generate_x_and_x_freq <- function(n_samples, img_size) {
+  n_pixels <- img_size^2
+  W <- gen_exp_corr(n_pixels) # correlation matrix for x
+  V <- eigen(W)$vectors
+  W_freq <- t(V) %*% W %*% V # correlation matrix for x_freq
+
+  x_freq <- gen_x(n_samples, W_freq)
+  x <- x_freq %*% t(V)
+
+  list(x = x, x_freq = x_freq, V = V)
+}
+
+run_simulation1 <- function(n_iter, n_samples, img_size, beta_effect_size, seed = NULL) {
   if (!is.null(seed)) {
     set.seed(seed)
   }
 
-  # Generate global variables
-  W <- gen_exp_corr(img_size^2)
-  V <- eigen(W)$vectors
-  W_freq <- t(V) %*% W %*% V
+  # run generate_x_and_x_freq function one time to get V, beta and b
+  res <- generate_x_and_x_freq(n_samples, img_size)
+  V <- res$V
+  beta <- gen_beta(img_size, beta_effect_size)
+  b <- beta_to_b(beta, V)
 
-  beta <- gen_beta(img_size, beta_effect)
-  b <- gen_b(img_size^2, b_sparsity, b_effect)
+  result <- list(
+    coefs = list(beta = beta, b = b, V = V),
+    data = list()
+  )
 
-  # Simulate X
-  n_all <- 2 * n_sim * n_samples # total number of obs
-  sim1_index <- seq_len(n_sim * n_samples)
-  sim2_index <- (n_sim * n_samples + 1):n_all
-  x_freq <- gen_x(n_all, W_freq)
-  x <- x_freq %*% t(V)
+  for (i in seq_len(n_iter)) {
+    res <- generate_x_and_x_freq(n_samples, img_size)
+    x <- res$x
+    x_freq <- res$x_freq
+    y <- gen_y(x_freq, b)
 
-  # Generate y
-  y1 <- gen_y(x[sim1_index, ], beta)
-  y2 <- gen_y(x_freq[sim2_index, ], b)
+    result$data[[i]] <- list(x = x, x_freq = x_freq, y = y)
+  }
+}
 
-  # Organize results
-  sim1 <- list(x = x[sim1_index, ], x_freq = x_freq[sim1_index, ], y = y1)
-  sim2 <- list(x = x[sim2_index, ], x_freq = x_freq[sim2_index, ], y = y2)
-  result <- list(sim1 = sim1, sim2 = sim2)
+run_simulation2 <- function(n_iter, n_samples, img_size, b_effect_size, sparsity, seed = NULL) {
+  if (!is.null(seed)) {
+    set.seed(seed)
+  }
 
-  return(result)
+  res <- generate_x_and_x_freq(n_samples, img_size)
+  V <- res$V
+  b <- gen_b(img_size^2, sparsity, b_effect_size)
+  beta <- b_to_beta(b, V)
+
+  result <- list(
+    coefs = list(beta = beta, b = b, V = V),
+    data = list()
+  )
+
+  for (i in seq_len(n_iter)) {
+    res <- generate_x_and_x_freq(n_samples, img_size)
+    x <- res$x
+    x_freq <- res$x_freq
+    y <- gen_y(x_freq, b)
+
+    result$data[[i]] <- list(x = x, x_freq = x_freq, y = y)
+  }
 }
 
 
@@ -259,14 +255,11 @@ compare_beta_effects <- function(effects, n_samples = 1000, seed = 42) {
   par(mfrow = c(ceiling(length(effects) / 2), 2))
   set.seed(seed)
 
-  W <- gen_exp_corr(256)
-  V <- eigen(W)$vectors
-  W_freq <- t(V) %*% W %*% V
+  res <- generate_x_and_x_freq(n_samples, img_size = 256)
+  x <- res$x
 
   for (effect in effects) {
     beta <- gen_beta(img_size = 16, effect_size = effect)
-    x_freq <- gen_x(n_samples, W_freq)
-    x <- x_freq %*% t(V)
     p <- 1 / (1 + exp(-(x %*% beta)))
     hist(p,
       breaks = 30, main = paste("Effect =", effect), xlim = c(0, 1),
@@ -286,13 +279,11 @@ compare_beta_effects <- function(effects, n_samples = 1000, seed = 42) {
 compare_b_effects <- function(effects, n_samples = 1000, sparsity = 0.1, seed = 42) {
   par(mfrow = c(ceiling(length(effects) / 2), 2))
 
-  W <- gen_exp_corr(256)
-  V <- eigen(W)$vectors
-  W_freq <- t(V) %*% W %*% V
+  res <- generate_x_and_x_freq(n_samples, img_size = 256)
+  x_freq <- res$x_freq
 
   for (effect in effects) {
     b <- gen_b(len = 256, sparsity, effect, seed)
-    x_freq <- gen_x(n_samples, W_freq)
     p <- 1 / (1 + exp(-(x_freq %*% b)))
     hist(p, breaks = 30, main = paste("Effect =", effect), xlim = c(0, 1), xlab = "Probability p", col = "lightblue", border = "black")
   }
