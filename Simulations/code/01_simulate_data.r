@@ -344,13 +344,13 @@ visualize_coefs <- function(img_size, beta_effect, b_effect, b_sparsity, seed = 
   grid.arrange(p1, p2, p3, p4, ncol = 2)
 }
 
-coef_plots <- visualize_coefs(
-  img_size = img_size,
-  beta_effect = beta_effect,
-  b_effect = b_effect,
-  b_sparsity = b_sparsity,
-  seed = seed
-)
+# coef_plots <- visualize_coefs(
+#   img_size = img_size,
+#   beta_effect = beta_effect,
+#   b_effect = b_effect,
+#   b_sparsity = b_sparsity,
+#   seed = seed
+# )
 # ggsave(
 #   file.path(fig_dir, paste0("coef_heatmaps_", format(Sys.Date(), "%y%m%d"), ".png")),
 #   coef_plots
