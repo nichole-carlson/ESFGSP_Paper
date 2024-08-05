@@ -41,45 +41,45 @@ source(file.path(code_dir, "simWrapper.r"))
 # A matrix containing the accuracy and AUC for models with lambda.min and lambda.1se.
 
 perform_lasso <- function(x, y, p_train, seed = NULL) {
-    if (!is.null(seed)) {
-        set.seed(seed)
-    }
-    # Split the dataset
-    n <- nrow(x)
-    train_idx <- sample(seq_len(n), size = floor(n * p_train))
+  if (!is.null(seed)) {
+    set.seed(seed)
+  }
+  # Split the dataset
+  n <- nrow(x)
+  train_idx <- sample(seq_len(n), size = floor(n * p_train))
 
-    x_train <- x[train_idx, , drop = FALSE]
-    x_test <- x[-train_idx, , drop = FALSE]
-    y_train <- y[train_idx]
-    y_test <- y[-train_idx]
+  x_train <- x[train_idx, , drop = FALSE]
+  x_test <- x[-train_idx, , drop = FALSE]
+  y_train <- y[train_idx]
+  y_test <- y[-train_idx]
 
-    # Perform cross-validation to find the optimal lambda values
-    cv_model <- cv.glmnet(x_train, y_train, alpha = 1, family = "binomial")
-    lambda_min <- cv_model$lambda.min
-    lambda_1se <- cv_model$lambda.1se
+  # Perform cross-validation to find the optimal lambda values
+  cv_model <- cv.glmnet(x_train, y_train, alpha = 1, family = "binomial")
+  lambda_min <- cv_model$lambda.min
+  lambda_1se <- cv_model$lambda.1se
 
-    # Function to evaluate model performance
-    eval_perf <- function(l) {
-        mod <- glmnet(x_train, y_train, alpha = 1, lambda = l, family = "binomial")
-        preds <- predict(mod, newx = x_test, type = "response")[, 1]
-        preds_bin <- ifelse(preds > 0.5, 1, 0)
+  # Function to evaluate model performance
+  eval_perf <- function(l) {
+    mod <- glmnet(x_train, y_train, alpha = 1, lambda = l, family = "binomial")
+    preds <- predict(mod, newx = x_test, type = "response")[, 1]
+    preds_bin <- ifelse(preds > 0.5, 1, 0)
 
-        acc <- mean(preds_bin == y_test)
-        auc <- pROC::auc(pROC::roc(y_test, preds))
+    acc <- mean(preds_bin == y_test)
+    auc <- pROC::auc(pROC::roc(y_test, preds))
 
-        c(acc = acc, AUC = auc)
-    }
+    c(acc = acc, AUC = auc)
+  }
 
-    # Get performance metrics for both lambda.min and lambda.1se
-    perf_min <- eval_perf(lambda_min)
-    perf_1se <- eval_perf(lambda_1se)
+  # Get performance metrics for both lambda.min and lambda.1se
+  perf_min <- eval_perf(lambda_min)
+  perf_1se <- eval_perf(lambda_1se)
 
-    # Combine results into a coherent matrix
-    results <- c(perf_min, perf_1se)
-    results <- matrix(results, nrow = 1)
-    colnames(results) <- c("min_acc", "min_auc", "1se_acc", "1se_auc")
+  # Combine results into a coherent matrix
+  results <- c(perf_min, perf_1se)
+  results <- matrix(results, nrow = 1)
+  colnames(results) <- c("min_acc", "min_auc", "1se_acc", "1se_auc")
 
-    return(results)
+  return(results)
 }
 
 
@@ -100,31 +100,31 @@ perform_lasso <- function(x, y, p_train, seed = NULL) {
 # the permutation test.
 
 perm_lasso <- function(x, y, n_perm, seed = NULL) {
-    if (!is.null(seed)) {
-        set.seed(seed)
-    }
+  if (!is.null(seed)) {
+    set.seed(seed)
+  }
 
-    cv_lasso <- function(x, y) {
-        cv_fit <- cv.glmnet(x, y, alpha = 1)
-        best_lambda <- cv_fit$lambda.min
-        coefs <- coef(cv_fit, s = "lambda.min")[-1, 1]
-        return(coefs)
-    }
+  cv_lasso <- function(x, y) {
+    cv_fit <- cv.glmnet(x, y, alpha = 1)
+    best_lambda <- cv_fit$lambda.min
+    coefs <- coef(cv_fit, s = "lambda.min")[-1, 1]
+    return(coefs)
+  }
 
-    # get original coef estimates
-    orig_coefs <- cv_lasso(x, y)
+  # get original coef estimates
+  orig_coefs <- cv_lasso(x, y)
 
-    # perform permutations
-    perm_coefs <- matrix(NA, n_perm, length(orig_coefs))
+  # perform permutations
+  perm_coefs <- matrix(NA, n_perm, length(orig_coefs))
 
-    for (i in seq_len(n_perm)) {
-        y_perm <- sample(y)
-        perm_coefs[i, ] <- cv_lasso(x, y_perm)
-    }
+  for (i in seq_len(n_perm)) {
+    y_perm <- sample(y)
+    perm_coefs[i, ] <- cv_lasso(x, y_perm)
+  }
 
-    # calculate p-values
-    p_vals <- matrix(colMeans(abs(perm_coefs) > abs(orig_coefs)), nrow = 1)
-    return(p_vals)
+  # calculate p-values
+  p_vals <- matrix(colMeans(abs(perm_coefs) > abs(orig_coefs)), nrow = 1)
+  return(p_vals)
 }
 
 # ----- Simulate Data -----
@@ -137,17 +137,52 @@ b_effect <- 0.4
 b_sparsity <- 0.1
 seed <- 42
 
+cat("Simulating Data for", n_sim, "iterations of Simulation 1 ... \n")
 tic()
-cat("Simulating Data for", n_sim, "iterations ... \n")
-simulated_data <- simulate_data(
-    n_sim = n_sim,
-    n_samples = n_samples,
-    img_size = img_size,
-    beta_effect = beta_effect,
-    b_effect = b_effect,
-    b_sparsity = b_sparsity,
-    seed = seed
+sim1_data <- run_simulation1(
+  n_sim, n_samples, img_size, beta_effect, seed
 )
 toc()
 
+cat("Simulating Data for", n_sim, "iterations of Simulation 2 ... \n")
+tic()
+sim2_data <- run_simulation2(
+  n_sim, n_samples, img_size, b_effect, b_sparsity, seed
+)
+toc()
+
+
 # ----- Fit Models -----
+
+p_train <- 0.8
+
+eval_model_perf <- function(i, sim_data, p_train, seed) {
+  sim_data_i <- sim_data$data[[i]]
+  x <- sim_data_i$x
+  x_freq <- sim_data_i$x_freq
+  y <- sim_data_i$y
+
+  perf_metrics <- perform_lasso(x, y, p_train, seed + i)
+  perf_metrics_freq <- perform_lasso(x_freq, y, p_train, seed + i)
+
+  return(list(pixel = perf_metrics, freq = perf_metrics_freq))
+}
+
+tic()
+sim1_model_perf <- simWrapper(
+  n_sim = n_sim,
+  f_sim = function(i) eval_model_perf(i, sim1_data, p_train, seed),
+  list_export = ls(),
+  list_package = c("glmnet", "pROC")
+)
+toc()
+
+
+tic()
+sim2_model_perf <- simWrapper(
+  n_sim = n_sim,
+  f_sim = function(i) eval_model_perf(i, sim2_data, p_train, seed),
+  list_export = ls(),
+  list_package = c("glmnet", "pROC")
+)
+toc()
