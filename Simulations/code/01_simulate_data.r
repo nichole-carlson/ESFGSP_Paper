@@ -40,7 +40,10 @@ library(ggplot2)
 library(reshape2)
 library(gridExtra)
 
-fig_dir <- "/Users/siyangren/Documents/ra-cida/ESFGSP_Paper/Simulations/results/figures"
+simulation_dir <- "/Users/siyangren/Documents/ra-cida/ESFGSP_Paper/Simulations"
+fig_dir <- file.path(simulation_dir, "results", "figures")
+results_data_dir <- file.path(simulation_dir, "results", "data")
+
 
 
 # ----- Functions to simulate data -----
@@ -315,20 +318,6 @@ compare_b_effects <- function(effects, n_samples = 1000, sparsity = 0.1, seed = 
 # compare_b_effects(c(1, 0.8, 0.6, 0.4, 0.2, 0.1))
 # dev.off()
 
-
-
-# ----- Run Simulations -----
-
-# Global settings
-# n_sim <- 500
-# n_samples <- 1000
-# img_size <- 16
-# beta_effect <- 0.1
-# b_effect <- 0.4
-# b_sparsity <- 0.1
-# seed <- 42
-
-
 # Visualize beta and b using selected effect size
 visualize_coefs <- function(img_size, beta_effect, b_effect, b_sparsity, seed = NULL) {
   if (!is.null(seed)) {
@@ -366,19 +355,36 @@ visualize_coefs <- function(img_size, beta_effect, b_effect, b_sparsity, seed = 
 #   coef_plots
 # )
 
-# Simulate x and y for two sparsity patterns
-# tic()
-# cat("Simulating Data for", n_sim, "iterations ... \n")
-# simulated_data <- simulate_data(
-#   n_sim = n_sim,
-#   n_samples = n_samples,
-#   img_size = img_size,
-#   beta_effect = beta_effect,
-#   b_effect = b_effect,
-#   b_sparsity = b_sparsity,
-#   seed = seed
-# )
-# toc()
+
+# ----- Run Simulations -----
+
+n_sim <- 500
+n_samples <- 1000
+img_size <- 16
+beta_effect <- 0.1
+b_effect <- 0.4
+b_sparsity <- 0.1
+seed <- 42
+
+cat("Simulating Data for", n_sim, "iterations of Simulation 1 ... \n")
+tic()
+sim1_data <- run_simulation1(
+  n_sim, n_samples, img_size, beta_effect, seed
+)
+toc()
+
+cat("Simulating Data for", n_sim, "iterations of Simulation 2 ... \n")
+tic()
+sim2_data <- run_simulation2(
+  n_sim, n_samples, img_size, b_effect, b_sparsity, seed
+)
+toc()
+
+save(
+  n_sim, n_samples, img_size, beta_effect, b_effect, b_sparsity,
+  sim1_data, sim2_data,
+  file = file.path(results_data_dir, "simulated_data.RData")
+)
 
 # Function to visualize the simulated data
 visualize_simulated_data <- function(sim_data) {
@@ -408,9 +414,3 @@ visualize_simulated_data <- function(sim_data) {
   }
   do.call(grid.arrange, c(plots, ncol = 2))
 }
-
-# # Extract data from the first simulation and visualize
-# ggsave(
-#   file.path(fig_dir, paste0("group_mean_image_", format(Sys.Date(), "%y%m%d"), ".png")),
-#   visualize_simulated_data(simulated_data)
-# )
