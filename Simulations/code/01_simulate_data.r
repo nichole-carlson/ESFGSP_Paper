@@ -382,7 +382,7 @@ toc()
 
 filename <- paste0("simulated_data_", format(Sys.Date(), "%y%m%d"), ".RData")
 save(
-  n_sim, n_samples, img_size, beta_effect, b_effect, b_sparsity,
+  n_sim, n_samples, img_size, beta_effect, b_effect, b_sparsity, seed,
   sim1_data, sim2_data,
   file = file.path(results_data_dir, filename)
 )
