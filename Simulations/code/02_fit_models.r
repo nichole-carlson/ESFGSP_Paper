@@ -12,12 +12,18 @@
 # Load required libraries
 library(glmnet)
 library(pROC)
+library(tictoc)
 
 simulation_dir <- "/Users/siyangren/Documents/ra-cida/ESFGSP_Paper/Simulations"
 code_dir <- file.path(simulation_dir, "code")
 results_data_dir <- file.path(simulation_dir, "results", "data")
 
+cat("Loading simulated data ... \n")
+tic()
 load(file = file.path(results_data_dir, "simulated_data_240815.RData"))
+toc()
+cat("Simulated data loaded  \n")
+
 source(file.path(code_dir, "simWrapper.r"))
 
 
@@ -134,7 +140,7 @@ p_train <- 0.8
 n_perm <- 100
 
 # AUC and accuracy
-eval_model_perf <- function(i, sim_data, p_train, seed) {
+eval_auc_acc <- function(i, sim_data, p_train, seed) {
   sim_data_i <- sim_data$data[[i]]
   x <- sim_data_i$x
   x_freq <- sim_data_i$x_freq
@@ -146,34 +152,79 @@ eval_model_perf <- function(i, sim_data, p_train, seed) {
   return(list(pixel = perf_metrics, freq = perf_metrics_freq))
 }
 
+cat("Calculating AUCs and ACCs on simulated data 1 ...\n")
 tic()
-sim1_model_perf <- simWrapper(
+sim1_auc_acc <- simWrapper(
   n_sim = n_sim,
-  f_sim = function(i) eval_model_perf(i, sim1_data, p_train, seed),
+  f_sim = function(i) eval_auc_acc(i, sim1_data, p_train, seed),
   list_export = ls(),
   list_package = c("glmnet", "pROC")
 )
 toc()
 
+cat("Calculating AUCs and ACCs on simulated data 2 ... \n")
 tic()
-sim2_model_perf <- simWrapper(
+sim2_auc_acc <- simWrapper(
   n_sim = n_sim,
-  f_sim = function(i) eval_model_perf(i, sim2_data, p_train, seed),
+  f_sim = function(i) eval_auc_acc(i, sim2_data, p_train, seed),
   list_export = ls(),
   list_package = c("glmnet", "pROC")
 )
 toc()
 
-sim1_model_perf <- apply(sim1_model_perf, 2, function(col) {
+sim1_auc_acc <- apply(sim1_auc_acc, 2, function(col) {
   as.data.frame(do.call("rbind", col))
 }, simplify = FALSE)
 
-sim2_model_perf <- apply(sim2_model_perf, 2, function(col) {
+sim2_auc_acc <- apply(sim2_auc_acc, 2, function(col) {
   as.data.frame(do.call("rbind", col))
 }, simplify = FALSE)
+
+
+# Permutation test for p-values
+eval_pvals <- function(i, sim_data, n_perm, seed) {
+  sim_data_i <- sim_data$data[[i]]
+  x <- sim_data_i$x
+  x_freq <- sim_data_i$x_freq
+  y <- sim_data_i$y
+
+  p_vals <- perm_lasso(x, y, n_perm, seed + i)
+  p_vals_freq <- perm_lasso(x_freq, y, n_perm, seed + i)
+
+  return(list(pixel = p_vals, freq = p_vals_freq))
+}
+
+cat("Calculating p-values on simulated data 1 ...\n")
+tic()
+sim1_pvals <- simWrapper(
+  n_sim = n_sim,
+  f_sim = function(i) eval_pvals(i, sim1_data, n_perm, seed),
+  list_export = ls(),
+  list_package = c("glmnet", "pROC")
+)
+toc()
+
+cat("Calculating p-values on simulated data 2 ...\n")
+tic()
+sim2_pvals <- simWrapper(
+  n_sim = n_sim,
+  f_sim = function(i) eval_pvals(i, sim2_data, n_perm, seed),
+  list_export = ls(),
+  list_package = c("glmnet", "pROC")
+)
+toc()
+
+sim1_pvals <- apply(sim1_pvals, 2, function(col) {
+  as.data.frame(do.call("rbind", col))
+}, simplify = FALSE)
+
+sim2_pvals <- apply(sim2_pvals, 2, function(col) {
+  as.data.frame(do.call("rbind", col))
+}, simplify = FALSE)
+
 
 filename <- paste0("model_metrics_", format(Sys.Date(), "%y%m%d"), ".RData")
 save(
-  sim1_model_perf, sim2_model_perf,
+  sim1_auc_acc, sim2_auc_acc, sim1_pvals, sim2_pvals,
   file = file.path(results_data_dir, filename)
 )
