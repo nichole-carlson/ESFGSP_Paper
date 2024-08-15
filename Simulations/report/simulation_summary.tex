@@ -3,10 +3,15 @@
 \usepackage{enumerate}
 \usepackage{graphicx}
 \usepackage{float}
+\usepackage{multirow}
+\usepackage{booktabs}
 
 \renewcommand{\baselinestretch}{1}
 \topmargin 0in \headheight 0.0in \textheight 9in \textwidth 6.5in
 \oddsidemargin 0.1in \evensidemargin 0.1in
+
+\graphicspath{{/Users/siyangren/Documents/ra-cida/ESFGSP_Paper/Simulations/results/figures}}
+
 
 \begin{document}
 
@@ -37,9 +42,9 @@ the frequency space by \( X_{\text {freq }}=V^T X \). The covariance matrix of
 diagonal matrix.
 
 For the simulations, in each iteration, we randomly generate \( X_{\text {freq
-}} \) from a multivariate normal distribution with the covariance matrix \(\
-operatorname{cov}\left(X_{\text {freq }}\right) \). We repeat this process 1000
-times. Then, we calculate \( X \) as \( X=V X_{\text {freq }} \).
+}} \) from a multivariate normal distribution with the covariance matrix
+\(\operatorname{cov}\left(X_{\text {freq }}\right) \). We repeat this process
+1000 times. Then, we calculate \( X \) as \( X=V X_{\text {freq }} \).
 
 In the first simulation, we assume sparsity in the coefficient vectors in the
 pixel space. The coefficient vector \( \beta \) was specified to have non-zero
@@ -63,8 +68,9 @@ generated in size \( 1000 \times 256 \) and representing images of \( 16 \times
 regularization parameter \( \lambda \) was tuned using cross-validation with
 the default binomial deviance metric. The dataset was divided into 10 folds,
 with the model trained and validated iteratively across these folds, varying \(
-\lambda \). The optimal \( \lambda \) was chosen based on the lowest average
-binomial deviance.
+\lambda \). Here we use two \( \lambda \) values, `lambda.min` is the
+regularization value that minimizes cross-validated error, and `lambda.1se` is
+the largest lambda within one standard error of the minimum.
 
 After selecting the optimal \( \lambda \), model performance was evaluated
 using accuracy and AUC metrics. Additionally, a permutation test was conducted
@@ -82,7 +88,7 @@ were set to 0.1.
 
 \begin{figure}[H] 
 	\centering
-	\includegraphics[width=\textwidth]{../Figures/sim1_p_dist.png} 
+	\includegraphics[width=\textwidth]{sim1_p_dist.png} 
 	\caption{The distribution of \(p\) at different \(\beta\) values. \(\beta = 0.1\) was
 chosen for model fitting as it gives the most evenly distributed values.}
 	\label{fig:sim1_p_dist} 
@@ -95,14 +101,43 @@ probabilites.
 
 \begin{figure}[H] 
 	\centering
-	\includegraphics[width=\textwidth]{../Figures/sim2_p_dist.png} 
+	\includegraphics[width=\textwidth]{sim2_p_dist.png} 
 	\caption{The distribution of \(p\) at different \( b \) values. \( b = 0.4 \) was
 chosen for model fitting as it gives the most evenly distributed values.}
 	\label{fig:sim2_p_dist} 
 \end{figure}
 
 
+\begin{table}[h!]
+\centering
+\caption{}
+\label{tab:auc_acc_table}
+\begin{tabular}{l|cc|cc}
+\toprule
+& \multicolumn{2}{c}{Model on the pixel space} & \multicolumn{2}{c}{Model on the freq space} \\ 
+	Lambda & AUC (SE) & Accuracy (SE) & AUC (SE) & Accuracy (SE) \\ 
+\midrule
+	lambda.min & 0.803 (0.031) & 0.725 (0.032) & 0.827 (0.029) & 0.746 (0.031) \\
+	lambda.1se & 0.800 (0.031) & 0.723 (0.032) & 0.826 (0.029) & 0.745 (0.031) \\ 
+	lambda.min & 0.756 (0.036) & 0.687 (0.035) & 0.816 (0.032) & 0.735 (0.033)  \\
+	lambda.1se & 0.734 (0.040) & 0.669 (0.036) & 0.816 (0.032) & 0.734 (0.034) \\
+\bottomrule
+\end{tabular}
+\end{table}
 
+We can see that no matter we assume sparsity in coefficient vectors in the pixel
+space of the frequency space, fitting models on the frequency space provides
+better performance in AUCs and accuracys. When assuming sparsity in coefficient
+vectors in the pixel space and using `lambda.min` as the
+regularization value, models fitting with covariates in the pixel space \( (X)
+\) achieves an AUC of 0.803 (se = 0.031), and an accuracy of 72.5\% (se =
+0.032); while models fitting with covariates in the corresponding frequency
+space \( (X_{\text{freq}}) \) achieves a slightly better AUC of 0.827 (se =
+0.029) and better accuracy of 74.6\% (se = 0.031). We see a similar advantage of
+fitting models on the frequency space when assuming sparsity in coefficient
+vectors in the frequency space, and using either `lambda.min` or `lambda.1se`
+does not affect this advantage.
 
+Another interesting fact we found is that, 
 
 \end{document}
