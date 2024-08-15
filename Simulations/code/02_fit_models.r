@@ -17,7 +17,7 @@ simulation_dir <- "/Users/siyangren/Documents/ra-cida/ESFGSP_Paper/Simulations"
 code_dir <- file.path(simulation_dir, "code")
 results_data_dir <- file.path(simulation_dir, "results", "data")
 
-load(file = file.path(results_data_dir, "simulated_data.RData"))
+load(file = file.path(results_data_dir, "simulated_data_240815.RData"))
 source(file.path(code_dir, "simWrapper.r"))
 
 
@@ -131,6 +131,7 @@ perm_lasso <- function(x, y, n_perm, seed = NULL) {
 # ----- Fit Models -----
 
 p_train <- 0.8
+n_perm <- 100
 
 # AUC and accuracy
 eval_model_perf <- function(i, sim_data, p_train, seed) {

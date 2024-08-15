@@ -380,10 +380,11 @@ sim2_data <- run_simulation2(
 )
 toc()
 
+filename <- paste0("simulated_data_", format(Sys.Date(), "%y%m%d"), ".RData")
 save(
   n_sim, n_samples, img_size, beta_effect, b_effect, b_sparsity,
   sim1_data, sim2_data,
-  file = file.path(results_data_dir, "simulated_data.RData")
+  file = file.path(results_data_dir, filename)
 )
 
 # Function to visualize the simulated data
