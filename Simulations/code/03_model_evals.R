@@ -7,6 +7,7 @@ results_data_dir <- file.path(simulation_dir, "results", "data")
 
 # ----- Load model fitting results -----
 load(file = file.path(results_data_dir, "model_metrics_240807.RData"))
+load(file = file.path(results_data_dir, "model_metrics_240815.RData"))
 
 my.render.cont <- function(x) {
   with(stats.default(x), sprintf("%.3f (%0.3f)", MEAN, SD))
