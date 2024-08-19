@@ -91,3 +91,30 @@ png(
 )
 visual_group_diff(sim2_1iter)
 dev.off()
+
+
+# ----- Visualize beta and b using selected effect size -----
+visualize_coefs <- function(sim_data){
+  meta_data <- sim_data$meta_data
+  b <- meta_data$b 
+  beta <- meta_data$beta 
+
+  p1 <- plot_heatmap(beta)
+  p2 <- plot_heatmap(b) 
+
+  grid.arrange(p1, p2, ncol = 2)
+}
+
+png(
+  file = file.path(fig_dir, "coefs_sim1.png"),
+  width = 1600, height = 1200, res = 150
+)
+visualize_coefs(sim1_1iter)
+dev.off()
+
+png(
+  file = file.path(fig_dir, "coefs_sim2.png"),
+  width = 1600, height = 1200, res = 150
+)
+visualize_coefs(sim2_1iter)
+dev.off()
