@@ -145,7 +145,6 @@ gen_y <- function(x_mat, coefs) {
   rbinom(nrow(x_mat), 1, probs)
 }
 
-
 gen_meta_data <- function(img_size) {
   n_pixels <- img_size^2
 
@@ -277,42 +276,6 @@ compare_b_effects <- function(effects, n_samples = 1000, sparsity = 0.1, seed = 
 # compare_b_effects(c(1, 0.8, 0.6, 0.4, 0.2, 0.1))
 # dev.off()
 
-# Visualize beta and b using selected effect size
-visualize_coefs <- function(img_size, beta_effect, b_effect, b_sparsity, seed = NULL) {
-  if (!is.null(seed)) {
-    set.seed(seed)
-  }
-
-  # Generate global variables
-  W <- gen_exp_corr(img_size^2)
-  V <- eigen(W)$vectors
-  W_freq <- t(V) %*% W %*% V
-
-  beta <- gen_beta(img_size, beta_effect)
-  b <- gen_b(img_size^2, b_sparsity, b_effect)
-
-  # Visualize coefs
-  # When assigning sparsity to beta
-  p1 <- plot_heatmap(beta)
-  p2 <- plot_heatmap(beta_to_b(beta, V))
-  # When assigning sparsity to b
-  p3 <- plot_heatmap(b)
-  p4 <- plot_heatmap(b_to_beta(b, V))
-
-  grid.arrange(p1, p2, p3, p4, ncol = 2)
-}
-
-# coef_plots <- visualize_coefs(
-#   img_size = img_size,
-#   beta_effect = beta_effect,
-#   b_effect = b_effect,
-#   b_sparsity = b_sparsity,
-#   seed = seed
-# )
-# ggsave(
-#   file.path(fig_dir, paste0("coef_heatmaps_", format(Sys.Date(), "%y%m%d"), ".png")),
-#   coef_plots
-# )
 
 
 # ----- Run Simulations -----
