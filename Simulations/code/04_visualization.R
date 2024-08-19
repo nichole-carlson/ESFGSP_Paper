@@ -2,6 +2,7 @@ library(ggplot2)
 library(gridExtra)
 
 simulation_dir <- "/Users/siyangren/Documents/ra-cida/ESFGSP_Paper/Simulations"
+fig_dir <- file.path(simulation_dir, "results", "figures")
 res_data_dir <- file.path(simulation_dir, "results", "data")
 
 
@@ -76,5 +77,17 @@ visual_group_diff <- function(sim_data) {
   grid.arrange(p1, p2, ncol = 2)
 }
 
+png(
+  file = file.path(fig_dir, "group_diff_sim1.png"),
+  width = 1600, height = 1200, res = 150
+)
 visual_group_diff(sim1_1iter)
+dev.off()
+
+
+png(
+  file = file.path(fig_dir, "group_diff_sim2.png"),
+  width = 1600, height = 1200, res = 150
+)
 visual_group_diff(sim2_1iter)
+dev.off()
