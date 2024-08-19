@@ -94,13 +94,13 @@ dev.off()
 
 
 # ----- Visualize beta and b using selected effect size -----
-visualize_coefs <- function(sim_data){
+visualize_coefs <- function(sim_data) {
   meta_data <- sim_data$meta_data
-  b <- meta_data$b 
-  beta <- meta_data$beta 
+  b <- meta_data$b
+  beta <- meta_data$beta
 
   p1 <- plot_heatmap(beta)
-  p2 <- plot_heatmap(b) 
+  p2 <- plot_heatmap(b)
 
   grid.arrange(p1, p2, ncol = 2)
 }
@@ -117,4 +117,26 @@ png(
   width = 1600, height = 1200, res = 150
 )
 visualize_coefs(sim2_1iter)
+dev.off()
+
+
+# ----- Visualize the top three and the bottom eigenvectors -----
+# the eigenvectors are the same across sim1 and sim2
+visualize_eigvecs <- function(sim_data) {
+  x_cov <- sim_data$meta_data$x_cov
+  eig_res <- eigen(x_cov)
+  eig_vecs <- eig_res$vectors[, order(eig_res$values, decreasing = TRUE)]
+  p1 <- plot_heatmap(eig_vecs[, 1])
+  p2 <- plot_heatmap(eig_vecs[, 2])
+  p3 <- plot_heatmap(eig_vecs[, 3])
+  p4 <- plot_heatmap(eig_vecs[, 256])
+
+  grid.arrange(p1, p2, p3, p4, ncol = 2)
+}
+
+png(
+  file = file.path(fig_dir, "top_bottom_eigvecs.png"),
+  width = 1600, height = 1200, res = 150
+)
+visualize_eigvecs(sim1_1iter)
 dev.off()
