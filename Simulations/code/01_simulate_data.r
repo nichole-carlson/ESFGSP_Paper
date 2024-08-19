@@ -38,7 +38,6 @@ library(MASS)
 library(tictoc)
 library(ggplot2)
 library(reshape2)
-library(gridExtra)
 
 simulation_dir <- "/Users/siyangren/Documents/ra-cida/ESFGSP_Paper/Simulations"
 fig_dir <- file.path(simulation_dir, "results", "figures")
@@ -146,46 +145,6 @@ gen_y <- function(x_mat, coefs) {
   rbinom(nrow(x_mat), 1, probs)
 }
 
-# Function to plot a 1D vector as a 16x16 heatmap
-#
-# Args:
-#   vec: A numeric vector of length 256 representing a 1D 16x16 image.
-#   value_limits: An optional numeric vector of length 2 specifying the value limits for the color scale (default is NULL).
-#   title: A string specifying the title of the plot (default is "Heatmap").
-#
-# Returns:
-#   A ggplot2 object representing the heatmap.
-plot_heatmap <- function(vec, value_limits = NULL) {
-  # Convert 1D vector to 2D matrix
-  len <- length(vec)
-  img_size <- as.integer(sqrt(len))
-  mat <- matrix(vec, img_size, img_size, byrow = TRUE)
-
-  # Convert the 2D matrix to a long data frame: x, y, value
-  data_long <- reshape2::melt(mat)
-
-  # Ensure value_limits is of length 2 if provided
-  if (!is.null(value_limits) && length(value_limits) != 2) {
-    stop("value_limits must be a vector of length 2, like c(low, high)")
-  }
-
-  # Create the plot using ggplot2
-  plot <- ggplot(data_long, aes(x = Var2, y = Var1, fill = value)) +
-    geom_tile() +
-    scale_fill_gradient(
-      low = "white", high = "black",
-      limits = value_limits,
-      oob = scales::squish
-    ) +
-    theme_minimal() +
-    theme(
-      plot.background = element_rect(fill = "white", colour = "white"),
-      panel.background = element_rect(fill = "white", colour = "white")
-    ) +
-    labs(x = "", y = "")
-
-  return(plot)
-}
 
 gen_meta_data <- function(img_size) {
   n_pixels <- img_size^2
@@ -386,32 +345,3 @@ save(
   sim1_data, sim2_data,
   file = file.path(results_data_dir, filename)
 )
-
-# Function to visualize the simulated data
-visualize_simulated_data <- function(sim_data) {
-  n_sim <- length(sim_data)
-  plots <- list()
-  for (i in seq_len(n_sim)) {
-    name <- names(sim_data)[[i]]
-    data <- sim_data[[name]]
-
-    x <- data$x
-    x_freq <- data$x_freq
-    y <- data$y
-
-    # Calculate mean differences based on y assignment
-    mean_diff_x <- colMeans(x[y == 1, ]) - colMeans(x[y == 0, ])
-    mean_diff_x_freq <- colMeans(x_freq[y == 1, ]) - colMeans(x_freq[y == 0, ])
-
-    # Define the common range for both heatmaps
-    common_range <- range(mean_diff_x, mean_diff_x_freq)
-
-    # Generate heatmaps
-    p1 <- plot_heatmap(mean_diff_x, common_range)
-    p2 <- plot_heatmap(mean_diff_x_freq, common_range)
-
-    plots[[length(plots) + 1]] <- p1
-    plots[[length(plots) + 1]] <- p2
-  }
-  do.call(grid.arrange, c(plots, ncol = 2))
-}
