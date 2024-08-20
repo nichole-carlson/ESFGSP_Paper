@@ -81,22 +81,21 @@ percentage of significant p-values for each covariate.
 
 \section*{Results}
 
-Firstly we show how the top 3 eigenvectors and the bottom eigenvector looks
-like.
 
 \begin{figure}[H] 
 	\centering
 	\includegraphics[width=\textwidth]{top_bottom_eigvecs.png} 
-	\caption{Frequencies associated with the top 3 eigenvalues, as well as the
-	frequency associated with the bottom eigenvalue}
+\caption{Frequencies associated with the top three eigenvalues (top row and
+bottom left) and the frequency associated with the smallest eigenvalue (bottom
+right), highlighting the primary and least significant patterns in the pixel
+space.}
 	\label{fig:top_bottom_eigvecs} 
 \end{figure}
 
-In simulation 1, figure~\ref{fig:sim1_p_dist} shows the distribution of 
-\( p \) for different values of \( \beta	\). \( \beta \) were evaluated with
-value of 0.01, 0.05, 0.1, 0.2 and 1. We can see that when \( \beta = 0.1 \) does
-it achieve an even spread of probabilities, thus the effect size of \( \beta \)
-were set to 0.1.
+Figure~\ref*{fig:top_bottom_eigvecs} shows the frequencies tied to the top
+three eigenvalues representing the main patterns in the pixel space. The
+frequency associated with the smallest eigenvalue highlights the least
+significant variance.
 
 \begin{figure}[H] 
 	\centering
@@ -106,10 +105,10 @@ chosen for model fitting as it gives the most evenly distributed values.}
 	\label{fig:sim1_p_dist} 
 \end{figure}
 
-In simulation 2, figure~\ref{fig:sim2_p_dist} shows the distribution of \( p \)
-for different values of \( b \). \( b \) were evaluated at 0.1, 0.2, 0.4, 0.6,
-0.8 and 1. When \( b \) equals 0.4 did we achieve an even spread of
-probabilites.
+In Simulation 1, the distribution of the success probability \( p \) was
+evaluated at various \( \beta \) values: 0.01, 0.05, 0.1, 0.2, and 1. Figure
+\ref{fig:sim1_p_dist} shows that \( \beta = 0.1 \) resulted in the most even
+spread of \( p \), making it the optimal choice for model fitting.
 
 \begin{figure}[H] 
 	\centering
@@ -119,36 +118,41 @@ chosen for model fitting as it gives the most evenly distributed values.}
 	\label{fig:sim2_p_dist} 
 \end{figure}
 
-We then used the chosen \( \beta \) effect size to generate the coefficient
-vector in the pixel space \( \beta \) for Simulation 1, and then converted it
-into the corresponding \( b \) in the frequency space. Similarly, we simulated
-the coefficient vector in the frequency space using the chosen \( b \) effect
-for Simulation 2, and calculated the corresponding \( \beta \) vector.
-Figure~\ref{fig:coefs_sim1} shows the generated coefficient vectors and
-Figure~\ref{fig:group_diff1} shows the group mean difference in \( X \) and 
-\( X_{\text{freq}} \) whose corresponding \( y \) equals 1 to the group with
-\( y=0 \).
+In Simulation 2, the effect size \( b \) was varied at 0.1, 0.2, 0.4, 0.6,
+0.8, and 1. Figure \ref{fig:sim2_p_dist} shows that \( b = 0.4 \) yielded the most
+evenly distributed \( p \), indicating it as the best choice for the model.
 
 \begin{figure}[h!]
 	\centering
-	\includegraphics[width=\textwidth]{group_diff_sim1.png}
-	\caption{The group mean difference between \( y = 1 \) and \( y = 0 \).}
+	\includegraphics[width=0.8\textwidth]{group_diff_sim1.png}
+	\caption{The group mean difference between \( y = 1 \) and \( y = 0 \) in
+	the pixel space and frequency space.}
 	\label{fig:group_diff1}
 \end{figure}
 
 \begin{figure}[h!]
 	\centering
-	\includegraphics[width=\textwidth]{coefs_sim1.png}
-  \caption{Coefficients for Simulation 1.}
+	\includegraphics[width=0.8\textwidth]{coefs_sim1.png}
+  \caption{Coefficients for Simulation 1 in the pixel space (left) and
+	frequency space (right).}
   \label{fig:coefs_sim1}
 \end{figure}
 
-We can see that the heatmaps of covariates match with the heatmaps of
-coefficients in the corresponding space. Using coefficients and covariates in
-the pixel space as an example, since only the center of \( \beta \) have
-non-zero positive values, it means \( X \) whose center values are high have
-higher probability of being assigned with \( y=1 \). Similar explanation can
-be applied to coefficients and coefficients in the pixel space. 
+Figure \ref{fig:group_diff1} shows the group mean difference in the covariate
+values between instances where \( y=1 \) and \( y=0	\) in both the pixel space
+and the frequency space. The heatmaps illustrate that in the pixel space, the
+central region with non-zero coefficients in \( \beta \) corresponds to higher
+mean values of the covariates. Indicating its strong association with the
+positive response. In the frequency space, the pattern is more dispersed but
+still reflects the influence of the non-zero coefficients.
+
+Figure \ref{fig:coefs_sim1} presents the coefficients for Simulation 1, where
+sparsity was assumed in the pixel space. The coefficients exhibit a
+concentrated non-zero region in the center of the image, reflecting the
+assumption that only a central subset of the covariates significantly
+influences the response variable. This central region aligns with the higher
+mean values observed in the pixel space's covariates, as shown in Figure
+\ref{fig:group_diff1}.
 
 
 \begin{figure}[h!]
