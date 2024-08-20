@@ -67,19 +67,19 @@ visual_group_diff <- function(sim_data) {
   mean_diff_x_freq <- colMeans(x_freq[y == 1, ]) - colMeans(x_freq[y == 0, ])
 
   # Define the range of X and X_freq
-  x_range <- c(floor(min(x)), ceiling(max(x)))
-  x_freq_range <- c(floor(min(x_freq)), ceiling(max(x_freq)))
+  # x_range <- c(floor(min(x)), ceiling(max(x)))
+  # x_freq_range <- c(floor(min(x_freq)), ceiling(max(x_freq)))
 
   # Generate heatmaps
-  p1 <- plot_heatmap(mean_diff_x, x_range)
-  p2 <- plot_heatmap(mean_diff_x_freq, x_freq_range)
+  p1 <- plot_heatmap(mean_diff_x)
+  p2 <- plot_heatmap(mean_diff_x_freq)
 
   grid.arrange(p1, p2, ncol = 2)
 }
 
 png(
   file = file.path(fig_dir, "group_diff_sim1.png"),
-  width = 1600, height = 1200, res = 150
+  width = 1200, height = 500, res = 150
 )
 visual_group_diff(sim1_1iter)
 dev.off()
@@ -87,7 +87,7 @@ dev.off()
 
 png(
   file = file.path(fig_dir, "group_diff_sim2.png"),
-  width = 1600, height = 1200, res = 150
+  width = 1200, height = 500, res = 150
 )
 visual_group_diff(sim2_1iter)
 dev.off()
@@ -107,14 +107,14 @@ visualize_coefs <- function(sim_data) {
 
 png(
   file = file.path(fig_dir, "coefs_sim1.png"),
-  width = 1600, height = 1200, res = 150
+  width = 1200, height = 500, res = 150
 )
 visualize_coefs(sim1_1iter)
 dev.off()
 
 png(
   file = file.path(fig_dir, "coefs_sim2.png"),
-  width = 1600, height = 1200, res = 150
+  width = 1200, height = 500, res = 150
 )
 visualize_coefs(sim2_1iter)
 dev.off()
@@ -136,7 +136,7 @@ visualize_eigvecs <- function(sim_data) {
 
 png(
   file = file.path(fig_dir, "top_bottom_eigvecs.png"),
-  width = 1600, height = 1200, res = 150
+  width = 1200, height = 800, res = 150
 )
 visualize_eigvecs(sim1_1iter)
 dev.off()
