@@ -78,39 +78,28 @@ using accuracy and AUC metrics. Additionally, a permutation test was conducted
 calculated the mean and standard deviation of the metrics, as well as the
 percentage of significant p-values for each covariate.
 
+\clearpage
 
 \section*{Results}
-
-
-\begin{figure}[H] 
-	\centering
-	\includegraphics[width=\textwidth]{top_bottom_eigvecs.png} 
-\caption{Frequencies associated with the top three eigenvalues (top row and
-bottom left) and the frequency associated with the smallest eigenvalue (bottom
-right), highlighting the primary and least significant patterns in the pixel
-space.}
-	\label{fig:top_bottom_eigvecs} 
-\end{figure}
-
-Figure~\ref*{fig:top_bottom_eigvecs} shows the frequencies tied to the top
-three eigenvalues representing the main patterns in the pixel space. The
-frequency associated with the smallest eigenvalue highlights the least
-significant variance.
-
-\begin{figure}[H] 
-	\centering
-	\includegraphics[width=\textwidth]{sim1_p_dist.png} 
-	\caption{The distribution of \(p\) at different \(\beta\) values. \(\beta = 0.1\) was
-chosen for model fitting as it gives the most evenly distributed values.}
-	\label{fig:sim1_p_dist} 
-\end{figure}
 
 In Simulation 1, the distribution of the success probability \( p \) was
 evaluated at various \( \beta \) values: 0.01, 0.05, 0.1, 0.2, and 1. Figure
 \ref{fig:sim1_p_dist} shows that \( \beta = 0.1 \) resulted in the most even
 spread of \( p \), making it the optimal choice for model fitting.
 
-\begin{figure}[H] 
+\begin{figure}[htbp] 
+	\centering
+	\includegraphics[width=0.9\textwidth]{sim1_p_dist.png} 
+	\caption{The distribution of \(p\) at different \(\beta\) values.}
+	\label{fig:sim1_p_dist} 
+\end{figure}
+
+In Simulation 2, similarly, the distribution of \( p \) was evaluated at
+various \( b \) values: 0.1, 0.2, 0.4, 0.6, 0.8, and 1. Figure
+\ref{fig:sim2_p_dist} shows that \( b = 0.4 \) yielded the most evenly
+distributed \( p \).
+
+\begin{figure}[htbp] 
 	\centering
 	\includegraphics[width=\textwidth]{sim2_p_dist.png} 
 	\caption{The distribution of \(p\) at different \( b \) values. \( b = 0.4 \) was
@@ -118,28 +107,30 @@ chosen for model fitting as it gives the most evenly distributed values.}
 	\label{fig:sim2_p_dist} 
 \end{figure}
 
-In Simulation 2, the effect size \( b \) was varied at 0.1, 0.2, 0.4, 0.6,
-0.8, and 1. Figure \ref{fig:sim2_p_dist} shows that \( b = 0.4 \) yielded the most
-evenly distributed \( p \), indicating it as the best choice for the model.
+Using the chosen effects, we drew the response variable \( y \) from a
+binomial distribution with success probabilities determined by \( \eta = X
+\beta \) in both simulations. We then plotted the group mean difference in the
+covariate values between instances where \( y=1 \) and \( y=0	\) in both the pixel space
+and the frequency space. Figure \ref{fig:group_diff1} 
 
-\begin{figure}[h!]
+\begin{figure}[htbp]
 	\centering
-	\includegraphics[width=0.8\textwidth]{group_diff_sim1.png}
+	\includegraphics[width=0.9\textwidth]{group_diff_sim1.png}
 	\caption{The group mean difference between \( y = 1 \) and \( y = 0 \) in
 	the pixel space and frequency space.}
 	\label{fig:group_diff1}
 \end{figure}
 
-\begin{figure}[h!]
+\begin{figure}[htbp]
 	\centering
-	\includegraphics[width=0.8\textwidth]{coefs_sim1.png}
+	\includegraphics[width=0.9\textwidth]{coefs_sim1.png}
   \caption{Coefficients for Simulation 1 in the pixel space (left) and
 	frequency space (right).}
   \label{fig:coefs_sim1}
 \end{figure}
 
 Figure \ref{fig:group_diff1} shows the group mean difference in the covariate
-values between instances where \( y=1 \) and \( y=0	\) in both the pixel space
+values between instances 
 and the frequency space. The heatmaps illustrate that in the pixel space, the
 central region with non-zero coefficients in \( \beta \) corresponds to higher
 mean values of the covariates. Indicating its strong association with the
@@ -155,16 +146,16 @@ mean values observed in the pixel space's covariates, as shown in Figure
 \ref{fig:group_diff1}.
 
 
-\begin{figure}[h!]
+\begin{figure}[htbp]
 	\centering
-	\includegraphics[width=\textwidth]{coefs_sim2.png}
+	\includegraphics[width=0.9\textwidth]{coefs_sim2.png}
   \caption{Coefficients for Simulation 2.}
   \label{fig:coefs_sim2}
 \end{figure}
 
-\begin{figure}[h!]
+\begin{figure}[htbp]
 	\centering
-	\includegraphics[width=\textwidth]{group_diff_sim2.png}
+	\includegraphics[width=0.9\textwidth]{group_diff_sim2.png}
 	\caption{The group mean difference between \( y = 1 \) and \( y = 0 \).}
 	\label{fig:group_diff2}
 \end{figure}
@@ -184,7 +175,7 @@ We see a similar advantage of fitting models on the frequency space when
 assuming sparsity in coefficient vectors in the frequency space, and using
 either `lambda.min` or `lambda.1se` does not affect this advantage.
 
-\begin{table}[h!]
+\begin{table}[htbp]
 \centering
 \caption{}
 \label{tab:auc_acc_table}
@@ -204,5 +195,22 @@ either `lambda.min` or `lambda.1se` does not affect this advantage.
 Then, for both Simulation 1 and Simulation 2, we fitted two models, one using
 covariates on the frequency space, another using covariates on the pixel
 space. In 
+
+
+Figure~\ref*{fig:top_bottom_eigvecs} shows the frequencies tied to the top
+three eigenvalues representing the main patterns in the pixel space. The
+frequency associated with the smallest eigenvalue highlights the least
+significant variance.
+
+\begin{figure}[htbp] 
+	\centering
+	\includegraphics[width=0.8\textwidth]{top_bottom_eigvecs.png} 
+\caption{Frequencies associated with the top three eigenvalues (top row and
+bottom left) and the frequency associated with the smallest eigenvalue (bottom
+right), highlighting the primary and least significant patterns in the pixel
+space.}
+	\label{fig:top_bottom_eigvecs} 
+\end{figure}
+
 
 \end{document}
