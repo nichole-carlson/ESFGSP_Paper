@@ -247,15 +247,16 @@ compare_beta_effects <- function(effects, n_samples = 1000, seed = 42) {
   }
 }
 
-# png(
-#   file = file.path(fig_dir, "sim1_p_dist.png"),
-#   width = 1600, height = 1200, res = 150
-# )
-# compare_beta_effects(c(1, 0.2, 0.1, 0.05, 0.01))
-# dev.off()
+png(
+   file = file.path(fig_dir, "sim1_p_dist.png"),
+   width = 1200, height = 800, res = 150
+)
+compare_beta_effects(c(1, 0.2, 0.1, 0.05, 0.01))
+dev.off()
 
 # Function to compare b effects for Simulation 2
 compare_b_effects <- function(effects, n_samples = 1000, sparsity = 0.1, seed = 42) {
+  set.seed(seed)
   par(mfrow = c(ceiling(length(effects) / 2), 2))
 
   meta <- gen_meta_data(img_size = 16)
@@ -263,18 +264,18 @@ compare_b_effects <- function(effects, n_samples = 1000, sparsity = 0.1, seed = 
   x_freq <- gen_x(n_samples, x_freq_cov)
 
   for (effect in effects) {
-    b <- gen_b(len = 256, sparsity, effect, seed)
+    b <- gen_b(len = 256, sparsity, effect)
     p <- 1 / (1 + exp(-(x_freq %*% b)))
     hist(p, breaks = 30, main = paste("Effect =", effect), xlim = c(0, 1), xlab = "Probability p", col = "lightblue", border = "black")
   }
 }
 
-# png(
-#   file = file.path(fig_dir, "sim2_p_dist.png"),
-#   width = 1600, height = 1200, res = 150
-# )
-# compare_b_effects(c(1, 0.8, 0.6, 0.4, 0.2, 0.1))
-# dev.off()
+png(
+   file = file.path(fig_dir, "sim2_p_dist.png"),
+   width = 1200, height = 800, res = 150
+)
+compare_b_effects(c(1, 0.8, 0.6, 0.4, 0.2, 0.1))
+dev.off()
 
 
 
