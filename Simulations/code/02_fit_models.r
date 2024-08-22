@@ -73,18 +73,20 @@ perform_lasso <- function(x, y, p_train, seed = NULL) {
     acc <- mean(preds_bin == y_test)
     auc <- pROC::auc(pROC::roc(y_test, preds))
 
-    c(acc = acc, AUC = auc)
+    coefs <- as.vector(coef(mod))[-1]
+
+    res <- list(
+      metrics = c(acc = acc, auc = auc),
+      coefs = coefs
+    )
+    return(res)
   }
 
   # Get performance metrics for both lambda.min and lambda.1se
   perf_min <- eval_perf(lambda_min)
   perf_1se <- eval_perf(lambda_1se)
 
-  # Combine results into a coherent matrix
-  results <- c(perf_min, perf_1se)
-  results <- matrix(results, nrow = 1)
-  colnames(results) <- c("min_acc", "min_auc", "1se_acc", "1se_auc")
-
+  results <- list(lambda_min = perf_min, lambda_1se = perf_1se)
   return(results)
 }
 
@@ -154,7 +156,7 @@ eval_auc_acc <- function(i, sim_data, p_train, seed) {
 
 cat("Calculating AUCs and ACCs on simulated data 1 ...\n")
 tic()
-sim1_auc_acc <- simWrapper(
+sim1_auc_acc_coefs <- simWrapper(
   n_sim = n_sim,
   f_sim = function(i) eval_auc_acc(i, sim1_data, p_train, seed),
   list_export = ls(),
@@ -164,7 +166,7 @@ toc()
 
 cat("Calculating AUCs and ACCs on simulated data 2 ... \n")
 tic()
-sim2_auc_acc <- simWrapper(
+sim2_auc_acc_coefs <- simWrapper(
   n_sim = n_sim,
   f_sim = function(i) eval_auc_acc(i, sim2_data, p_train, seed),
   list_export = ls(),
@@ -172,13 +174,43 @@ sim2_auc_acc <- simWrapper(
 )
 toc()
 
-sim1_auc_acc <- apply(sim1_auc_acc, 2, function(col) {
-  as.data.frame(do.call("rbind", col))
-}, simplify = FALSE)
+extract_auc_acc <- function(.mat) {
+  apply(.mat, 2, function(.ls) {
+    lambda_min_metrics <- do.call("rbind", lapply(.ls, function(.lls) {
+      .lls$lambda_min$metrics
+    }))
+    lambda_1se_metrics <- do.call("rbind", lapply(.ls, function(.lls) {
+      .lls$lambda_1se$metrics
+    }))
+    metrics <- cbind(lambda_min_metrics, lambda_1se_metrics)
+    rownames(metrics) <- NULL
+    colnames(metrics) <- c("min_acc", "min_auc", "1se_acc", "1se_auc")
 
-sim2_auc_acc <- apply(sim2_auc_acc, 2, function(col) {
-  as.data.frame(do.call("rbind", col))
-}, simplify = FALSE)
+    return(metrics)
+  }, simplify = FALSE)
+}
+
+extract_coefs <- function(.mat) {
+  apply(.mat, 2, function(.ls) {
+    lambda_min_coefs <- do.call("rbind", lapply(.ls, function(.lls) {
+      .lls$lambda_min$coefs
+    }))
+    lambda_1se_coefs <- do.call("rbind", lapply(.ls, function(.lls) {
+      .lls$lambda_1se$coefs
+    }))
+
+    coefs <- list(
+      lambda_min = lambda_min_coefs,
+      lambda_1se = lambda_1se_coefs
+    )
+    return(coefs)
+  }, simplify = FALSE)
+}
+
+sim1_auc_acc <- extract_auc_acc(sim1_auc_acc_coefs)
+sim2_auc_acc <- extract_auc_acc(sim2_auc_acc_coefs)
+sim1_coefs <- extract_coefs(sim1_auc_acc_coefs)
+sim2_coefs <- extract_coefs(sim2_auc_acc_coefs)
 
 
 # Permutation test for p-values
@@ -225,6 +257,6 @@ sim2_pvals <- apply(sim2_pvals, 2, function(col) {
 
 filename <- paste0("model_metrics_", format(Sys.Date(), "%y%m%d"), ".RData")
 save(
-  sim1_auc_acc, sim2_auc_acc, sim1_pvals, sim2_pvals,
+  sim1_auc_acc, sim2_auc_acc, sim1_coefs, sim2_coefs, sim1_pvals, sim2_pvals,
   file = file.path(results_data_dir, filename)
 )
