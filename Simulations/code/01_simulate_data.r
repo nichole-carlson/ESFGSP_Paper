@@ -47,6 +47,18 @@ results_data_dir <- file.path(simulation_dir, "results", "data")
 
 # ----- Functions to simulate data -----
 
+eigen_decomp <- function(mat) {
+  n_cols <- ncol(mat)
+  cent_mat <- diag(n_cols) - matrix(1, n_cols, n_cols) / n_cols
+  eig_res <- eigen(cent_mat %*% mat %*% cent_mat, symmetric = TRUE)
+
+  ord_idx <- order(eig_res$values, decreasing = TRUE)
+  eig_vecs <- eig_res$vectors[, ord_idx]
+  eig_vals <- eig_res$values[ord_idx]
+
+  return(list(vectors = eig_vecs, values = eig_vals))
+}
+
 # Generate an exponential correlation matrix: suppose the pixels can
 # construct a squared image. Calculate the correlation between all pairs
 # of pixels based on their location in the image.
@@ -74,6 +86,19 @@ gen_exp_corr <- function(n_pixels) {
 
   # Generate the correlation matrix using the vectorized distance function
   outer(1:n_pixels, 1:n_pixels, Vectorize(function(i, j) exp(-calc_dist(i, j))))
+}
+
+# Generates a diagonal matrix with values decay faster at the beginning and 
+# slow down towards the end.
+# d_i = start_value * exp(-k * log(1 + b * i))
+# k is the decay rate
+# b is a constant that controls the rate of initial decay
+gen_exp_diag_matrix <- function(n, start_value = 6, end_value = 0.5, b = 0.1 ) {
+  k <- log(start_value / end_value) / log(1 + b * (n - 1))
+  diag_vals <- start_value * exp(-k * log(1 + b * seq(0, n - 1)))
+  diag_mat <- diag(diag_vals)
+
+  return(diag_mat)
 }
 
 # Generate a sparse coefficient vector in the freq space
