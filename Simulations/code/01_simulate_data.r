@@ -3,34 +3,30 @@
 # Two simulations: sparsity in pixel and frequency spaces.
 
 # Setup
-# X: a column vector representing 256 pixels in the pixel space. Its covariance
-# matrix, Sigma, follows an exponential correlation structure. Suppose i and j
-# are two pixels in X, Sigma_ij = -exp(dist(i, j)), where dist(i, j) are
-# calculated based on their location in the 16*16 matrix.
-
-# Let V be the matrix of eigenvectors of Sigma, with each column representing
-# an eigenvector. X_freq = t(V) %*% X, representing X in the frequency space.
-# Its covariance matrix is t(V) %*% Sigma %*% V, which is a diagonal matrix.
-
-# Simulations
-#   In each iteration, randomly generate X_freq, a vector, from a multivariate
-# normal distribution with the covariance matrix equals to t(V) %*% Sigma %*% V.
-# We repeat this process 1000 times. Then we calculate X = V %*% X_freq.
-#   In simulation 1, we assume sparsity in beta, the coefficient vector for X.
-# When converting the (256, ) vector into a 16*16 matrix, it should only have
-# non-zero values in the central 8*8 region.
-#   In simulation 2, we assume sparsity in b, the coefficient vector for X_freq.
-# Most of its 256 entries will be zero, with a randomly 10% be non-zero.
-
+# Suppose x is a column vector representing 256 pixels in the pixel space. It's
+# covariance matrix, Sigma, follows an exponential correlation structure:
+# suppose i and j are two pixels in x, sigma_ij = exp(-dist(i, j)), where
+# dist(i, j) is calculated based on their 2-D location in the 16*16 matrix.
+# 
+# Let V be the matrix of eigenvectors of Sigma, calculated using the method
+# brought in the Spatial filtering paper, with each column representing an
+# eigenvector. x_freq = t(V) %*% x, representing x in the freq space. It's
+# covariance matrix is t(V) %*% Sigma %*% V, which should be a diagonal matrix.
+# 
 # Matrix notation
-# If X is a 256*1 matrix, V is the matrix of eigenvectors, with each column
-# representing an eigenvector, then we know from the content above that
-# X_freq = t(V) %*% X, which is also a 256*1 matrix. Suppose know we generate
-# 1000 samples of X, and let X_mat to be a 1000*256 matrix, with each row
-# as a X, then X_freq_mat = t( t(V) %*% t(X_mat) ) = X_mat %*% V.
-
-# If beta and b are both 256*1 matrix, then t(X) %*% beta = t(X_freq) %*% b.
-# t(X_freq) %*% b = t(X) %*% V %*% b. So beta = V %*% b
+# Suppose X reperesents a n*256 matrix, with each row as t(x) in the above
+# context, then we can calculate X_freq = X %*% V, which is also a n*256 matrix. 
+# 
+# We further assume beta and b as 256*1, representing the coefficient vector
+# in the pixel space and freq space, respectively. Since X_freq %*% b = X %*%
+# beta, we can get V %*% b = beta.
+# 
+# Simulations
+# We do two simulations. The first one assume sparsity in beta. When converting
+# beta into a 16*16 matrix, it should only have non-zero values in the central
+# 8*8 region. We will simulate the covariates and outcome in the pixel space. The second
+# one assumes sparsity in b. We will simulate the covariates and outcome in the
+# freq space this time.
 
 
 # Load required libraries
@@ -93,13 +89,14 @@ gen_exp_corr <- function(n_pixels) {
 # d_i = start_value * exp(-k * log(1 + b * i))
 # k is the decay rate
 # b is a constant that controls the rate of initial decay
-gen_exp_diag_matrix <- function(n, start_value = 6, end_value = 0.5, b = 0.1 ) {
-  k <- log(start_value / end_value) / log(1 + b * (n - 1))
-  diag_vals <- start_value * exp(-k * log(1 + b * seq(0, n - 1)))
-  diag_mat <- diag(diag_vals)
+# gen_diag_corr <- function(n, start_value = 6, end_value = 0.5, b = 0.1 ) {
+#   k <- log(start_value / end_value) / log(1 + b * (n - 1))
+#   diag_vals <- start_value * exp(-k * log(1 + b * seq(0, n - 1)))
+#   diag_mat <- diag(diag_vals)
+# 
+#   return(diag_mat)
+# }
 
-  return(diag_mat)
-}
 
 # Generate a sparse coefficient vector in the freq space
 # Args:
@@ -170,138 +167,125 @@ gen_y <- function(x_mat, coefs) {
   rbinom(nrow(x_mat), 1, probs)
 }
 
-gen_meta_data <- function(img_size) {
-  n_pixels <- img_size^2
-
-  W <- gen_exp_corr(n_pixels) # correlation matrix for x
-  V <- eigen(W)$vectors
-  W_freq <- t(V) %*% W %*% V # correlation matrix for x_freq
-
-  list(x_cov = W, eig_vecs = V, x_freq_cov = W_freq)
-}
-
-simulate_xy_freq <- function(n_iter, n_samples, img_size, freq_coefs) {
-  meta_data <- gen_meta_data(img_size)
-  x_freq_cov <- meta_data$x_freq_cov
-  eig_vecs <- meta_data$eig_vecs
-
-  results <- list()
-
-  for (i in seq_len(n_iter)) {
-    if (i %% 10 == 0) {
-      cat("Simulating", i, "of", n_iter, "iterations \n")
-    }
-    x_freq <- gen_x(n_samples, x_freq_cov)
-    x <- x_freq %*% t(eig_vecs)
-    y <- gen_y(x_freq, freq_coefs)
-    results[[i]] <- list(x = x, x_freq = x_freq, y = y)
-  }
-
-  results
-}
-
-run_simulation1 <- function(n_iter, n_samples, img_size, beta_effect_size, seed = NULL) {
+run_sim1 <- function(n_iter, n_samples, img_size, beta_effect_size, seed = NULL) {
   if (!is.null(seed)) {
     set.seed(seed)
   }
+  
+  # generate correlation structure in the pixel space
+  n_pixels <- img_size^2
+  x_cov <- gen_exp_corr(n_pixels)
+  eig_res <- eigen_decomp(x_cov)
+  eig_vecs <- eig_res$vectors
+  eig_vals <- eig_res$values
 
-  # calculate meta data, W, V, W_freq
-  meta_data <- gen_meta_data(img_size)
-  x_freq_cov <- meta_data$x_freq_cov
-  eig_vecs <- meta_data$eig_vecs
-
-  # generate coefs on pixel space
+  # generate coefs in the pixel space
   beta <- gen_beta(img_size, beta_effect_size)
   b <- beta_to_b(beta, eig_vecs)
 
-  # run simulation on freq space
-  simulated_data <- simulate_xy_freq(n_iter, n_samples, img_size, b)
+  # generate covariates in the pixel space (X)
+  x <- gen_x(n_samples * n_iter, x_cov)
+  x_freq <- x %*% eig_vecs
+  y <- gen_y(x, beta)
 
-  results <- list(
-    meta_data = c(meta_data, list(beta = beta, b = b)),
-    data = simulated_data
+  # return
+  res <- list(
+    meta_data = list(
+      n_iter = n_iter, n_samples = n_samples, 
+      x_cov = x_cov, eig_vecs = eig_vecs, eig_vals = eig_vals,
+      beta = beta, b = b
+    ),
+    data = list(x = x, y = y, x_freq = x_freq)
   )
-
-  return(results)
+  return(res)
 }
 
-run_simulation2 <- function(n_iter, n_samples, img_size, b_effect_size, sparsity, seed = NULL) {
+run_sim2 <- function(n_iter, n_samples, img_size, b_effect_size, sparsity, seed = NULL){
   if (!is.null(seed)) {
     set.seed(seed)
   }
+ 
+  # generate correlation structure in the freq space
+  n_pixels <- img_size^2
+  x_freq_cov <- diag(seq(6, 0.5, length.out = n_pixels))
+  x_cov <- gen_exp_corr(n_pixels) # same assumption of exp corr structre for X
+  eig_res <- eigen_decomp(x_cov)
+  eig_vecs <- eig_res$vectors
+  eig_vals <- eig_res$values
 
-  # calculate meta data, W, V, W_freq
-  meta_data <- gen_meta_data(img_size)
-  x_freq_cov <- meta_data$x_freq_cov
-  eig_vecs <- meta_data$eig_vecs
-
-  # generate coefs on pixel space
-  b <- gen_b(img_size^2, sparsity, b_effect_size)
+  # generate coefs in the freq space
+  b <- gen_b(n_pixels, sparsity, b_effect_size)
   beta <- b_to_beta(b, eig_vecs)
 
-  # run simulation on freq space
-  simulated_data <- simulate_xy_freq(n_iter, n_samples, img_size, b)
+  # generate covariates in the freq space (X_freq)
+  x_freq <- gen_x(n_samples * n_iter, x_freq_cov)
+  x <- x_freq %*% t(eig_vecs)
+  y <- gen_y(x_freq, b)
 
-  results <- list(
-    meta_data = c(meta_data, list(beta = beta, b = b)),
-    data = simulated_data
+  # return
+  res <- list(
+    meta_data = list(
+      n_iter = n_iter, n_samples = n_samples,
+      x_freq_cov = x_freq_cov, eig_vecs = eig_vecs, eig_vals = eig_vals,
+      beta = beta, b = b
+    ),
+    data = list(x = x, y = y, x_freq = x_freq)
   )
-
-  return(results)
+  return(res)
 }
 
 
 # ----- Choose beta effect size and b effect size -----
 
-# Function to compare beta effects for Simulation 1
-compare_beta_effects <- function(effects, n_samples = 1000, seed = 42) {
-  par(mfrow = c(ceiling(length(effects) / 2), 2))
-  set.seed(seed)
-
-  meta <- gen_meta_data(img_size = 16)
-  x_cov <- meta$x_cov
-  x <- gen_x(n_samples, x_cov)
-
-  for (effect in effects) {
-    beta <- gen_beta(img_size = 16, effect_size = effect)
-    p <- 1 / (1 + exp(-(x %*% beta)))
-    hist(p,
-      breaks = 30, main = paste("Effect =", effect), xlim = c(0, 1),
-      xlab = "Probability p", col = "lightblue", border = "black"
-    )
-  }
-}
-
+# Choose beta effect size for sim1
 png(
    file = file.path(fig_dir, "sim1_p_dist.png"),
    width = 1200, height = 800, res = 150
 )
-compare_beta_effects(c(1, 0.2, 0.1, 0.05, 0.01))
-dev.off()
 
-# Function to compare b effects for Simulation 2
-compare_b_effects <- function(effects, n_samples = 1000, sparsity = 0.1, seed = 42) {
-  set.seed(seed)
-  par(mfrow = c(ceiling(length(effects) / 2), 2))
-
-  meta <- gen_meta_data(img_size = 16)
-  x_freq_cov <- meta$x_freq_cov
-  x_freq <- gen_x(n_samples, x_freq_cov)
-
-  for (effect in effects) {
-    b <- gen_b(len = 256, sparsity, effect)
-    p <- 1 / (1 + exp(-(x_freq %*% b)))
-    hist(p, breaks = 30, main = paste("Effect =", effect), xlim = c(0, 1), xlab = "Probability p", col = "lightblue", border = "black")
-  }
+beta_effects <- c(1, 0.2, 0.1, 0.05, 0.01)
+par(mfrow = c(ceiling(length(beta_effects) / 2), 2))
+for (effect in beta_effects){
+  sim1_1iter <- run_sim1(
+    n_iter = 1, n_samples = 1000, img_size = 16, 
+    beta_effect_size = effect, seed = 42
+  )  
+  x <- sim1_1iter$data$x 
+  beta <- sim1_1iter$meta_data$beta
+  p <- 1 / (1 + exp(-(x %*% beta)))
+  hist(
+    p,
+    breaks = 30, main = paste("Effect =", effect), xlim = c(0, 1),
+    xlab = "Probability p", col = "lightblue", border = "black"
+  )
 }
 
-png(
-   file = file.path(fig_dir, "sim2_p_dist.png"),
-   width = 1200, height = 800, res = 150
-)
-compare_b_effects(c(1, 0.8, 0.6, 0.4, 0.2, 0.1))
 dev.off()
 
+# Choose b effect for sim2
+png(
+ file = file.path(fig_dir, "sim2_p_dist.png"),
+ width = 1200, height = 800, res = 150
+)
+
+b_effects <- seq(0.3, 0.1, by = -0.05)
+par(mfrow = c(ceiling(length(b_effects) / 2), 2))
+for (effect in b_effects){
+  sim2_1iter <- run_sim2(
+    n_iter = 1, n_samples = 1000, img_size = 16,
+    b_effect_size = effect, sparsity = 0.1, seed = 42
+  )
+  x_freq <- sim2_1iter$data$x_freq
+  b <- sim2_1iter$meta_data$b
+  p <- 1 / (1 + exp(-(x_freq %*% b)))
+  hist(
+    p,
+    breaks = 30, main = paste("Effect =", effect), xlim = c(0, 1),
+    xlab = "Probability p", col = "lightblue", border = "black"
+  )
+}
+
+dev.off()
 
 
 # ----- Run Simulations -----
@@ -310,27 +294,35 @@ n_sim <- 500
 n_samples <- 1000
 img_size <- 16
 beta_effect <- 0.1
-b_effect <- 0.4
+b_effect <- 0.2
 b_sparsity <- 0.1
 seed <- 42
 
 cat("Simulating Data for", n_sim, "iterations of Simulation 1 ... \n")
 tic()
-sim1_data <- run_simulation1(
-  n_sim, n_samples, img_size, beta_effect, seed
-)
+sim1_data <- run_sim1(n_sim, n_samples, img_size, beta_effect, seed)
 toc()
 
 cat("Simulating Data for", n_sim, "iterations of Simulation 2 ... \n")
 tic()
-sim2_data <- run_simulation2(
-  n_sim, n_samples, img_size, b_effect, b_sparsity, seed
-)
+sim2_data <- run_sim2(n_sim, n_samples, img_size, b_effect, b_sparsity, seed)
 toc()
+
+sim1_1iter <- run_sim1(1, n_samples, img_size, beta_effect, seed)
+sim2_1iter <- run_sim2(1, n_samples, img_size, b_effect, b_sparsity, seed)
 
 filename <- paste0("simulated_data_", format(Sys.Date(), "%y%m%d"), ".RData")
 save(
   n_sim, n_samples, img_size, beta_effect, b_effect, b_sparsity, seed,
-  sim1_data, sim2_data,
+  sim1_data, sim2_data, sim1_1iter, sim2_1iter,
   file = file.path(results_data_dir, filename)
 )
+
+filename2 <- paste0("simulated_data_1iter_", format(Sys.Date(), "%y%m%d"), ".RData")
+save(
+  n_sim, n_samples, img_size, beta_effect, b_effect, b_sparsity, seed,
+  sim1_1iter, sim2_1iter,
+  file = file.path(results_data_dir, filename2)
+)
+
+
