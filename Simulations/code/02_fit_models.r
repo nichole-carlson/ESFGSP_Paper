@@ -20,7 +20,7 @@ results_data_dir <- file.path(simulation_dir, "results", "data")
 
 cat("Loading simulated data ... \n")
 tic()
-load(file = file.path(results_data_dir, "simulated_data_240815.RData"))
+load(file = file.path(results_data_dir, "simulated_data_240826.RData"))
 toc()
 cat("Simulated data loaded  \n")
 
@@ -143,10 +143,12 @@ n_perm <- 100
 
 # AUC and accuracy
 eval_auc_acc <- function(i, sim_data, p_train, seed) {
-  sim_data_i <- sim_data$data[[i]]
-  x <- sim_data_i$x
-  x_freq <- sim_data_i$x_freq
-  y <- sim_data_i$y
+  n_samples <- sim_data$meta_data$n_samples
+  index_st <- (i - 1) * n_samples + 1
+  index_end <- i * n_samples
+  x <- sim_data$data$x[index_st:index_end, ]
+  x_freq <- sim_data$data$x_freq[index_st:index_end, ]
+  y <- sim_data$data$y[index_st:index_end]
 
   perf_metrics <- perform_lasso(x, y, p_train, seed + i)
   perf_metrics_freq <- perform_lasso(x_freq, y, p_train, seed + i)
@@ -215,10 +217,12 @@ sim2_coefs <- extract_coefs(sim2_auc_acc_coefs)
 
 # Permutation test for p-values
 eval_pvals <- function(i, sim_data, n_perm, seed) {
-  sim_data_i <- sim_data$data[[i]]
-  x <- sim_data_i$x
-  x_freq <- sim_data_i$x_freq
-  y <- sim_data_i$y
+  n_samples <- sim_data$meta_data$n_samples
+  index_st <- (i - 1) * n_samples + 1
+  index_end <- i * n_samples
+  x <- sim_data$data$x[index_st:index_end, ]
+  x_freq <- sim_data$data$x_freq[index_st:index_end, ]
+  y <- sim_data$data$y[index_st:index_end]
 
   p_vals <- perm_lasso(x, y, n_perm, seed + i)
   p_vals_freq <- perm_lasso(x_freq, y, n_perm, seed + i)
