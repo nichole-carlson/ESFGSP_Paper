@@ -45,34 +45,6 @@ library(reshape2)
 ##########################################################################
 
 
-
-
-
-
-
-
-
-
-# # 0.6 Functions for eigen decomposition
-# Perform eigen decomposition on a matrix
-# Args:
-#   mat: Matrix. The covariance matrix to be decomposed.
-# Returns:
-#   A list containing the eigenvectors and eigenvalues of the matrix.
-eigen_decomp <- function(mat) {
-  n_cols <- ncol(mat)
-  cent_mat <- diag(n_cols) - matrix(1, n_cols, n_cols) / n_cols
-  eig_res <- eigen(cent_mat %*% mat %*% cent_mat, symmetric = TRUE)
-
-  ord_idx <- order(eig_res$values, decreasing = TRUE)
-  eig_vecs <- eig_res$vectors[, ord_idx]
-  eig_vals <- eig_res$values[ord_idx]
-
-  return(list(vectors = eig_vecs, values = eig_vals))
-}
-
-
-
 # Function to calculate the percentages of significant p-values
 #
 # Args:
