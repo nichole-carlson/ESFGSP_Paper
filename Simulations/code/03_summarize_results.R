@@ -21,6 +21,7 @@ eig_vals_ordered <- {
   order(eig_vals) / length(eig_vals)
 }
 
+
 # ----- Functions for visualization -----
 plot_heatmap <- function(vec, value_limits = NULL) {
   # Convert 1D vector to 2D matrix
@@ -64,10 +65,10 @@ plot_scatterplot <- function(x, y, xlab = NULL, ylab = NULL) {
 
   dat <- data.frame(x = x, y = y)
   ggplot(dat, aes(x = x, y = y)) +
-    geom_point(color = "blue") + 
-    labs(x = xlab, y = ylab) + 
+    geom_point(color = "blue") +
+    labs(x = xlab, y = ylab) +
     scale_y_continuous(limits = c(ymin, ymax)) +
-    theme_minimal() + 
+    theme_minimal() +
     theme(strip.text = element_blank())
 }
 
@@ -77,7 +78,7 @@ plot_scatterplot <- function(x, y, xlab = NULL, ylab = NULL) {
 p_group_mean_diff <- list()
 for (i in seq_len(length(sim_data_list))) {
   dat <- sim_data_list[[i]]$data
-  x <- dat$x 
+  x <- dat$x
   x_freq <- dat$x_freq
   y <- dat$y
 
@@ -93,32 +94,32 @@ for (i in seq_len(length(sim_data_list))) {
 
 p_actual_coefs <- list()
 for (i in seq_len(length(sim_data_list))) {
-  meta_data <- sim_data_list[[i]]$meta_data 
+  meta_data <- sim_data_list[[i]]$meta_data
   beta <- meta_data$beta
   b <- meta_data$b
 
   p_actual_coefs[[paste0("sim", i)]][["beta"]] <- plot_heatmap(beta)
   p_actual_coefs[[paste0("sim", i)]][["b"]] <- plot_scatterplot(
-    eig_vals_ordered, b, 
+    eig_vals_ordered, b,
     "Order of eigenvalues", "Coefficient values"
   )
 }
 
 for (i in seq_len(length(sim_data_list))) {
   filename1 <- paste0("actual_coefs_sim", i, ".png")
-  png(file = file.path(fig_dir, filename1), width = 1200, height = 800)
-  grid.arrange(p_actual_coefs[[paste0("sim", i)]], ncol = 2)
+  png(file = file.path(fig_dir, filename1), width = 1200, height = 500)
+  grid.arrange(grobs = p_actual_coefs[[paste0("sim", i)]], ncol = 2)
   dev.off()
 
   filename2 <- paste0("group_mean_diff_sim", i, ".png")
-  png(file = file.path(fig_dir, filename2), width = 1200, height = 800)
-  grid.arrange(p_group_mean_diff[[paste0("sim", i)]], ncol = 2)
+  png(file = file.path(fig_dir, filename2), width = 1200, height = 500)
+  grid.arrange(grobs = p_group_mean_diff[[paste0("sim", i)]], ncol = 2)
   dev.off()
 }
 
 
 # ----- Create table for AUC and accuracy -----
-my.render.cont <- function(x) {
+my.render.continuous <- function(x) {
   with(stats.default(x), sprintf("%.3f (%0.3f)", MEAN, SD))
 }
 
@@ -159,7 +160,7 @@ png(
   file = file.path(fig_dir, "beta_estimates.png"),
   width = 1200, height = 800, res = 150
 )
-grid.arrange(c(p_est_coefs$sim1$beta, p_est_coefs$sim2$beta), ncol = 2)
+grid.arrange(grobs = c(p_est_coefs$sim1$beta, p_est_coefs$sim2$beta), ncol = 2)
 dev.off()
 
 # For b, use scatterplot
@@ -167,7 +168,7 @@ png(
   file = file.path(fig_dir, "b_estimates.png"),
   width = 1200, height = 800, res = 150
 )
-grid.arrange(c(p_est_coefs$sim1$b, p_est_coefs$sim2$b), ncol = 2)
+grid.arrange(grobs = c(p_est_coefs$sim1$b, p_est_coefs$sim2$b), ncol = 2)
 dev.off()
 
 
@@ -184,12 +185,12 @@ png(
   file = file.path(fig_dir, "perc_sign_pvals_beta.png"),
   width = 1200, height = 500, res = 150
 )
-grid.arrange(p_pvals$sim1$beta, p_pvals$sim2$beta, ncol = 2)
+grid.arrange(grobs = list(p_pvals$sim1$beta, p_pvals$sim2$beta), ncol = 2)
 dev.off()
 
 png(
   file = file.path(fig_dir, "perc_sign_pvals_b.png"),
   width = 1200, height = 500, res = 150
 )
-grid.arrange(p_pvals$sim1$b, p_pvals$sim2$b, ncol = 2)
+grid.arrange(grobs = list(p_pvals$sim1$b, p_pvals$sim2$b), ncol = 2)
 dev.off()
