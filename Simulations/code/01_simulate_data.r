@@ -171,7 +171,6 @@ run_sim1 <- function(n_iter, n_samples, img_size, beta_effect_size, seed = NULL)
   if (!is.null(seed)) {
     set.seed(seed)
   }
-  
   # generate correlation structure in the pixel space
   n_pixels <- img_size^2
   x_cov <- gen_exp_corr(n_pixels)
@@ -191,7 +190,7 @@ run_sim1 <- function(n_iter, n_samples, img_size, beta_effect_size, seed = NULL)
   # return
   res <- list(
     meta_data = list(
-      n_iter = n_iter, n_samples = n_samples, 
+      n_iter = n_iter, n_samples = n_samples,
       x_cov = x_cov, eig_vecs = eig_vecs, eig_vals = eig_vals,
       beta = beta, b = b
     ),
@@ -200,7 +199,7 @@ run_sim1 <- function(n_iter, n_samples, img_size, beta_effect_size, seed = NULL)
   return(res)
 }
 
-run_sim2 <- function(n_iter, n_samples, img_size, b_effect_size, sparsity, seed = NULL){
+run_sim2 <- function(n_iter, n_samples, img_size, b_effect_size, sparsity, seed = NULL) {
   if (!is.null(seed)) {
     set.seed(seed)
   }
@@ -239,18 +238,18 @@ run_sim2 <- function(n_iter, n_samples, img_size, b_effect_size, sparsity, seed 
 
 # Choose beta effect size for sim1
 png(
-   file = file.path(fig_dir, "sim1_p_dist.png"),
-   width = 1200, height = 800, res = 150
+  file = file.path(fig_dir, "sim1_p_dist.png"),
+  width = 1200, height = 800, res = 150
 )
 
 beta_effects <- c(1, 0.2, 0.1, 0.05, 0.01)
 par(mfrow = c(ceiling(length(beta_effects) / 2), 2))
 for (effect in beta_effects){
   sim1_1iter <- run_sim1(
-    n_iter = 1, n_samples = 1000, img_size = 16, 
+    n_iter = 1, n_samples = 1000, img_size = 16,
     beta_effect_size = effect, seed = 42
-  )  
-  x <- sim1_1iter$data$x 
+  ) 
+  x <- sim1_1iter$data$x
   beta <- sim1_1iter$meta_data$beta
   p <- 1 / (1 + exp(-(x %*% beta)))
   hist(
@@ -264,8 +263,8 @@ dev.off()
 
 # Choose b effect for sim2
 png(
- file = file.path(fig_dir, "sim2_p_dist.png"),
- width = 1200, height = 800, res = 150
+  file = file.path(fig_dir, "sim2_p_dist.png"),
+  width = 1200, height = 800, res = 150
 )
 
 b_effects <- seq(0.3, 0.1, by = -0.05)
@@ -324,5 +323,3 @@ save(
   sim1_1iter, sim2_1iter,
   file = file.path(results_data_dir, filename2)
 )
-
-
