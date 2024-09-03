@@ -44,7 +44,7 @@ source(file.path(code_dir, "simWrapper.r"))
 # - seed: An optional seed for reproducibility.
 #
 # Return:
-# A matrix containing the accuracy and AUC for models with lambda.min and lambda.1se.
+# A matrix containing the accuracy and AUC for lambda.min and lambda.1se.
 
 perform_lasso <- function(x, y, p_train, seed = NULL) {
   if (!is.null(seed)) {
@@ -113,7 +113,6 @@ perm_lasso <- function(x, y, n_perm, seed = NULL) {
 
   cv_lasso <- function(x, y) {
     cv_fit <- cv.glmnet(x, y, alpha = 1)
-    best_lambda <- cv_fit$lambda.min
     coefs <- coef(cv_fit, s = "lambda.min")[-1, 1]
     return(coefs)
   }
@@ -134,6 +133,11 @@ perm_lasso <- function(x, y, n_perm, seed = NULL) {
   return(p_vals)
 }
 
+# evaluate p-values using the hdi package
+hdi_pval <- function(x, y) {
+  p_vals <- matrix(hdi::lasso.proj(x, y)$pval, nrow = 1)
+  return(p_vals)
+}
 
 
 # ----- Fit Models -----
@@ -230,13 +234,28 @@ eval_pvals <- function(i, sim_data, n_perm, seed) {
   return(list(pixel = p_vals, freq = p_vals_freq))
 }
 
+# hdi package for p-values
+eval_pvals_hdi <- function(i, sim_data) {
+  n_samples <- sim_data$meta_data$n_samples
+  index_st <- (i - 1) * n_samples + 1
+  index_end <- i * n_samples
+  x <- sim_data$data$x[index_st:index_end, ]
+  x_freq <- sim_data$data$x_freq[index_st:index_end, ]
+  y <- sim_data$data$y[index_st:index_end]
+
+  p_vals <- hdi_pval(x, y)
+  p_vals_freq <- hdi_pval(x_freq, y)
+
+  return(list(pixel = p_vals, freq = p_vals_freq))
+}
+
 cat("Calculating p-values on simulated data 1 ...\n")
 tic()
 sim1_pvals <- simWrapper(
   n_sim = n_sim,
   f_sim = function(i) eval_pvals(i, sim1_data, n_perm, seed),
   list_export = ls(),
-  list_package = c("glmnet", "pROC")
+  list_package = c("glmnet")
 )
 toc()
 
@@ -246,7 +265,7 @@ sim2_pvals <- simWrapper(
   n_sim = n_sim,
   f_sim = function(i) eval_pvals(i, sim2_data, n_perm, seed),
   list_export = ls(),
-  list_package = c("glmnet", "pROC")
+  list_package = c("glmnet")
 )
 toc()
 
@@ -258,9 +277,37 @@ sim2_pvals <- apply(sim2_pvals, 2, function(col) {
   as.data.frame(do.call("rbind", col))
 }, simplify = FALSE)
 
+cat("Calculating p-values by hdi on simulated data 1 ...\n")
+tic()
+sim1_pvals_hdi <- simWrapper(
+  n_sim = n_sim,
+  f_sim = function(i) eval_pvals_hdi(i, sim1_data),
+  list_export = ls(),
+  list_package = c("hdi")
+)
+toc()
+
+cat("Calculating p-values by hdi on simulated data 2 ...\n")
+tic()
+sim2_pvals_hdi <- simWrapper(
+  n_sim = n_sim,
+  f_sim = function(i) eval_pvals_hdi(i, sim2_data),
+  list_export = ls(),
+  list_package = c("hdi")
+)
+toc()
+
+sim1_pvals_hdi <- apply(sim1_pvals_hdi, 2, function(col) {
+  as.data.frame(do.call("rbind", col))
+}, simplify = FALSE)
+
+sim2_pvals_hdi <- apply(sim2_pvals_hdi, 2, function(col) {
+  as.data.frame(do.call("rbind", col))
+}, simplify = FALSE)
 
 filename <- paste0("model_metrics_", format(Sys.Date(), "%y%m%d"), ".RData")
 save(
   sim1_auc_acc, sim2_auc_acc, sim1_coefs, sim2_coefs, sim1_pvals, sim2_pvals,
+  sim1_pvals_hdi,  sim2_pvals_hdi,
   file = file.path(results_data_dir, filename)
 )
