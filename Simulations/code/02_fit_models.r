@@ -13,6 +13,7 @@
 library(glmnet)
 library(pROC)
 library(tictoc)
+library(hdi)
 
 simulation_dir <- "/Users/siyangren/Documents/ra-cida/ESFGSP_Paper/Simulations"
 code_dir <- file.path(simulation_dir, "code")
