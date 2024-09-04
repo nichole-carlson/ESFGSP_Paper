@@ -10,7 +10,7 @@ results_data_dir <- file.path(simulation_dir, "results", "data")
 
 # ----- Load model fitting results and simulated data -----
 load(file = file.path(results_data_dir, "simulated_data_1iter_240826.RData"))
-load(file = file.path(results_data_dir, "model_metrics_240826.RData"))
+load(file = file.path(results_data_dir, "model_metrics_240904.RData"))
 
 sim_data_list <- list(sim1_1iter, sim2_1iter)
 sim_coefs_list <- list(sim1_coefs, sim2_coefs)
