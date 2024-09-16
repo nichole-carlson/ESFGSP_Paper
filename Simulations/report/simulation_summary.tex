@@ -31,7 +31,9 @@ In this study, we conducted two simulations to evaluate the performance of LASSO
 
 \subsection*{Data Simulation}
 
-Let \( X \) denote a column vector representing the pixel values of a single observation, with 256 pixels in total. Its covariance matrix, \( \Sigma \), is defined to have an exponential correlation structure, where \( \Sigma_{i j}=-\exp (\operatorname{dist}(i, j)) \). Here, \( \operatorname{dist}(i, j) \) is the distance between the pixels \( i \) and \( j \) in a \( 16 \times 16 \) grid. The matrix \( V \) contains the eigenvectors of \( \Sigma \), with each column representing an eigenvector. We transform the random vector \( X \) into the frequency space by computing \( X_{\text {freq }}=V^T X \). The covariance matrix of \( X_{\text {freq }} \) is then given by \( \operatorname{cov}(X_{\mathrm{freq}})=V^T \Sigma V \), which results in a diagonal matrix.
+We will firstly illustrate how the transformation between the pixel space and the frequency space was performed. Let \( \mathbf{x} \) denote a column vector representing the pixel values of a single observation, with \( n =256 \) pixels in total. Its covariance matrix, \( C \), is defined to have an exponential correlation structure, where \( C_{i j}=-\exp (\operatorname{dist}(i, j)) \). Here, \( \operatorname{dist}(i, j) \) is the distance between the pixels \( i \) and \( j \) in a \( 16 \times 16 \) grid. Let's define \( \mathbf{M}=\mathbf{I}-\mathbf{1} \mathbf{1}^{\prime} / n \) to be a centering matrix. We can eigen-decompose the matrix \( \mathbf{MCM} \) into \( \mathbf{E}_{\text {full }} \boldsymbol{\Lambda}_{\text {full }} \mathbf{E}_{\text {full }}^{\prime} \), where the \( l \)th column of \( \mathbf{E} \) is the \( l \)th eigenvector. We transform the random vector \( \mathbf{x} \) into the frequency space by computing \( \mathbf{x}_{\text {freq }}=\mathbf{E}^T \mathbf{x} \). The covariance matrix of \( \mathbf{x}_{\text {freq }} \) is then given by \( \operatorname{cov}(\mathbf{x}_{\mathrm{freq}})=\mathbf{E}^T C \mathbf{E} \), which results in a diagonal matrix.
+
+
 
 In each simulation iteration, 1000 observations of \( X_{\text {freq}} \) are generated from a multivariate normal
 distribution with the covariance matrix \(\operatorname{cov}\left(X_{\text {freq }}\right) \). This process is repeated
@@ -227,3 +229,6 @@ space.}
 
 
 \end{document}
+
+
+Murakami and Griffith, “Eigenvector Spatial Filtering for Large Data Sets.”
