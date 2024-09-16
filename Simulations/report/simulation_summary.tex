@@ -13,25 +13,25 @@
 \graphicspath{{/Users/siyangren/Documents/ra-cida/ESFGSP_Paper/Simulations/results/figures}}
 
 
+\title{}
+\author{Siyang Ren}
+
 \begin{document}
+
+\maketitle
+
+\section*{Notes}
+
+\section*{Introduction}
+
+In this study, we conducted two simulations to evaluate the performance of LASSO models in identifying significant features within high-dimensional datasets. The first simulation assumes sparsity in the feature space corresponding to pixels, referred to as the pixel space, while the second simulation assumes sparsity in the frequency domain, known as the frequency space. The pixel space represents the original high-dimensional domain, where each dimension corresponds to a pixel in an image. Features in this space are directly observable and may exhibit inherent correlations. In contrast, the frequency space is a transformed version of the pixel space, derived through eigen decomposition, where the data is represented in terms of its frequency components.
+
 
 \section*{Methods}
 
-In this study, we conducted two simulations to evaluate the performace of LASSO models in identifying significant
-features within high-dimensional datasets. The first simulation assumes sparsity in the feature space corresponding to
-pixels, referred to as the pixel space, while the second simulation assumes sparsity in the frequency domain, known as
-the frequency space. The pixel space represents the original high-dimensional domain, where each dimension corresponds
-to a pixel in an image. Features in this space are directly observable and may exhibit inherent correlations. In
-contrast, the frequency space is a transformed version of the pixel space, derived through eigen decomposition, where
-the data is represented in terms of its frequency components.
+\subsection*{Data Simulation}
 
-Let \( X \) denote a column vector representing the pixel values of a single observation, with 256 pixels in total. Its
-covariance matrix, \( \Sigma \), is defined to have an exponential correlation structure, where \( \Sigma_{i j}=-\exp
-(\operatorname{dist}(i, j)) \). Here, \( \operatorname{dist}(i, j) \) is the distance between the pixels \( i \) and \(
-j \) in a \( 16 \times 16 \) grid. The matrix \( V \) contains the eigenvectors of \( \Sigma \), with each column
-representing an eigenvector. We transform the random vector \( X \) into the frequency space by computing \( X_{\text
-{freq }}=V^T X \). The covariance matrix of \( X_{\text {freq }} \) is then given by \(
-\operatorname{cov}(X_{\mathrm{freq}})=V^T \Sigma V \), which results in a diagonal matrix.
+Let \( X \) denote a column vector representing the pixel values of a single observation, with 256 pixels in total. Its covariance matrix, \( \Sigma \), is defined to have an exponential correlation structure, where \( \Sigma_{i j}=-\exp (\operatorname{dist}(i, j)) \). Here, \( \operatorname{dist}(i, j) \) is the distance between the pixels \( i \) and \( j \) in a \( 16 \times 16 \) grid. The matrix \( V \) contains the eigenvectors of \( \Sigma \), with each column representing an eigenvector. We transform the random vector \( X \) into the frequency space by computing \( X_{\text {freq }}=V^T X \). The covariance matrix of \( X_{\text {freq }} \) is then given by \( \operatorname{cov}(X_{\mathrm{freq}})=V^T \Sigma V \), which results in a diagonal matrix.
 
 In each simulation iteration, 1000 observations of \( X_{\text {freq}} \) are generated from a multivariate normal
 distribution with the covariance matrix \(\operatorname{cov}\left(X_{\text {freq }}\right) \). This process is repeated
