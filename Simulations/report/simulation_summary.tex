@@ -19,23 +19,32 @@
 
 \begin{document}
 
+\maketitle
+
+\section*{Notes}
+
+In the Data Simulation section, am using Moran's eigenvectors instead of the default eigenvectors to project pixels into the frequency domain. Is this correct? Also, I need to double check whether \( \mathbf{E} \) is orthogonal. It needs to be orthogonal to let \( \mathbf{E}^T \mathbf{C} \mathbf{E} \) to be a diagonal matrix.
+
+\section*{Introduction}
+
+In this study, we conducted two simulations to evaluate the performace of LASSO models in identifying significant features within high-dimensional datasets. The first simulation assumes sparsity in the feature space corresponding to pixels, referred to as the pixel space, while the second simulation assumes sparsity in the frequency domain, known as the frequency space. The pixel space represents the original high-dimensional domain, where each dimension corresponds to a pixel in an image. Features in this space are directly observable and may exhibit inherent correlations. In contrast, the frequency space is a transformed version of the pixel space, derived through eigen decomposition, where the data is represented in terms of its frequency components.
+
+
 \section*{Methods}
 
-In this study, we conducted two simulations to evaluate the performace of LASSO models in identifying significant
-features within high-dimensional datasets. The first simulation assumes sparsity in the feature space corresponding to
-pixels, referred to as the pixel space, while the second simulation assumes sparsity in the frequency domain, known as
-the frequency space. The pixel space represents the original high-dimensional domain, where each dimension corresponds
-to a pixel in an image. Features in this space are directly observable and may exhibit inherent correlations. In
-contrast, the frequency space is a transformed version of the pixel space, derived through eigen decomposition, where
-the data is represented in terms of its frequency components.
+\subsection*{Data Simulation}
 
-Let \( X \) denote a column vector representing the pixel values of a single observation, with 256 pixels in total. Its
-covariance matrix, \( \Sigma \), is defined to have an exponential correlation structure, where \( \Sigma_{i j}=-\exp
-(\operatorname{dist}(i, j)) \). Here, \( \operatorname{dist}(i, j) \) is the distance between the pixels \( i \) and \(
-j \) in a \( 16 \times 16 \) grid. The matrix \( V \) contains the eigenvectors of \( \Sigma \), with each column
-representing an eigenvector. We transform the random vector \( X \) into the frequency space by computing \( X_{\text
-		{freq }}=V^T X \). The covariance matrix of \( X_{\text {freq }} \) is then given by \(
-\operatorname{cov}(X_{\mathrm{freq}})=V^T \Sigma V \), which results in a diagonal matrix.
+Let \( \mathbf{x} \) denote a column vector representing the pixel values of a single observation, with \( n = 256 \) pixels in total. Its covariance matrix, \( \mathbf{C} \), is defined to have an exponential correlation structure, where \( \mathbf{C}_{i j}=-\exp (\operatorname{dist}(i, j)) \). Here, \( \operatorname{dist}(i, j) \) is the distance between the pixels \( i \) and \( j \) in a \( 16 \times 16 \) grid. Suppose \( \mathbf{M} = \mathbf{I} - \mathbf{1} \mathbf{1}^{\prime} / n \) is a centering matrix. Let us eigen-decompose the matrix \( \mathbf{MCM} \) into \( \mathbf{E}_{\text {full }} \mathbf{\Lambda}_{\text {full }} \mathbf{E}_{\text {full }}^{\prime} \), where \( \mathbf{E}_{\text {full }} \) is a \( n \times n \) matrix whose \( l \) th column, \( \mathbf{e}_l \), equals the \( l \) th eigenvector. We transform the random vector \( \mathbf{x} \) into the frequency space by computing 
+\[
+  \mathbf{x}_{\text {freq }}= \mathbf{E}^T \mathbf{x}
+\]
+The covariance matrix of \( \mathbf{x}_{\text {freq }} \) is then given by \( \operatorname{cov}(\mathbf{x}_{\mathrm{freq}}) = \mathbf{E}^T \mathbf{C} \mathbf{E} \), which results in a diagonal matrix.(notations come from the reference at the bottom).
+
+In each simulation iteration, we use \( \mathbf{X} \) to denote the matrix of \( \mathbf{x} \), where each row represents an observation. In this notation, its relationship with \( \mathbf{X}_{\mathrm{freq}} \) can be denoted as:
+\[
+  \mathbf{X}_{\mathrm{freq}} = \mathbf{X} \mathbf{E}
+\]
+
 
 In each simulation iteration, 1000 observations of \( X_{\text {freq}} \) are generated from a multivariate normal
 distribution with the covariance matrix \(\operatorname{cov}\left(X_{\text {freq }}\right) \). This process is repeated
