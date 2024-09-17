@@ -16,6 +16,7 @@
 
 \title{}
 \author{Siyang Ren}
+\date{}
 
 \begin{document}
 
@@ -23,8 +24,9 @@
 
 \section*{Notes}
 
-In the Data Simulation section, I am using Moran's eigenvectors instead of the default eigenvectors to project pixels into the frequency domain. Is this correct? Additionally, I need to confirm that \( \mathbf{E} \) is orthogonal. Orthogonality is necessary to ensure that \( \mathbf{E}^T \mathbf{C} \mathbf{E} \) results in a diagonal matrix.
-
+\begin{itemize}
+  \item In the Data Simulation section, I am using Moran's eigenvectors instead of the default eigenvectors to project pixels into the frequency domain. Is this correct? Additionally, I need to confirm that \( \mathbf{E} \) is orthogonal. Orthogonality is necessary to ensure that \( \mathbf{E}^T \mathbf{C} \mathbf{E} \) results in a diagonal matrix.
+\end{itemize}
 
 \section*{Introduction}
 
@@ -63,9 +65,10 @@ Next, we define the coefficient vectors in both spaces. Let \( \boldsymbol{\beta
 
 Two scenarios are simulated:
 
-1. **Pixel space sparsity**: In this scenario, \( \boldsymbol{\beta} \) is sparse, with non-zero values confined to a central \( 8 \times 8 \) region. The covariate matrix \( \mathbf{X} \) is generated from a multivariate normal distribution with zero mean and covariance matrix \( \mathbf{C} \). The response variable \( \mathbf{y} \) is drawn from a binomial distribution, with the success probability determined by \( \boldsymbol{\eta} = \mathbf{X} \boldsymbol{\beta} \). The non-zero entries of \( \boldsymbol{\beta} \) are constant and chosen such that the probability \( \mathbf{p} = \frac{1}{1 + \exp(-\boldsymbol{\eta})} \) is uniformly distributed in \( [0, 1] \).
-
-2. **Frequency space sparsity**: In this case, \( \mathbf{b} \) is sparse, with 10\% of its 256 entries randomly set to non-zero values, while the rest remain zero. The covariate matrix \( \mathbf{X}_{\mathrm{freq}} \) is generated from a multivariate normal distribution with zero mean and a diagonal covariance matrix, assuming the eigenvalues decrease along the diagonal [I am thinking of what step size is proper, currently using constant step size]. The non-zero entries in \( \mathbf{b} \) are constant and chosen such that \( \mathbf{p} \) is uniformly distributed in \( [0, 1] \), and the response variable \( \mathbf{y} \) is drawn from a binomial distribution with probability \( \mathbf{p} \).
+\begin{enumerate}
+  \item \textbf{Pixel space sparsity:} In this scenario, \( \boldsymbol{\beta} \) is sparse, with non-zero values confined to a central \( 8 \times 8 \) region. The covariate matrix \( \mathbf{X} \) is generated from a multivariate normal distribution with zero mean and covariance matrix \( \mathbf{C} \). The response variable \( \mathbf{y} \) is drawn from a binomial distribution, with the success probability determined by \( \boldsymbol{\eta} = \mathbf{X} \boldsymbol{\beta} \). The non-zero entries of \( \boldsymbol{\beta} \) are constant and chosen such that the probability \( \mathbf{p} = \frac{1}{1 + \exp(-\boldsymbol{\eta})} \) is uniformly distributed in \( [0, 1] \).
+  \item \textbf{Frequency space sparsity:} In this case, \( \mathbf{b} \) is sparse, with 10\% of its 256 entries randomly set to non-zero values, while the rest remain zero. The covariate matrix \( \mathbf{X}_{\mathrm{freq}} \) is generated from a multivariate normal distribution with zero mean and a diagonal covariance matrix, assuming the eigenvalues decrease along the diagonal [I am thinking of what step size is proper, currently using constant step size]. The non-zero entries in \( \mathbf{b} \) are constant and chosen such that \( \mathbf{p} \) is uniformly distributed in \( [0, 1] \), and the response variable \( \mathbf{y} \) is drawn from a binomial distribution with probability \( \mathbf{p} \).
+\end{enumerate}
 
 After simulating data from either space, the values in the other space are calculated using the transformations described above. Note that when simulating data from the frequency space, even though the diagonal covariance matrix is randomly chosen, not calculated by \( \mathbf{E}^T \mathbf{C} \mathbf{E} \), we still use \( \mathbf{E} \) to transform it back to the pixel space.
 
@@ -80,9 +83,9 @@ For each iteration, model performance is evaluated using the selected \( \lambda
 
 \subsection*{Effect Size Determination}
 
-In Simulation 1, the distribution of the success probability \( p \) was evaluated at various \( \beta \) values: 0.01,
-0.05, 0.1, 0.2, and 1. As shown in Figure \ref{fig:sim1_p_dist}, \( \beta = 0.1 \) yielded the most uniform distribution
-of \( p \), making it the optimal choice for model fitting. Similarly, in Simulation 2, the distribution of \( p \) was assessed at various \( b \) values: 0.1, 0.2, 0.4, 0.6, 0.8, and 1. As illustrated in Figure \ref{fig:sim2_p_dist}, \( b = 0.2 \) resulted in the most uniform distribution of \( p \).
+In Simulation 1, the distribution of the success probability \( \mathbf{p} \) was evaluated at various non-zero values for \( \boldsymbol{\beta} \): 0.01,
+0.05, 0.1, 0.2, and 1. As shown in Figure \ref{fig:sim1_p_dist}, 0.1 yielded the most uniform distribution
+of \( \mathbf{p} \), making it the optimal choice for model fitting. Similarly, in Simulation 2, the distribution of \( \mathbf{p} \) was assessed at various non-zero values for \( \mathbf{b} \): 0.1, 0.2, 0.4, 0.6, 0.8, and 1. As illustrated in Figure \ref{fig:sim2_p_dist}, 0.2 resulted in the most uniform distribution of \( \mathbf{p} \).
 
 \begin{figure}[h!]
 	\centering
@@ -102,7 +105,9 @@ of \( p \), making it the optimal choice for model fitting. Similarly, in Simula
 
 \subsection*{Group Mean Difference}
 
-Using the selected values of \( \beta \) and \( b \), figure \ref{fig:group_diff1} and \ref{fig:group_diff2} depict the group mean difference in covariate values between instances where \( y = 1 \) and \( y = 0 \) in both the pixel space and frequency space for Simulation 1 and 2, respectively. For Simulation 1, as shown in Figure \ref{fig:group_diff1}, the heatmap in the pixel space reveals that the central region with non-zero coefficients in \( \beta \) corresponds to higher mean covariate values, which is consistent with the heatmap of \( \beta \) in Figure \( \ref{fig:coefs_sim1} \). Similarly, regions with higher or lower values in the frequency space match the corresponding values in the coefficients. A similar pattern is observed in Simulation 2, as illustrated in Figures \ref{fig:group_diff2} and \ref{fig:coefs_sim2}, where the heatmaps for both the pixel and frequency spaces demonstrate alignment between covariate values and the corresponding non-zero coefficients.
+Figure \ref{fig:group_diff1} shows the group mean difference in covariate values between instances where \( y = 1 \) and \( y = 0 \) for Simulation 1. The difference in \( \boldsymbol{\beta} \) (left) is shown in heatmap as the location matters, and the difference in \( \mathbf{b} \) are shown by a scatterplot, where the x-axis is standardized order of eigenvalues, with the larger eigenvalues have larger values, and y-axis as the group means for the coefficients. Figure \ref{fig:coefs_sim1} shows the actual coefficient values we used in the same simulation. We can see that the group mean difference in positions where the actual coefficient value is non-zero is larger, which makes sense as covariates with larger values have higher probabilities to be assigned to \( y = 1 \).
+
+Using the selected non-zero values of \( \boldsymbol{\beta} \) and \( \mathbf{b} \), figure \ref{fig:group_diff1} and \ref{fig:group_diff2} depict the group mean difference in covariate values between instances where \( y = 1 \) and \( y = 0 \) in both the pixel space and frequency space for Simulation 1 and 2, respectively. For Simulation 1, as shown in Figure \ref{fig:group_diff1}, the heatmap in the pixel space reveals that the central region with non-zero coefficients in \( \beta \) corresponds to higher mean covariate values, which is consistent with the heatmap of \( \beta \) in Figure \( \ref{fig:coefs_sim1} \). Similarly, regions with higher or lower values in the frequency space match the corresponding values in the coefficients. A similar pattern is observed in Simulation 2, as illustrated in Figures \ref{fig:group_diff2} and \ref{fig:coefs_sim2}, where the heatmaps for both the pixel and frequency spaces demonstrate alignment between covariate values and the corresponding non-zero coefficients.
 
 \begin{figure}[h!]
 	\centering
