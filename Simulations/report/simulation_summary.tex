@@ -15,7 +15,7 @@
 
 
 \title{}
-\author{Siyang Ren}
+\author{Siyang Ren, Nichole E. Carlson, William Lippitt, Yue Wang}
 \date{}
 
 \begin{document}
@@ -76,7 +76,7 @@ After simulating data from either space, the values in the other space are calcu
 
 To evaluate the performance of LASSO in both spaces, we fit two models: one using covariates in the pixel space and another using covariates in the frequency space. To select the optimal regularization parameter \( \lambda \), the dataset is split into training (80\%) and test (20\%) sets. The regularization parameter \( \lambda \) is tuned using cross-validation based on the binomial deviance metric, with the dataset divided into 10 folds. Two values of \( \lambda \) are considered: \texttt{lambda.min}, which minimizes the cross-validated error, and \texttt{lambda.1se}, which represents the largest \( \lambda \) within one standard error of the minimum.
 
-For each iteration, model performance is evaluated using the selected \( \lambda \) on the test set. The evaluation metrics include accuracy, Area Under the Curve (AUC), and p-values for each covariate. P-values are calculated using the \texttt{hdi} package [provide more details on how this package calculates p-values]. The simulation is repeated 500 times, and we report the mean and standard deviation of accuracy and AUC. For p-values, we report the percentage of instances where \( p < 0.05 \) at each location.
+For each iteration, model performance is evaluated using the selected \( \lambda \) on the test set. The evaluation metrics include accuracy, Area Under the Curve (AUC), and p-values for each covariate. P-values are calculated using the \texttt{hdi} package [provide more details on how this package calculates p-values]. The simulation is repeated 500 times, and we report the mean and standard deviation of accuracy and AUC. For p-values, we report the percentage of instances where \( p < 0.05 \) at each location [I am wondering whether we need to do adjustment here].
 
 
 \section*{Results}
@@ -107,11 +107,11 @@ of \( \mathbf{p} \), making it the optimal choice for model fitting. Similarly, 
 
 Figure \ref{fig:group_diff1} shows the group mean difference in covariate values between instances where \( y = 1 \) and \( y = 0 \) for Simulation 1. The difference in \( \boldsymbol{\beta} \) (left) is shown in heatmap as the location matters, and the difference in \( \mathbf{b} \) are shown by a scatterplot, where the x-axis is standardized order of eigenvalues, with the larger eigenvalues have larger values, and y-axis as the group means for the coefficients. Figure \ref{fig:coefs_sim1} shows the actual coefficient values we used in the same simulation. We can see that the group mean difference in positions where the actual coefficient value is non-zero is larger, which makes sense as covariates with larger values have higher probabilities to be assigned to \( y = 1 \).
 
-Using the selected non-zero values of \( \boldsymbol{\beta} \) and \( \mathbf{b} \), figure \ref{fig:group_diff1} and \ref{fig:group_diff2} depict the group mean difference in covariate values between instances where \( y = 1 \) and \( y = 0 \) in both the pixel space and frequency space for Simulation 1 and 2, respectively. For Simulation 1, as shown in Figure \ref{fig:group_diff1}, the heatmap in the pixel space reveals that the central region with non-zero coefficients in \( \beta \) corresponds to higher mean covariate values, which is consistent with the heatmap of \( \beta \) in Figure \( \ref{fig:coefs_sim1} \). Similarly, regions with higher or lower values in the frequency space match the corresponding values in the coefficients. A similar pattern is observed in Simulation 2, as illustrated in Figures \ref{fig:group_diff2} and \ref{fig:coefs_sim2}, where the heatmaps for both the pixel and frequency spaces demonstrate alignment between covariate values and the corresponding non-zero coefficients.
+Figure \ref{fig:group_diff2} and \ref{fig:coefs_sim2} show the similar figures for Simulation 2, where coefficient vectors in the frequency space is specified and transformed to the pixel space. I feel that the group mean difference showing in the heatmap still show similar patterns compared to the actual values, I do notice some locations have different directions, like a shadow blue compared to a shallow red. But actual values have a large absolute value do keep the same direction in the group mean diff figure. The interesting finding comes to the scatterplots. We can see that the actual non-zero values are a constant 0.2, but the estimated values are up and down around 0, and goes larger (with larger variance) for those corresponding to larger eigenvalues. The larger variance makes sense to me, as the covariance matrix I used is a diagonal matrix with decreasing diagonal values. Even though all coefficients are zero, the group mean difference should be scattered around 0 and has larger variance along the x-axis. What surprise me is that I didn't see clear pattern showing which location has non-zero values. I am guessing the non-zero effect is relative small compared to the covariance I specified [maybe next step].
 
 \begin{figure}[h!]
 	\centering
-	\includegraphics[width=0.9\textwidth]{group_mean_diff_sim1.png}
+  \includegraphics[width=0.8\textwidth, height=0.35\textwidth]{group_mean_diff_sim1.png}
 	\caption{Group mean difference in covariate values between instances where \( y = 1 \) and \( y = 0 \) in Simulation
 		1, shown for both the pixel space (left) and frequency space (right).}
 	\label{fig:group_diff1}
@@ -119,36 +119,33 @@ Using the selected non-zero values of \( \boldsymbol{\beta} \) and \( \mathbf{b}
 
 \begin{figure}[h!]
 	\centering
-	\includegraphics[width=0.9\textwidth]{actual_coefs_sim1.png}
+	\includegraphics[width=0.8\textwidth, height=0.35\textwidth]{actual_coefs_sim1.png}
 	\caption{Actual coefficients in Simulation 1 for the pixel space (left) and frequency space (right).}
 	\label{fig:coefs_sim1}
 \end{figure}
 
 \begin{figure}[h!]
 	\centering
-	\includegraphics[width=0.9\textwidth]{group_mean_diff_sim2.png}
+	\includegraphics[width=0.8\textwidth, height=0.35\textwidth]{group_mean_diff_sim2.png}
 	\caption{Group mean difference in covariate values between instances where \( y = 1 \) and \( y = 0 \) in Simulation 2.}
 	\label{fig:group_diff2}
 \end{figure}
 
 \begin{figure}[h!]
 	\centering
-	\includegraphics[width=0.9\textwidth]{actual_coefs_sim2.png}
+	\includegraphics[width=0.8\textwidth, height=0.35\textwidth]{actual_coefs_sim2.png}
 	\caption{Actual coefficients in Simulation 2 for the pixel space (left) and frequency space (right).}
 	\label{fig:coefs_sim2}
 \end{figure}
 
 \FloatBarrier
 
-\subsection*{Model Performance Evaluation: AUC and Accuracy}
+\subsection*{AUC and Accuracy}
 
-To assess the performance of models fitted with covariates from the pixel space versus the frequency space, we evaluated
-the area under the curve (AUC) and prediction accuracy. LASSO models were trained using cross-validation by splitting
-each set of 1000 simulated observations into 80\% training and 20\% test sets. This process was repeated 500 times.
 Table~\ref*{tab:auc_acc_table} presents the average AUCs and accuracies over the 500 iterations. Regardless of whether
 sparsity is assumed in the pixel space (Simulation 1) or the frequency space (Simulation 2), models fitted in the
 frequency space consistently outperformed those fitted in the pixel space. Specifically, in Simulation 1, using
-`lambda.min` as the regularization value, models fitted with covariates from the pixel space achieved an AUC of
+\texttt{lambda.min} as the regularization value, models fitted with covariates from the pixel space achieved an AUC of
 0.803 (SE = 0.031) and an accuracy of 72.6\% (SE = 0.032). In contrast, models fitted with covariates from the
 frequency space achieved a slightly higher AUC of 0.826 (SE = 0.028) and a higher accuracy of
 74.5\% (SE = 0.030). A similar trend was observed in Simulation 2, with models fitted in the frequency space
@@ -165,25 +162,25 @@ demonstrating superior performance regardless of the regularization parameter us
 		                      & \textbf{AUC (SE)}                                 & \textbf{Accuracy (SE)}                                & \textbf{AUC (SE)} & \textbf{Accuracy (SE)} \\
 		\midrule
 		\textbf{Simulation 1} &                                                   &                                                       &                   &                        \\
-		lambda.min            & 0.803 (0.031)                                     & 0.726 (0.032)                                         & 0.826 (0.028)     & 0.745 (0.030)          \\
-		lambda.1se            & 0.800 (0.032)                                     & 0.722 (0.032)                                         & 0.826 (0.029)     & 0.745 (0.031)          \\
+    \texttt{lambda.min}            & 0.803 (0.031)                                     & 0.726 (0.032)                                         & 0.826 (0.028)     & 0.745 (0.030)          \\
+      \texttt{lambda.1se}            & 0.800 (0.032)                                     & 0.722 (0.032)                                         & 0.826 (0.029)     & 0.745 (0.031)          \\
 		\midrule
 		\textbf{Simulation 2} &                                                   &                                                       &                   &                        \\
-		lambda.min            & 0.755 (0.036)                                     & 0.684 (0.034)                                         & 0.812 (0.030)     & 0.732 (0.032)          \\
-		lambda.1se            & 0.735 (0.039)                                     & 0.669 (0.038)                                         & 0.812 (0.031)     & 0.732 (0.032)          \\
+    \texttt{lambda.min}            & 0.755 (0.036)                                     & 0.684 (0.034)                                         & 0.812 (0.030)     & 0.732 (0.032)          \\
+      \texttt{lambda.1se}            & 0.735 (0.039)                                     & 0.669 (0.038)                                         & 0.812 (0.031)     & 0.732 (0.032)          \\
 		\bottomrule
 	\end{tabular}
 \end{table}
 
 \subsection*{Coefficients Estimation}
 
-The mean estimated coefficients in both the pixel space and frequency space were calculated for Simulation 1 and Simulation 2. Figure \ref{fig:beta_estimates} displays the mean estimated \( \beta \) values. The left column shows the estimates when models were fitted using \texttt{lambda.min}, while the right column corresponds to models fitted using \texttt{lambda.1se}. The top row presents the results for Simulation 1, and the bottom row for Simulation 2. When comparing these estimated \( \beta \) values to the actual coefficients shown in Figures \ref{fig:coefs_sim1} and \ref{fig:coefs_sim2}, it is evident that the estimated values closely align with the true coefficients.
+The mean estimated coefficients across iterations were calculated. Figure \ref{fig:beta_estimates} displays the mean estimated \( \beta \) values. There are two conclusions here: 1. Using \texttt{lambda.min} and \texttt{lambda.1se} makes no significant difference in the coefficients estimated. 2. The estimated values aligns well with the actual values.
 
-Figure \ref{fig:b_estimates} presents the mean estimated \( b \) values plotted against the ordered eigenvalues. The eigenvalues are ranked from smallest to largest, with the smallest assigned an order of 1. To standardize the scale, the orders are then divided by the total number of eigenvalues, resulting in values between 0 and 1 on the x-axis. In Simulation 1, the number of non-zero coefficient estimates closely matches the true \( b \) values shown in Figure \ref{fig:coefs_sim1}. These non-zero coefficients are primarily concentrated among the largest eigenvalues, indicating that the model correctly identifies the most significant components. In contrast, Simulation 2 shows that non-zero coefficient estimates are more uniformly distributed along the x-axis.
+Figure \ref{fig:b_estimates} presents the mean estimated \( b \) values plotted against the order of eigenvalues. The order of eigenvalues are calculated the same way as above. For Simulation 1, \texttt{lambda.1se} shrinks the estimated coefficients more than \texttt{lambda.min}, as it provides a larger panelty on it. For Simulation 2, even though it is not obvious, I feel the estimated values has an increase trend as the eigenvalues increase. [Still, I am wondering whether this is related to the covariance matrix, the decreased diagonal values, consider math proof?].
 
 \begin{figure}[h!]
 	\centering
-	\includegraphics[width=0.9\textwidth]{beta_estimates.png}
+	\includegraphics[width=0.8\textwidth]{beta_estimates.png}
 	\caption{Mean estimated \( \beta \) values across simulations, with models fitted using \texttt{lambda.min} (left) and
 		\texttt{lambda.1se} (right). The top row shows results for Simulation 1, while the bottom row shows results for Simulation 2.}
 	\label{fig:beta_estimates}
@@ -191,7 +188,7 @@ Figure \ref{fig:b_estimates} presents the mean estimated \( b \) values plotted 
 
 \begin{figure}[h!]
 	\centering
-	\includegraphics[width=0.9\textwidth]{b_estimates.png}
+	\includegraphics[width=0.8\textwidth]{b_estimates.png}
 	\caption{Mean estimated \( b \) values across simulations, plotted against ordered eigenvalues. Models fitted using
 		\texttt{lambda.min} are on the left and models fitted with \texttt{lambda.1se} on the right. The top row shows results for Simulation 1, while the bottom row shows results for Simulation 2.}
 	\label{fig:b_estimates}
@@ -200,6 +197,11 @@ Figure \ref{fig:b_estimates} presents the mean estimated \( b \) values plotted 
 \FloatBarrier
 
 \subsection*{Significant P-values}
+
+It is interesting to notice that the even though the heatmap for significance of \( \boldsymbol{\beta} \) in Simulation 1 follows the pattern of the actual non-zero values, the percentage of significance is relative low (Figure \ref{fig:perc_sign_beta} left) compared to the percentage for \( \mathbf{b} \) (Figure \ref{fig:perc_sign_b} left), where the non-zero values have as high as 100\% significance across iterations.  
+
+Another finding is that, again, even though the non-zero effect size for \( \mathbf{b} \) is a constant number in simulation 2, the percentage of significance has an increase trend as eigenvalues increase (Figure \ref{fig:perc_sign_b} right). [I am thinking of building a plot to visualize the actual \( \beta \) value in Simulation 2, and actual \( b \) value in Simulation 1, which has non-constant values, and compare them with the corresponding actual percentage of significant p-values. The purpose is to see wehther the actual non-zero value size has a relationship with the percentage of not. (I personally think a larger absolute effect size leads to a higher percentage of significance, but it looks like this is not the case for \( b \) in Simulation 2, so I want to check the other parameters as well.)]
+
 
 \begin{figure}[h!]
 	\centering
