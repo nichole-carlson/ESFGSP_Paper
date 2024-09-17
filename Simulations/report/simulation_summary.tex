@@ -23,53 +23,57 @@
 
 \section*{Notes}
 
-In the Data Simulation section, am using Moran's eigenvectors instead of the default eigenvectors to project pixels into the frequency domain. Is this correct? Also, I need to double check whether \( \mathbf{E} \) is orthogonal. It needs to be orthogonal to let \( \mathbf{E}^T \mathbf{C} \mathbf{E} \) to be a diagonal matrix.
+In the Data Simulation section, I am using Moran's eigenvectors instead of the default eigenvectors to project pixels into the frequency domain. Is this correct? Additionally, I need to confirm that \( \mathbf{E} \) is orthogonal. Orthogonality is necessary to ensure that \( \mathbf{E}^T \mathbf{C} \mathbf{E} \) results in a diagonal matrix.
+
 
 \section*{Introduction}
 
-In this study, we conducted two simulations to evaluate the performace of LASSO models in identifying significant features within high-dimensional datasets. The first simulation assumes sparsity in the feature space corresponding to pixels, referred to as the pixel space, while the second simulation assumes sparsity in the frequency domain, known as the frequency space. The pixel space represents the original high-dimensional domain, where each dimension corresponds to a pixel in an image. Features in this space are directly observable and may exhibit inherent correlations. In contrast, the frequency space is a transformed version of the pixel space, derived through eigen decomposition, where the data is represented in terms of its frequency components.
+This study involves two simulations aimed at evaluating the performance of LASSO models in identifying significant features in high-dimensional datasets. The first simulation assumes sparsity in the pixel space, where each feature corresponds to a pixel, while the second simulation assumes sparsity in the frequency domain, which is a transformation of the pixel space.
+
+The pixel space represents the original high-dimensional domain where correlations among features may exist. The frequency space, derived through eigen decomposition, represents the data in terms of its frequency components.
 
 
 \section*{Methods}
 
 \subsection*{Data Simulation}
 
-Let \( \mathbf{x} \) denote a column vector representing the pixel values of a single observation, with \( n = 256 \) pixels in total. Its covariance matrix, \( \mathbf{C} \), is defined to have an exponential correlation structure, where \( \mathbf{C}_{i j}=-\exp (\operatorname{dist}(i, j)) \). Here, \( \operatorname{dist}(i, j) \) is the distance between the pixels \( i \) and \( j \) in a \( 16 \times 16 \) grid. Suppose \( \mathbf{M} = \mathbf{I} - \mathbf{1} \mathbf{1}^{\prime} / n \) is a centering matrix. Let us eigen-decompose the matrix \( \mathbf{MCM} \) into \( \mathbf{E}_{\text {full }} \mathbf{\Lambda}_{\text {full }} \mathbf{E}_{\text {full }}^{\prime} \), where \( \mathbf{E}_{\text {full }} \) is a \( n \times n \) matrix whose \( l \) th column, \( \mathbf{e}_l \), equals the \( l \) th eigenvector. We transform the random vector \( \mathbf{x} \) into the frequency space by computing 
+Let \( \mathbf{x} \) be a column vector representing the pixel values of a single observation, with \( n = 256 \) pixels in total. The covariance matrix \( \mathbf{C} \) is defined by an exponential correlation structure: 
 \[
-  \mathbf{x}_{\text {freq }}= \mathbf{E}^T \mathbf{x}
+\mathbf{C}_{ij} = -\exp(\operatorname{dist}(i,j))
 \]
-The covariance matrix of \( \mathbf{x}_{\text {freq }} \) is then given by \( \operatorname{cov}(\mathbf{x}_{\mathrm{freq}}) = \mathbf{E}^T \mathbf{C} \mathbf{E} \), which results in a diagonal matrix.(notations come from the reference at the bottom).
-
-In each simulation iteration, we use \( \mathbf{X} \) to denote the matrix of \( \mathbf{x} \), where each row represents an observation. In this notation, its relationship with \( \mathbf{X}_{\mathrm{freq}} \) can be denoted as:
+where \( \operatorname{dist}(i,j) \) is the distance between pixels \( i \) and \( j \) on a \( 16 \times 16 \) grid. Define \( \mathbf{M} = \mathbf{I} - \mathbf{1} \mathbf{1}^{\prime} / n \) as a centering matrix. We decompose \( \mathbf{MCM} \) as
 \[
-  \mathbf{X}_{\mathrm{freq}} = \mathbf{X} \mathbf{E}
+\mathbf{MCM} = \mathbf{E}_{\text{full}} \mathbf{\Lambda}_{\text{full}} \mathbf{E}_{\text{full}}^{\prime}
+\]
+where \( \mathbf{E}_{\text{full}} \) is the matrix of eigenvectors [the notations above come from reference 1]. We transform the vector \( \mathbf{x} \) into the frequency space using:
+\[
+\mathbf{x}_{\text{freq}} = \mathbf{E}^T \mathbf{x}
+\]
+The covariance matrix of \( \mathbf{x}_{\text{freq}} \) becomes \( \mathbf{E}^T \mathbf{C} \mathbf{E} \), which is diagonal by construction [diagonal needs to be verified].
+
+In each simulation, \( \mathbf{X} \) denotes the matrix of all observations, where each row represents an observation, and there are 1000 observations in total. The relationship between \( \mathbf{X} \) and \( \mathbf{X}_{\mathrm{freq}} \) is:
+\[
+\mathbf{X}_{\mathrm{freq}} = \mathbf{X} \mathbf{E}
 \]
 
+Next, we define the coefficient vectors in both spaces. Let \( \boldsymbol{\beta} \) be the coefficient vector in the pixel space and \( \mathbf{b} \) in the frequency space. To ensure \( \mathbf{X} \boldsymbol{\beta} = \mathbf{X}_{\mathrm{freq}} \mathbf{b} \), we require:
+\[
+\boldsymbol{\beta} = \mathbf{E} \mathbf{b}
+\]
 
-In each simulation iteration, 1000 observations of \( X_{\text {freq}} \) are generated from a multivariate normal
-distribution with the covariance matrix \(\operatorname{cov}\left(X_{\text {freq }}\right) \). This process is repeated
-across 500 iterations.  For each observation, we compute the corresponding pixel space vector \( X \) as \( X=V X_{\text
-		{freq }} \).
+Two scenarios are simulated:
 
-In the first simulation, we assume that the coefficient vector \( \beta \) is sparse in the pixel space. Specifically,
-the non-zero values in \( \beta \) are confined to a central \( 8 \times 8 \) region of the image. The response variable
-\( y \) is drawn from a binomial distribution, with the success probability determined by \( \eta = X \beta \). The
-non-zero coefficients in \( \beta \) are chosen to ensure that the probability \( p = \frac{1}{1 + \exp(-\eta)} \) is
-uniformly distributed within the interval \( [0, 1] \).
+1. **Pixel space sparsity**: In this scenario, \( \boldsymbol{\beta} \) is sparse, with non-zero values confined to a central \( 8 \times 8 \) region. The covariate matrix \( \mathbf{X} \) is generated from a multivariate normal distribution with zero mean and covariance matrix \( \mathbf{C} \). The response variable \( \mathbf{y} \) is drawn from a binomial distribution, with the success probability determined by \( \boldsymbol{\eta} = \mathbf{X} \boldsymbol{\beta} \). The non-zero entries of \( \boldsymbol{\beta} \) are constant and chosen such that the probability \( \mathbf{p} = \frac{1}{1 + \exp(-\boldsymbol{\eta})} \) is uniformly distributed in \( [0, 1] \).
 
-In the second simulation, sparsity is assumed in the coefficient vector \( b \) within the frequency space. Here, 10\%
-of the 256 entries in \( b \) are randomly set to non-zero values, while the rest remain zero. The response variable \(
-y \) is generated similarly to the first simulation, ensuring that the probability \( p \) is uniformly distributed.
+2. **Frequency space sparsity**: In this case, \( \mathbf{b} \) is sparse, with 10\% of its 256 entries randomly set to non-zero values, while the rest remain zero. The covariate matrix \( \mathbf{X}_{\mathrm{freq}} \) is generated from a multivariate normal distribution with zero mean and a diagonal covariance matrix, assuming the eigenvalues decrease along the diagonal [I am thinking of what step size is proper, currently using constant step size]. The non-zero entries in \( \mathbf{b} \) are constant and chosen such that \( \mathbf{p} \) is uniformly distributed in \( [0, 1] \), and the response variable \( \mathbf{y} \) is drawn from a binomial distribution with probability \( \mathbf{p} \).
 
-For both simulations, two models are fitted: one using the covariates in the pixel space and the other using the
-covariates in the frequency space. Each dataset, consisting of 1000 observations with 256 features (representing \( 16
-\times 16 \) pixel images), is split into training (80\%) and test (20\%) sets. The regularization parameter \( \lambda
-\) is tuned using cross-validation based on the binomial deviance metric. The dataset is divided into 10 folds, with the
-model trained and validated iteratively across these folds while varying \( \lambda \). We consider two specific \(
-\lambda \) values, `lambda.min` which minimizes the cross-validated error, and `lambda.1se`, which represents the
-largest \( \lambda \) within one standard error of the minimum.
+After simulating data from either space, the values in the other space are calculated using the transformations described above. Note that when simulating data from the frequency space, even though the diagonal covariance matrix is randomly chosen, not calculated by \( \mathbf{E}^T \mathbf{C} \mathbf{E} \), we still use \( \mathbf{E} \) to transform it back to the pixel space.
 
-After selecting the optimal \( \lambda \), model performance is evaluated using accuracy and the Area Under the Curve (AUC) metric. Additionally, a permutation test is performed 100 times to calculate p-values for each covariate. Across all iterations, we compute the mean and standard deviation of the performance metrics and the percentage of significant p-values for each covariate.
+\subsection*{Model Evaluation}
+
+To evaluate the performance of LASSO in both spaces, we fit two models: one using covariates in the pixel space and another using covariates in the frequency space. To select the optimal regularization parameter \( \lambda \), the dataset is split into training (80\%) and test (20\%) sets. The regularization parameter \( \lambda \) is tuned using cross-validation based on the binomial deviance metric, with the dataset divided into 10 folds. Two values of \( \lambda \) are considered: \texttt{lambda.min}, which minimizes the cross-validated error, and \texttt{lambda.1se}, which represents the largest \( \lambda \) within one standard error of the minimum.
+
+For each iteration, model performance is evaluated using the selected \( \lambda \) on the test set. The evaluation metrics include accuracy, Area Under the Curve (AUC), and p-values for each covariate. P-values are calculated using the \texttt{hdi} package [provide more details on how this package calculates p-values]. The simulation is repeated 500 times, and we report the mean and standard deviation of accuracy and AUC. For p-values, we report the percentage of instances where \( p < 0.05 \) at each location.
 
 
 \section*{Results}
