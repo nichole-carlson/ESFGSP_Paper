@@ -14,90 +14,105 @@
 \graphicspath{{/Users/siyangren/Documents/ra-cida/ESFGSP_Paper/Simulations/results/figures}}
 
 
-\title{}
-\author{Siyang Ren, Nichole E. Carlson, William Lippitt, Yue Wang}
-\date{}
 
 \begin{document}
 
+\title{Evaluating LASSO Performance in High-Dimensional Data: A Comparison Between Pixel and Frequency Domains}
+\author{Siyang Ren, Nichole E. Carlson, William Lippitt, Yue Wang}
+\date{}
 \maketitle
+
 
 \section*{Notes}
 
-\begin{itemize}
-  \item In the Data Simulation section, I am using Moran's eigenvectors instead of the default eigenvectors to project pixels into the frequency domain. Is this correct? Additionally, I need to confirm that \( \mathbf{E} \) is orthogonal. Orthogonality is necessary to ensure that \( \mathbf{E}^T \mathbf{C} \mathbf{E} \) results in a diagonal matrix.
-\end{itemize}
+Everything surrounded by [] are my thoughts/questions/to-dos.
+
 
 \section*{Introduction}
 
-This study involves two simulations aimed at evaluating the performance of LASSO models in identifying significant features in high-dimensional datasets. The first simulation assumes sparsity in the pixel space, where each feature corresponds to a pixel, while the second simulation assumes sparsity in the frequency domain, which is a transformation of the pixel space.
+This study evaluates the performance of LASSO models in high-dimensional feature selection by comparing results from two different data representations: the original pixel space and a frequency space derived from eigen decomposition using Moran’s eigenvectors. The pixel space corresponds to the raw data where each feature is a pixel, while the frequency space transforms these features into frequency components.
 
-The pixel space represents the original high-dimensional domain where correlations among features may exist. The frequency space, derived through eigen decomposition, represents the data in terms of its frequency components.
+We investigate whether fitting LASSO in the frequency space improves feature selection and prediction accuracy compared to the pixel space. Two simulation scenarios are used: one assuming sparsity in the pixel space and the other assuming sparsity in the frequency space. By comparing the results, we aim to determine which representation provides better performance for LASSO in high-dimensional datasets.
 
 
 \section*{Methods}
 
 \subsection*{Data Simulation}
 
-Let \( \mathbf{x} \) be a column vector representing the pixel values of a single observation, with \( n = 256 \) pixels in total. The covariance matrix \( \mathbf{C} \) is defined by an exponential correlation structure: 
+Let \( \mathbf{x} \) be a column vector representing the pixel values of a single observation, where the total number of pixels is \( n = 256 \). The covariance matrix \( \mathbf{C} \) follows an exponential correlation structure:
 \[
-\mathbf{C}_{ij} = -\exp(\operatorname{dist}(i,j))
+\mathbf{C}_{ij} = -\exp(\operatorname{dist}(i,j)),
 \]
-where \( \operatorname{dist}(i,j) \) is the distance between pixels \( i \) and \( j \) on a \( 16 \times 16 \) grid. Define \( \mathbf{M} = \mathbf{I} - \mathbf{1} \mathbf{1}^{\prime} / n \) as a centering matrix. We decompose \( \mathbf{MCM} \) as
+where \( \operatorname{dist}(i,j) \) is the distance between pixels \( i \) and \( j \) on a \( 16 \times 16 \) grid. To center the data, we use the centering matrix \( \mathbf{M} = \mathbf{I} - \mathbf{1} \mathbf{1}^{\prime} / n \). The decomposition of \( \mathbf{MCM} \) is given by:
 \[
-\mathbf{MCM} = \mathbf{E}_{\text{full}} \mathbf{\Lambda}_{\text{full}} \mathbf{E}_{\text{full}}^{\prime}
+\mathbf{MCM} = \mathbf{E}_{\text{full}} \mathbf{\Lambda}_{\text{full}} \mathbf{E}_{\text{full}}^{\prime},
 \]
-where \( \mathbf{E}_{\text{full}} \) is the matrix of eigenvectors [the notations above come from reference 1]. We transform the vector \( \mathbf{x} \) into the frequency space using:
+where \( \mathbf{E}_{\text{full}} \) represents the eigenvectors, and \( \mathbf{\Lambda}_{\text{full}} \) the diagonal matrix of eigenvalues [The notations above come from reference 1]. The transformation of the pixel values \( \mathbf{x} \) into the frequency space is then:
 \[
-\mathbf{x}_{\text{freq}} = \mathbf{E}^T \mathbf{x}
+\mathbf{x}_{\text{freq}} = \mathbf{E}^T \mathbf{x}.
 \]
-The covariance matrix of \( \mathbf{x}_{\text{freq}} \) becomes \( \mathbf{E}^T \mathbf{C} \mathbf{E} \), which is diagonal by construction [diagonal needs to be verified].
+Here, the covariance matrix of \( \mathbf{x}_{\text{freq}} \), \( \mathbf{E}^T \mathbf{C} \mathbf{E} \), is expected to be diagonal [this requires verification of \( \mathbf{E} \)'s orthogonality].
 
-In each simulation, \( \mathbf{X} \) denotes the matrix of all observations, where each row represents an observation, and there are 1000 observations in total. The relationship between \( \mathbf{X} \) and \( \mathbf{X}_{\mathrm{freq}} \) is:
+For each simulation, \( \mathbf{X} \) represents the matrix of observations, with each row corresponding to one of the 1000 total observations. The transformation of \( \mathbf{X} \) into the frequency domain is:
 \[
-\mathbf{X}_{\mathrm{freq}} = \mathbf{X} \mathbf{E}
-\]
-
-Next, we define the coefficient vectors in both spaces. Let \( \boldsymbol{\beta} \) be the coefficient vector in the pixel space and \( \mathbf{b} \) in the frequency space. To ensure \( \mathbf{X} \boldsymbol{\beta} = \mathbf{X}_{\mathrm{freq}} \mathbf{b} \), we require:
-\[
-\boldsymbol{\beta} = \mathbf{E} \mathbf{b}
+\mathbf{X}_{\mathrm{freq}} = \mathbf{X} \mathbf{E}.
 \]
 
-Two scenarios are simulated:
+We define the coefficient vectors in both spaces as follows: \( \boldsymbol{\beta} \) for the pixel space and \( \mathbf{b} \) for the frequency space. The relationship between the two is:
+\[
+\boldsymbol{\beta} = \mathbf{E} \mathbf{b},
+\]
+ensuring that \( \mathbf{X} \boldsymbol{\beta} = \mathbf{X}_{\mathrm{freq}} \mathbf{b} \).
 
+Two simulation scenarios are considered:
 \begin{enumerate}
-  \item \textbf{Pixel space sparsity:} In this scenario, \( \boldsymbol{\beta} \) is sparse, with non-zero values confined to a central \( 8 \times 8 \) region. The covariate matrix \( \mathbf{X} \) is generated from a multivariate normal distribution with zero mean and covariance matrix \( \mathbf{C} \). The response variable \( \mathbf{y} \) is drawn from a binomial distribution, with the success probability determined by \( \boldsymbol{\eta} = \mathbf{X} \boldsymbol{\beta} \). The non-zero entries of \( \boldsymbol{\beta} \) are constant and chosen such that the probability \( \mathbf{p} = \frac{1}{1 + \exp(-\boldsymbol{\eta})} \) is uniformly distributed in \( [0, 1] \).
-  \item \textbf{Frequency space sparsity:} In this case, \( \mathbf{b} \) is sparse, with 10\% of its 256 entries randomly set to non-zero values, while the rest remain zero. The covariate matrix \( \mathbf{X}_{\mathrm{freq}} \) is generated from a multivariate normal distribution with zero mean and a diagonal covariance matrix, assuming the eigenvalues decrease along the diagonal [I am thinking of what step size is proper, currently using constant step size]. The non-zero entries in \( \mathbf{b} \) are constant and chosen such that \( \mathbf{p} \) is uniformly distributed in \( [0, 1] \), and the response variable \( \mathbf{y} \) is drawn from a binomial distribution with probability \( \mathbf{p} \).
+  \item \textbf{Pixel space sparsity:} Here, \( \boldsymbol{\beta} \) is sparse, with non-zero values limited to a central \( 8 \times 8 \) region of the pixel grid. The covariate matrix \( \mathbf{X} \) is generated from a multivariate normal distribution with mean 0 and covariance matrix \( \mathbf{C} \). The response variable \( \mathbf{y} \) is binomial, with success probability determined by \( \boldsymbol{\eta} = \mathbf{X} \boldsymbol{\beta} \), where the non-zero entries in \( \boldsymbol{\beta} \) are constant and ensure that the success probability \( \mathbf{p} = \frac{1}{1 + \exp(-\boldsymbol{\eta})} \) is uniformly distributed in \( [0, 1] \).
+  
+  \item \textbf{Frequency space sparsity:} In this scenario, the coefficient vector \( \mathbf{b} \) is sparse, with 10\% of its 256 entries randomly set to non-zero values. The covariate matrix \( \mathbf{X}_{\mathrm{freq}} \) is generated from a multivariate normal distribution with zero mean and a diagonal covariance matrix, where the eigenvalues decrease along the diagonal [I am considering different options for the step size in the diagonal covariance matrix. Currently, I am using a constant step size, but further investigation may be needed to determine the most appropriate choice.]. The non-zero entries in \( \mathbf{b} \) are constant, and \( \mathbf{y} \) is drawn from a binomial distribution with a success probability \( \mathbf{p} \) uniformly distributed in \( [0, 1] \).
+
 \end{enumerate}
 
-After simulating data from either space, the values in the other space are calculated using the transformations described above. Note that when simulating data from the frequency space, even though the diagonal covariance matrix is randomly chosen, not calculated by \( \mathbf{E}^T \mathbf{C} \mathbf{E} \), we still use \( \mathbf{E} \) to transform it back to the pixel space.
+After simulating data from either space, the values in the alternate space are calculated using the described transformations. When simulating data from the frequency space, even though the diagonal covariance matrix is chosen randomly and not calculated via \( \mathbf{E}^T \mathbf{C} \mathbf{E} \), \( \mathbf{E} \) is still used to transform the data back to the pixel space.
 
 \subsection*{Model Evaluation}
 
-To evaluate the performance of LASSO in both spaces, we fit two models: one using covariates in the pixel space and another using covariates in the frequency space. To select the optimal regularization parameter \( \lambda \), the dataset is split into training (80\%) and test (20\%) sets. The regularization parameter \( \lambda \) is tuned using cross-validation based on the binomial deviance metric, with the dataset divided into 10 folds. Two values of \( \lambda \) are considered: \texttt{lambda.min}, which minimizes the cross-validated error, and \texttt{lambda.1se}, which represents the largest \( \lambda \) within one standard error of the minimum.
+To compare the performance of LASSO in both the pixel space and frequency space, we fit two models: one using covariates in the pixel space and another using covariates in the frequency space. The optimal regularization parameter \( \lambda \) is selected via cross-validation, using the binomial deviance as the performance metric. The dataset is split into training (80\%) and test (20\%) sets, and the cross-validation is performed using 10 folds.
 
-For each iteration, model performance is evaluated using the selected \( \lambda \) on the test set. The evaluation metrics include accuracy, Area Under the Curve (AUC), and p-values for each covariate. P-values are calculated using the \texttt{hdi} package [provide more details on how this package calculates p-values]. The simulation is repeated 500 times, and we report the mean and standard deviation of accuracy and AUC. For p-values, we report the percentage of instances where \( p < 0.05 \) at each location [I am wondering whether we need to do adjustment here].
+Two values of \( \lambda \) are considered: 
+\begin{itemize}
+  \item \texttt{lambda.min}, which minimizes the cross-validated error.
+  \item \texttt{lambda.1se}, the largest \( \lambda \) within one standard error of the minimum.
+\end{itemize}
+
+After selecting the optimal \( \lambda \), we evaluate model performance on the test set. The performance metrics include:
+\begin{itemize}
+  \item Accuracy
+  \item Area Under the Curve (AUC)
+  \item P-values for each covariate
+\end{itemize}
+
+P-values are computed using the \texttt{hdi} package [need to provide further details on how the package computes p-values]. The entire simulation is repeated 500 times. We report the mean and standard deviation of accuracy and AUC. For p-values, we report the percentage of cases where \( p < 0.05 \) at each covariate location [consider whether p-value adjustment is needed here].
 
 
 \section*{Results}
 
 \subsection*{Effect Size Determination}
 
-In Simulation 1, the distribution of the success probability \( \mathbf{p} \) was evaluated at various non-zero values for \( \boldsymbol{\beta} \): 0.01,
-0.05, 0.1, 0.2, and 1. As shown in Figure \ref{fig:sim1_p_dist}, 0.1 yielded the most uniform distribution
-of \( \mathbf{p} \), making it the optimal choice for model fitting. Similarly, in Simulation 2, the distribution of \( \mathbf{p} \) was assessed at various non-zero values for \( \mathbf{b} \): 0.1, 0.2, 0.4, 0.6, 0.8, and 1. As illustrated in Figure \ref{fig:sim2_p_dist}, 0.2 resulted in the most uniform distribution of \( \mathbf{p} \).
+In Simulation 1, we evaluated the distribution of the success probability \( \mathbf{p} \) at different non-zero values of \( \boldsymbol{\beta} \) (0.01, 0.05, 0.1, 0.2, and 1). As shown in Figure \ref{fig:sim1_p_dist}, a value of 0.1 produced the most uniform distribution of \( \mathbf{p} \), making it the optimal choice for model fitting in this scenario.
+
+Similarly, in Simulation 2, we assessed the distribution of \( \mathbf{p} \) at various non-zero values for \( \mathbf{b} \) (0.1, 0.15, 0.2, 0.25, and 0.3). As shown in Figure \ref{fig:sim2_p_dist}, the value of 0.2 resulted in the most uniform distribution of \( \mathbf{p} \), making it the best option for this simulation.
 
 \begin{figure}[h!]
 	\centering
 	\includegraphics[width=0.8\textwidth]{sim1_p_dist.png}
-	\caption{Distribution of success probability \( p \) at different \( \beta \) values in Simulation 1.}
+  \caption{Distribution of success probability \( \mathbf{p} \) at different non-zero values in Simulation 1.}
 	\label{fig:sim1_p_dist}
 \end{figure}
 
 \begin{figure}[h!]
 	\centering
 	\includegraphics[width=0.8\textwidth]{sim2_p_dist.png}
-	\caption{Distribution of success probability \( p \) at different \( b \) values in Simulation 2.}
+  \caption{Distribution of success probability \( \mathbf{p} \) at different non-zero values in Simulation 2.}
 	\label{fig:sim2_p_dist}
 \end{figure}
 
@@ -105,9 +120,9 @@ of \( \mathbf{p} \), making it the optimal choice for model fitting. Similarly, 
 
 \subsection*{Group Mean Difference}
 
-Figure \ref{fig:group_diff1} shows the group mean difference in covariate values between instances where \( y = 1 \) and \( y = 0 \) for Simulation 1. The difference in \( \boldsymbol{\beta} \) (left) is shown in heatmap as the location matters, and the difference in \( \mathbf{b} \) are shown by a scatterplot, where the x-axis is standardized order of eigenvalues, with the larger eigenvalues have larger values, and y-axis as the group means for the coefficients. Figure \ref{fig:coefs_sim1} shows the actual coefficient values we used in the same simulation. We can see that the group mean difference in positions where the actual coefficient value is non-zero is larger, which makes sense as covariates with larger values have higher probabilities to be assigned to \( y = 1 \).
+In this subsection, we examine the group mean differences in covariate values between instances where \( y = 1 \) and \( y = 0 \) for both Simulation 1 and Simulation 2.
 
-Figure \ref{fig:group_diff2} and \ref{fig:coefs_sim2} show the similar figures for Simulation 2, where coefficient vectors in the frequency space is specified and transformed to the pixel space. I feel that the group mean difference showing in the heatmap still show similar patterns compared to the actual values, I do notice some locations have different directions, like a shadow blue compared to a shallow red. But actual values have a large absolute value do keep the same direction in the group mean diff figure. The interesting finding comes to the scatterplots. We can see that the actual non-zero values are a constant 0.2, but the estimated values are up and down around 0, and goes larger (with larger variance) for those corresponding to larger eigenvalues. The larger variance makes sense to me, as the covariance matrix I used is a diagonal matrix with decreasing diagonal values. Even though all coefficients are zero, the group mean difference should be scattered around 0 and has larger variance along the x-axis. What surprise me is that I didn't see clear pattern showing which location has non-zero values. I am guessing the non-zero effect is relative small compared to the covariance I specified [maybe next step].
+Figure \ref{fig:group_diff1} presents the group mean differences for Simulation 1, with the heatmap on the left showing that regions corresponding to non-zero coefficients in \( \boldsymbol{\beta} \) exhibit larger mean differences between \( y = 1 \) and \( y = 0 \), as larger covariate values in these locations have higher probabilities of being assigned to \( y = 1 \). The scatterplot on the right displays the group mean differences in the frequency domain, where each point represents a frequency component; frequencies associated with larger eigenvalues tend to have larger mean differences. Figure \ref{fig:coefs_sim1} shows the actual coefficients used in Simulation 1, where non-zero coefficients in \( \boldsymbol{\beta} \) are localized to specific pixels, corresponding to the areas with larger mean differences in the group comparison.
 
 \begin{figure}[h!]
 	\centering
@@ -123,6 +138,8 @@ Figure \ref{fig:group_diff2} and \ref{fig:coefs_sim2} show the similar figures f
 	\caption{Actual coefficients in Simulation 1 for the pixel space (left) and frequency space (right).}
 	\label{fig:coefs_sim1}
 \end{figure}
+
+Figure \ref{fig:group_diff2} shows the group mean differences for Simulation 2, while Figure \ref{fig:coefs_sim2} displays the actual coefficients. The non-zero coefficients in \( \mathbf{b} \) are uniformly set to 0.2. However, the scatterplot in the frequency space does not clearly highlight the non-zero components, with increasing variance observed for larger eigenvalues. This variance pattern is consistent with the diagonal covariance matrix used in the simulation. The difficulty in identifying the non-zero components suggests that the effect size may be too small relative to the variance, making detection challenging. [Further adjustments to either the effect size or the covariance matrix could improve the detectability of these non-zero coefficients in future analyses.]
 
 \begin{figure}[h!]
 	\centering
@@ -142,14 +159,7 @@ Figure \ref{fig:group_diff2} and \ref{fig:coefs_sim2} show the similar figures f
 
 \subsection*{AUC and Accuracy}
 
-Table~\ref*{tab:auc_acc_table} presents the average AUCs and accuracies over the 500 iterations. Regardless of whether
-sparsity is assumed in the pixel space (Simulation 1) or the frequency space (Simulation 2), models fitted in the
-frequency space consistently outperformed those fitted in the pixel space. Specifically, in Simulation 1, using
-\texttt{lambda.min} as the regularization value, models fitted with covariates from the pixel space achieved an AUC of
-0.803 (SE = 0.031) and an accuracy of 72.6\% (SE = 0.032). In contrast, models fitted with covariates from the
-frequency space achieved a slightly higher AUC of 0.826 (SE = 0.028) and a higher accuracy of
-74.5\% (SE = 0.030). A similar trend was observed in Simulation 2, with models fitted in the frequency space
-demonstrating superior performance regardless of the regularization parameter used.
+Table~\ref*{tab:auc_acc_table} summarizes the average AUCs and accuracies over 500 iterations. In both Simulation 1 (pixel space sparsity) and Simulation 2 (frequency space sparsity), models fitted in the frequency space consistently outperformed those fitted in the pixel space. For example, in Simulation 1, using \texttt{lambda.min} as the regularization parameter, models trained with pixel space covariates achieved an AUC of 0.803 (SE = 0.031) and an accuracy of 72.6\% (SE = 0.032). In contrast, models trained with frequency space covariates produced a slightly higher AUC of 0.826 (SE = 0.028) and a higher accuracy of 74.5\% (SE = 0.030). A similar trend was observed in Simulation 2, with frequency space models showing superior performance regardless of the regularization parameter used.
 
 \begin{table}[h!]
 	\centering
@@ -174,9 +184,11 @@ demonstrating superior performance regardless of the regularization parameter us
 
 \subsection*{Coefficients Estimation}
 
-The mean estimated coefficients across iterations were calculated. Figure \ref{fig:beta_estimates} displays the mean estimated \( \beta \) values. There are two conclusions here: 1. Using \texttt{lambda.min} and \texttt{lambda.1se} makes no significant difference in the coefficients estimated. 2. The estimated values aligns well with the actual values.
-
 Figure \ref{fig:b_estimates} presents the mean estimated \( b \) values plotted against the order of eigenvalues. The order of eigenvalues are calculated the same way as above. For Simulation 1, \texttt{lambda.1se} shrinks the estimated coefficients more than \texttt{lambda.min}, as it provides a larger panelty on it. For Simulation 2, even though it is not obvious, I feel the estimated values has an increase trend as the eigenvalues increase. [Still, I am wondering whether this is related to the covariance matrix, the decreased diagonal values, consider math proof?].
+
+The mean estimated coefficients across iterations were calculated, and Figure \ref{fig:beta_estimates} displays the mean estimated \( \boldsymbol{\beta} \) values. Two key observations can be made: (1) There is no significant difference in the estimated coefficients when using \texttt{lambda.min} versus \texttt{lambda.1se}, and (2) the estimated values align well with the actual values, indicating that the model is accurately identifying the relevant features.
+
+Figure \ref{fig:b_estimates} shows the mean estimated \( \mathbf{b} \) values plotted against the order of eigenvalues. The eigenvalue ordering is consistent with earlier calculations. In Simulation 1, \texttt{lambda.1se} applies a stronger regularization penalty, shrinking the estimated coefficients more than \texttt{lambda.min}. For Simulation 2, although the trend is less clear, there seems to be an upward trend in the estimated values as the eigenvalues increase. This trend may be related to the structure of the covariance matrix, specifically its decreasing diagonal values [consider math proof?].
 
 \begin{figure}[h!]
 	\centering
@@ -198,10 +210,9 @@ Figure \ref{fig:b_estimates} presents the mean estimated \( b \) values plotted 
 
 \subsection*{Significant P-values}
 
-It is interesting to notice that the even though the heatmap for significance of \( \boldsymbol{\beta} \) in Simulation 1 follows the pattern of the actual non-zero values, the percentage of significance is relative low (Figure \ref{fig:perc_sign_beta} left) compared to the percentage for \( \mathbf{b} \) (Figure \ref{fig:perc_sign_b} left), where the non-zero values have as high as 100\% significance across iterations.  
+It is interesting to observe that, although the heatmap for significance of \( \boldsymbol{\beta} \) in Simulation 1 follows the pattern of the actual non-zero values, the percentage of significance is relatively low (Figure \ref{fig:perc_sign_beta} left). In contrast, the non-zero values of \( \mathbf{b} \) (Figure \ref{fig:perc_sign_b} left) show a much higher percentage of significance, reaching as high as 100\% across iterations.
 
-Another finding is that, again, even though the non-zero effect size for \( \mathbf{b} \) is a constant number in simulation 2, the percentage of significance has an increase trend as eigenvalues increase (Figure \ref{fig:perc_sign_b} right). [I am thinking of building a plot to visualize the actual \( \beta \) value in Simulation 2, and actual \( b \) value in Simulation 1, which has non-constant values, and compare them with the corresponding actual percentage of significant p-values. The purpose is to see wehther the actual non-zero value size has a relationship with the percentage of not. (I personally think a larger absolute effect size leads to a higher percentage of significance, but it looks like this is not the case for \( b \) in Simulation 2, so I want to check the other parameters as well.)]
-
+Another observation is that, although the non-zero effect size for \( \mathbf{b} \) is constant in Simulation 2, the percentage of significant p-values increases as the eigenvalues grow (Figure \ref{fig:perc_sign_b} right). [I am considering creating a plot to visualize the actual \( \beta \) values in Simulation 2 and the actual \( b \) values in Simulation 1, where the non-zero values vary, and compare them with the corresponding percentage of significant p-values. The goal is to examine whether the size of the actual non-zero values correlates with the percentage of significance. I suspect that a larger absolute effect size should result in a higher percentage of significance, but this doesn’t seem to be the case for \( b \) in Simulation 2, so I want to investigate other factors as well.]
 
 \begin{figure}[h!]
 	\centering
@@ -220,17 +231,19 @@ Another finding is that, again, even though the non-zero effect size for \( \mat
 
 \FloatBarrier
 
-Figure~\ref*{fig:top_bottom_eigvecs} presents the frequencies associated with the top three eigenvalues, which represent the dominant patterns in the pixel space. The frequency associated with the smallest eigenvalue is also shown, highlighting the least significant variance.
 
-\begin{figure}[h!]
-	\centering
-	\includegraphics[width=0.8\textwidth]{top_bottom_eigvecs.png}
-	\caption{Frequencies associated with the top three eigenvalues (top row and bottom left) and the frequency associated with the smallest eigenvalue (bottom right), highlighting the primary and least significant patterns in the pixel space.}
-	\label{fig:top_bottom_eigvecs}
-\end{figure}
+\section*{Future Work}
 
+\begin{itemize}
+  \item Adding details about how \texttt{hdi} package calculated p-values and why my permutation test didn't work.
+  \item Increase \( b \) effect size (how to keep \( p \) evenly distributed in the same time?) see whether the pattern of coefficient estimates disappear or relieve.
+  \item What is the next step in higher level?
+\end{itemize}
+
+\section*{References}
+
+Murakami and Griffith, ``Eigenvector Spatial Filtering for Large Data Sets.''
 
 \end{document}
 
 
-Murakami and Griffith, “Eigenvector Spatial Filtering for Large Data Sets.”
