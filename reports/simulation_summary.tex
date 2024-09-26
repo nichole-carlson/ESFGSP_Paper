@@ -1,5 +1,5 @@
 \documentclass[12pt]{article}
-\usepackage{amsmath,amsfonts}
+\usepackage{amsmath,amsfonts,amsthm}
 \usepackage{enumerate}
 \usepackage{graphicx}
 \usepackage{float}
@@ -37,17 +37,28 @@ We investigate whether fitting LASSO in the frequency space improves feature sel
 
 \section*{Methods}
 
-Suppose \( X \) is a \( n \times p \) matrix representing \( n \) observations, each with \( p \) features. Its covariance matrix \( \Sigma \) is a \( p \times p \) matrix. A whitening transformation is a linear transformation that transforms \( X \) into a new matrix whose covariance is the identity matrix. Suppose the whitening matrix is defined as \( W \), then the new matrix \( Z = X W \) has \( \operatorname*{cov} (Z) = I \). It can be prove that \( W \) satisfies the condition
+Suppose \( \boldsymbol{x}=\left(x_1, \ldots, x_p\right)^T \) is a \( p \)-dimensional random vector. Its covariance matrix \( \operatorname{var}(\boldsymbol{x})=\boldsymbol{\Sigma} \) is a \( p \times p \) matrix. Whitening is a linear transformation that converts \( \boldsymbol{x} \) into a new random vector
+\[
+\boldsymbol{z}=\left(z_1, \ldots, z_d\right)^T=\boldsymbol{W} \boldsymbol{x}
+\]
+whose covariance matrix \( \operatorname{var} (\boldsymbol{z}) = I \) is a diagonal matrix with all diagonal values equal 1. Here \( \boldsymbol{W} \) is called the whitening matrix. We can prove that \( \boldsymbol{W} \) needs to satisfy 
 \[
   W^T W = \Sigma^{-1}
 \]
+to be a whitening matrix.
+\begin{proof}
+  From \( \boldsymbol{z} = \boldsymbol{W} \boldsymbol{x} \) and \( \operatorname{cov} (\boldsymbol{z}) = I \) and 
+\end{proof}
+
 However, this constraint does not uniquely determine the whitening matmrix \( W \) [citing ``Optimal Whitening and Decorrelation''].
 
 Whitening is useful as it assures uncorrelation among variables, which is a great property for many analysis. One of the common choice of \( W \) is 
 \[
   W = \Lambda^{-1/2} U^T
 \]
-where \( \Sigma = U \Lambda U^T \) is the eigen-decomposition of the covariance matrix. The \( \Lambda^{-1/2} \) term ensures an identity matrix,
+where \( \Sigma = U \Lambda U^T \) is the eigen-decomposition of the covariance matrix. 
+
+
 
 \subsection*{Data Simulation}
 
