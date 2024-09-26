@@ -11,7 +11,7 @@
 \topmargin 0in \headheight 0.0in \textheight 9in \textwidth 6.5in
 \oddsidemargin 0.1in \evensidemargin 0.1in
 
-\graphicspath{{/Users/siyangren/Documents/ra-cida/ESFGSP_Paper/Simulations/results/figures}}
+\graphicspath{{../results/figures}}
 
 
 
@@ -36,6 +36,18 @@ We investigate whether fitting LASSO in the frequency space improves feature sel
 
 
 \section*{Methods}
+
+Suppose \( X \) is a \( n \times p \) matrix representing \( n \) observations, each with \( p \) features. Its covariance matrix \( \Sigma \) is a \( p \times p \) matrix. A whitening transformation is a linear transformation that transforms \( X \) into a new matrix whose covariance is the identity matrix. Suppose the whitening matrix is defined as \( W \), then the new matrix \( Z = X W \) has \( \operatorname*{cov} (Z) = I \). It can be prove that \( W \) satisfies the condition
+\[
+  W^T W = \Sigma^{-1}
+\]
+However, this constraint does not uniquely determine the whitening matmrix \( W \) [citing ``Optimal Whitening and Decorrelation''].
+
+Whitening is useful as it assures uncorrelation among variables, which is a great property for many analysis. One of the common choice of \( W \) is 
+\[
+  W = \Lambda^{-1/2} U^T
+\]
+where \( \Sigma = U \Lambda U^T \) is the eigen-decomposition of the covariance matrix. The \( \Lambda^{-1/2} \) term ensures an identity matrix,
 
 \subsection*{Data Simulation}
 
