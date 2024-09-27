@@ -54,3 +54,5 @@ vignettes/*.pdf
 *.fdb_latexmk 
 *.synctex.gz
 *.aux
+*.bbl
+*.blg
