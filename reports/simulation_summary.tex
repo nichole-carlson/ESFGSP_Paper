@@ -47,7 +47,7 @@ whose covariance matrix \( \operatorname{var} (\boldsymbol{z}) = I \) is a diago
 \]
 to be a whitening matrix.
 \begin{proof}
-  From \( \boldsymbol{z} = \boldsymbol{W} \boldsymbol{x} \) and \( \operatorname{cov} (\boldsymbol{z}) = I \) and 
+  From \( \boldsymbol{z} = \boldsymbol{W} \boldsymbol{x} \) and \( \operatorname{cov} (\boldsymbol{z}) = W \Sigma W^T = I \), so \( W (\Sigma W^T W) = W \) and \( \Sigma W^T W = I \). Finally it gives us \( W^T W = \Sigma^{-1} \).
 \end{proof}
 
 However, this constraint does not uniquely determine the whitening matmrix \( W \) [citing ``Optimal Whitening and Decorrelation''].
@@ -58,6 +58,12 @@ Whitening is useful as it assures uncorrelation among variables, which is a grea
 \]
 where \( \Sigma = U \Lambda U^T \) is the eigen-decomposition of the covariance matrix. 
 
+\begin{proof}
+  Here \( W^T W = U \Lambda^{-1/2} \Lambda^{-1/2} U^T = U \Lambda^{-1} U^T \). Since \( \Sigma \) is a covariance matrix, it is symmetric, so \( U \) is orthogonal meaning \( U U^T = I \), so \( U^T = U^{-1} \). Finally \( U \Lambda^{-1} U^T = (U^T)^{-1} (\Lambda^{-1})^{-1} U^{-1} = (U \Lambda U^T)^{-1} = \Sigma^{-1} \). 
+\end{proof}
+
+Actually we do not need a whitening matrix to achieve uncorrelation, for example, in the \( W \) built with eigen-decomposition above, \( W^{\prime} = U^T \) is enough to achieve this.
+  
 
 
 \subsection*{Data Simulation}
