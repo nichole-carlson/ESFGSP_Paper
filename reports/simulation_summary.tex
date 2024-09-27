@@ -63,7 +63,22 @@ where \( \Sigma = U \Lambda U^T \) is the eigen-decomposition of the covariance 
 \end{proof}
 
 Actually we do not need a whitening matrix to achieve uncorrelation, for example, in the \( W \) built with eigen-decomposition above, \( W^{\prime} = U^T \) is enough to achieve this.
-  
+\begin{proof}
+  \( cov(W^{\prime} x) = W^{\prime} \Sigma {W^{\prime}}^T = U^T \Sigma U = U^T U \Lambda U^T U = \Lambda \).
+\end{proof}
+\( \Lambda \) is a diagonal matrix with its diagonal values as eigenvalues. Thus we proved that using the eigenvectors of random vector's covariance matrix to perform linear transformation could resolve correlation between vector items, though not making them have constant variance.
+
+The Moran Coefficient (MC) is the most common measurement of spatial autocorrelation. Given a spatial pattern (an image with \( n \) pixels for example) represented with a vector \( y = (y_1, \ldots, y_n)^T \), \( MC(y) \) is a value, with larger absolute values representing strong spatial patterns, and a value close to 0 means relative random pattern. It's expression can be written as \cite{Griffith_Chun_2014}:
+\[
+MC(y) = \frac{n}{\sum_{i=1}^n \sum_{j=1}^n c_{i j}} \frac{\sum_{i=1}^n\left(y_i-\bar{y}\right)\left[\sum_{j=1}^n c_{i j}\left(y_j-\bar{y}\right)\right]}{\sum_{i=1}^n\left(y_i-\bar{y}\right)^2}
+\]
+where \( c_{ij} \) represents spatial closeness between item \( i \) and \( j \). If we write this in matrix notation, it will be a more common:
+\[
+\frac{n}{\mathbf{1}^{\prime} \mathbf{C} \mathbf{1}} \frac{\mathrm{y}^{\prime} \mathbf{M C M y}}{\mathbf{y}^{\prime} \mathbf{M y}}
+\]
+where \( \mathbf{M}=\mathbf{I}-11^{\prime} / n \) is called a centering matrix, as it centers vector \( y \) to mean 0.
+
+Spatial filtering (\cite{Tiefelsdorf_Griffith_2007}) is a method [briefly describe what it does]. The next step is [explain the relationship between MC values and the eigenvalues built with MCM].
 
 
 \subsection*{Data Simulation}
@@ -76,7 +91,7 @@ where \( \operatorname{dist}(i,j) \) is the distance between pixels \( i \) and 
 \[
 \mathbf{MCM} = \mathbf{E}_{\text{full}} \mathbf{\Lambda}_{\text{full}} \mathbf{E}_{\text{full}}^{\prime},
 \]
-where \( \mathbf{E}_{\text{full}} \) represents the eigenvectors, and \( \mathbf{\Lambda}_{\text{full}} \) the diagonal matrix of eigenvalues [The notations above come from reference 1]. The transformation of the pixel values \( \mathbf{x} \) into the frequency space is then:
+where \( \mathbf{E}_{\text{full}} \) represents the eigenvectors, and \( \mathbf{\Lambda}_{\text{full}} \) the diagonal matrix of eigenvalues \cite{murakami_eigenvector_2019}. The transformation of the pixel values \( \mathbf{x} \) into the frequency space is then:
 \[
 \mathbf{x}_{\text{freq}} = \mathbf{E}^T \mathbf{x}.
 \]
@@ -269,9 +284,9 @@ Another observation is that, although the non-zero effect size for \( \mathbf{b}
   \item What is the next step in higher level?
 \end{itemize}
 
-\section*{References}
-
-Murakami and Griffith, ``Eigenvector Spatial Filtering for Large Data Sets.''
+\footnotesize
+\bibliographystyle{abbrv}
+\bibliography{references}
 
 \end{document}
 
