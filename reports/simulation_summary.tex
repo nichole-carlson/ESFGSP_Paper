@@ -78,7 +78,52 @@ where \( c_{ij} \) represents spatial closeness between item \( i \) and \( j \)
 \]
 where \( \mathbf{M}=\mathbf{I}-11^{\prime} / n \) is called a centering matrix, as it centers vector \( y \) to mean 0.
 
-Spatial filtering (\cite{Tiefelsdorf_Griffith_2007}) is a method [briefly describe what it does]. The next step is [explain the relationship between MC values and the eigenvalues built with MCM].
+Spatial filtering (\cite{Tiefelsdorf_Griffith_2007}) is a method [briefly describe what it does]. Eigenvector Spatial Filtering (ESF) is a method utilizes eigenvectors extracted from the spatial closeness matrix \( \mathbf{C} \). [Show how C could be defined.] The decomposition could be expressed as
+\[
+  \mathbf{M C M}=\mathbf{E} \boldsymbol{\Lambda} \mathbf{E}^{\mathrm{T}}
+\]
+where the diagonal values of \( \boldsymbol{\Lambda} \) are the eigenvalues in descending order. And each column of \( \mathbf{E} \) is the corresponding eigenvector. According to the property of eigenvectors, we know that \( \mathbf{e}_i^T \mathbf{e}_j = 0 \) if \( i \neq j \) otherwise 1. In matrix notation, this is \( \mathbf{E} \mathbf{E}^T = \mathbf{I} \). [Another property of the eigenvectors of this matrix I read about is \( E^T 1 = 0 \), which I know is correct but haven't verifed it]. Other properties we know about M is that it is idempotent, meaning \( \mathbf{M} \mathbf{M} = \mathbf{M} \). And the last property we need is \( E = ME \).
+
+\begin{proof}
+  Since E is the matrix of eigenvectors, we have 
+\[
+  MCM E = E \Lambda
+\]
+Then,
+\[
+  \begin{aligned}
+    M M C M E = M E \Lambda \\
+    M C M E = M E \Lambda \\ 
+\end{aligned}
+\]
+so
+\[
+  \begin{aligned}
+    E \Lambda = M E \Lambda \\
+    (E - ME) \Lambda = 0 \\
+    (E - ME) \Lambda \Lambda^{-1} = 0 \\
+    E = ME
+  \end{aligned}
+\]
+\end{proof}
+
+Then the point we try to make is the MC value of each eigenvector is proportional to its corresponding eigenvalue. THat is 
+\[
+  \text{MC}(\mathbf{e}_i) = \frac{n}{\mathbf{1}^T C \mathbf{1}} \lambda_i
+\]
+
+\begin{proof}
+  \[
+    \begin{aligned}
+      \frac{n}{\mathbf{1}^{\prime} \mathrm{C} 1} \frac{\mathrm{e_i}^{\prime} \mathrm{MCMe_i}}{\mathrm{e_i}^{\prime} \mathrm{Me_i}} \\
+      = \frac{n}{\mathbf{1}^{\prime} \mathrm{C} 1} \frac{e_i^{\prime} e_i \lambda_i}{\mathrm{e_i}^{\prime} \mathrm{Me_i}} \\
+      = \frac{n}{\mathbf{1}^{\prime} \mathrm{C} 1} \frac{\lambda_i}{\mathrm{e_i}^{\prime} \mathrm{Me_i}} \\
+      = \frac{n}{\mathbf{1}^{\prime} \mathrm{C} 1} \frac{\lambda_i}{e_i^{\prime} e_i} \\
+      = \frac{n}{\mathbf{1}^{\prime} \mathrm{C} 1} \lambda_i
+    \end{aligned}
+  \]
+\end{proof}
+
 
 
 \subsection*{Data Simulation}
