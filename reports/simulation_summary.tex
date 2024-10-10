@@ -37,90 +37,145 @@ We investigate whether fitting LASSO in the frequency space improves feature sel
 
 \section*{Methods}
 
-Suppose \( \boldsymbol{x}=\left(x_1, \ldots, x_p\right)^T \) is a \( p \)-dimensional random vector. Its covariance matrix \( \operatorname{var}(\boldsymbol{x})=\boldsymbol{\Sigma} \) is a \( p \times p \) matrix. Whitening is a linear transformation that converts \( \boldsymbol{x} \) into a new random vector
-\[
-\boldsymbol{z}=\left(z_1, \ldots, z_d\right)^T=\boldsymbol{W} \boldsymbol{x}
-\]
-whose covariance matrix \( \operatorname{var} (\boldsymbol{z}) = I \) is a diagonal matrix with all diagonal values equal 1. Here \( \boldsymbol{W} \) is called the whitening matrix. We can prove that \( \boldsymbol{W} \) needs to satisfy 
-\[
-  W^T W = \Sigma^{-1}
-\]
-to be a whitening matrix.
-\begin{proof}
-  From \( \boldsymbol{z} = \boldsymbol{W} \boldsymbol{x} \) and \( \operatorname{cov} (\boldsymbol{z}) = W \Sigma W^T = I \), so \( W (\Sigma W^T W) = W \) and \( \Sigma W^T W = I \). Finally it gives us \( W^T W = \Sigma^{-1} \).
-\end{proof}
+Suppose \( \mathbf{x}=\left(x_1, \ldots, x_p\right)^T \) is a \( p \)-dimensional random vector. Its covariance matrix, \( \operatorname{var} (\mathbf{x}) = \boldsymbol{\Sigma} \), is a  \( p \times p \) matrix.
 
-However, this constraint does not uniquely determine the whitening matmrix \( W \) [citing ``Optimal Whitening and Decorrelation''].
-
-Whitening is useful as it assures uncorrelation among variables, which is a great property for many analysis. One of the common choice of \( W \) is 
+Whitening is a linear transformation that converts \( \mathbf{x} \) into a new random vector \( \mathbf{z}=\left(z_1, \ldots, z_p\right)^T \), using the transformation:
 \[
-  W = \Lambda^{-1/2} U^T
+  \mathbf{z}=\mathbf{W} \mathbf{x}
 \]
-where \( \Sigma = U \Lambda U^T \) is the eigen-decomposition of the covariance matrix. 
+where \( \mathbf{W} \) is a whitening matrix. The goal of whitening is to ensure that the covirance matrix of \( \mathbf{z} \) is the identity matrix \( \mathbf{I} \), meaning that all components of \( \mathbf{z} \) are uncorrelated and have unit variance:
+\[
+  \operatorname{var}(\mathbf{z})=\mathbf{I}
+\]
+
+We will show that in order for \( \mathbf{W} \) to be a valid whitening matrix, it must satisfy the condition:
+\[
+  \mathbf{W}^T \mathbf{W}=\boldsymbol{\Sigma}^{-1}
+\]
 
 \begin{proof}
-  Here \( W^T W = U \Lambda^{-1/2} \Lambda^{-1/2} U^T = U \Lambda^{-1} U^T \). Since \( \Sigma \) is a covariance matrix, it is symmetric, so \( U \) is orthogonal meaning \( U U^T = I \), so \( U^T = U^{-1} \). Finally \( U \Lambda^{-1} U^T = (U^T)^{-1} (\Lambda^{-1})^{-1} U^{-1} = (U \Lambda U^T)^{-1} = \Sigma^{-1} \). 
+  Let \( \mathbf{z} = \mathbf{W} \mathbf{x} \). The covariance of \( \mathbf{z} \) is:
+  \[
+    \operatorname{cov}(\mathbf{z}) = \mathbf{W} \operatorname{cov}(\mathbf{x}) \mathbf{W}^T = \mathbf{W} \boldsymbol{\Sigma} \mathbf{W}^T
+  \]
+  Since whitening ensures \( \operatorname{cov}(\mathbf{z}) = \mathbf{I} \), we have:
+  \[
+    \mathbf{W} \boldsymbol{\Sigma} \mathbf{W}^T = \mathbf{I}
+  \]
+  Multiplying both sides by \( \mathbf{W} \) gives:
+  \[
+    \boldsymbol{\Sigma} (\mathbf{W}^T \mathbf{W}) = \mathbf{I}
+  \]
+  Thus, \( \mathbf{W}^T \mathbf{W} = \boldsymbol{\Sigma}^{-1} \), as required.
 \end{proof}
 
-Actually we do not need a whitening matrix to achieve uncorrelation, for example, in the \( W \) built with eigen-decomposition above, \( W^{\prime} = U^T \) is enough to achieve this.
-\begin{proof}
-  \( cov(W^{\prime} x) = W^{\prime} \Sigma {W^{\prime}}^T = U^T \Sigma U = U^T U \Lambda U^T U = \Lambda \).
-\end{proof}
-\( \Lambda \) is a diagonal matrix with its diagonal values as eigenvalues. Thus we proved that using the eigenvectors of random vector's covariance matrix to perform linear transformation could resolve correlation between vector items, though not making them have constant variance.
+However, this constraint does not uniquely determine the whitening matrix \( \mathbf{W} \) \cite{Kessy_Lewin_Strimmer_2018}.
 
-The Moran Coefficient (MC) is the most common measurement of spatial autocorrelation. Given a spatial pattern (an image with \( n \) pixels for example) represented with a vector \( y = (y_1, \ldots, y_n)^T \), \( MC(y) \) is a value, with larger absolute values representing strong spatial patterns, and a value close to 0 means relative random pattern. It's expression can be written as \cite{Griffith_Chun_2014}:
+Whitening is useful because it ensures uncorrelation among variables, a desirable property in many analyses. A common choice of \( \mathbf{W} \) is
 \[
-MC(y) = \frac{n}{\sum_{i=1}^n \sum_{j=1}^n c_{i j}} \frac{\sum_{i=1}^n\left(y_i-\bar{y}\right)\left[\sum_{j=1}^n c_{i j}\left(y_j-\bar{y}\right)\right]}{\sum_{i=1}^n\left(y_i-\bar{y}\right)^2}
+  \mathbf{W}=\boldsymbol{\Lambda}^{-1 / 2} \mathbf{U}^T
 \]
-where \( c_{ij} \) represents spatial closeness between item \( i \) and \( j \). If we write this in matrix notation, it will be a more common:
-\[
-\frac{n}{\mathbf{1}^{\prime} \mathbf{C} \mathbf{1}} \frac{\mathrm{y}^{\prime} \mathbf{M C M y}}{\mathbf{y}^{\prime} \mathbf{M y}}
-\]
-where \( \mathbf{M}=\mathbf{I}-11^{\prime} / n \) is called a centering matrix, as it centers vector \( y \) to mean 0.
-
-Spatial filtering (\cite{Tiefelsdorf_Griffith_2007}) is a method [briefly describe what it does]. Eigenvector Spatial Filtering (ESF) is a method utilizes eigenvectors extracted from the spatial closeness matrix \( \mathbf{C} \). [Show how C could be defined.] The decomposition could be expressed as
-\[
-  \mathbf{M C M}=\mathbf{E} \boldsymbol{\Lambda} \mathbf{E}^{\mathrm{T}}
-\]
-where the diagonal values of \( \boldsymbol{\Lambda} \) are the eigenvalues in descending order. And each column of \( \mathbf{E} \) is the corresponding eigenvector. According to the property of eigenvectors, we know that \( \mathbf{e}_i^T \mathbf{e}_j = 0 \) if \( i \neq j \) otherwise 1. In matrix notation, this is \( \mathbf{E} \mathbf{E}^T = \mathbf{I} \). [Another property of the eigenvectors of this matrix I read about is \( E^T 1 = 0 \), which I know is correct but haven't verifed it]. Other properties we know about M is that it is idempotent, meaning \( \mathbf{M} \mathbf{M} = \mathbf{M} \). And the last property we need is \( E = ME \).
-
-\begin{proof}
-  Since E is the matrix of eigenvectors, we have 
-\[
-  MCM E = E \Lambda
-\]
-Then,
-\[
-  \begin{aligned}
-    M M C M E = M E \Lambda \\
-    M C M E = M E \Lambda \\ 
-\end{aligned}
-\]
-so
-\[
-  \begin{aligned}
-    E \Lambda = M E \Lambda \\
-    (E - ME) \Lambda = 0 \\
-    (E - ME) \Lambda \Lambda^{-1} = 0 \\
-    E = ME
-  \end{aligned}
-\]
-\end{proof}
-
-Then the point we try to make is the MC value of each eigenvector is proportional to its corresponding eigenvalue. THat is 
-\[
-  \text{MC}(\mathbf{e}_i) = \frac{n}{\mathbf{1}^T C \mathbf{1}} \lambda_i
-\]
+where \( \boldsymbol{\Sigma}=\mathbf{U} \boldsymbol{\Lambda} \mathbf{U}^T \) is the eigen-decomposition of the covariance matrix. 
 
 \begin{proof}
   \[
+    \mathbf{W}^T \mathbf{W}=\mathbf{U} \boldsymbol{\Lambda}^{-1 / 2} \boldsymbol{\Lambda}^{-1 / 2} \mathbf{U}^T=\mathbf{U} \boldsymbol{\Lambda}^{-1} \mathbf{U}^T
+  \]
+  Since \( \boldsymbol{\Sigma} \) is a covariance matrix, it is symmetric, which implies that \( \mathbf{U} \) is orthogonal, meaning \( \mathbf{U U}^T = \mathbf{I} \), so \( \mathbf{U}^T = \mathbf{U}^{-1} \). Therefore,
+  \[
     \begin{aligned}
-      \frac{n}{\mathbf{1}^{\prime} \mathrm{C} 1} \frac{\mathrm{e_i}^{\prime} \mathrm{MCMe_i}}{\mathrm{e_i}^{\prime} \mathrm{Me_i}} \\
-      = \frac{n}{\mathbf{1}^{\prime} \mathrm{C} 1} \frac{e_i^{\prime} e_i \lambda_i}{\mathrm{e_i}^{\prime} \mathrm{Me_i}} \\
-      = \frac{n}{\mathbf{1}^{\prime} \mathrm{C} 1} \frac{\lambda_i}{\mathrm{e_i}^{\prime} \mathrm{Me_i}} \\
-      = \frac{n}{\mathbf{1}^{\prime} \mathrm{C} 1} \frac{\lambda_i}{e_i^{\prime} e_i} \\
-      = \frac{n}{\mathbf{1}^{\prime} \mathrm{C} 1} \lambda_i
-    \end{aligned}
+      \mathbf{U} \boldsymbol{\Lambda}^{-1} \mathbf{U}^T & = \left(\mathbf{U}^T\right)^{-1} \boldsymbol{\Lambda} \mathbf{U}^{-1} \\
+                                                        & = \left(\mathbf{U} \boldsymbol{\Lambda} \mathbf{U}^T\right)^{-1} \\
+                                                        & = \boldsymbol{\Sigma}^{-1}
+  \end{aligned}
+  \]
+\end{proof}
+
+Actually, a whitening matrix is not necessary to achieve uncorrelation. For example, using \( W^{\prime} = U^T \) from the eigen-decomposition is sufficient for this purpose.
+
+\begin{proof}
+  \[
+    \operatorname{cov}\left(\mathbf{W}^{\prime} \mathbf{x}\right)=\mathbf{W}^{\prime} \boldsymbol{\Sigma} \mathbf{W}^{\prime T}=\mathbf{U}^T \boldsymbol{\Sigma} \mathbf{U}=\mathbf{U}^T \mathbf{U} \boldsymbol{\Lambda} \mathbf{U}^T \mathbf{U}=\boldsymbol{\Lambda}
+  \]
+  (since \( \mathbf{U}^T \mathbf{U}=\mathbf{I} \))
+\end{proof}
+
+Here, \( \Lambda \) is a diagonal matrix with eigenvalues on the diagonal. Therefore, we have shown that using the eigenvectors of a random vector's covariance matrix to perform a linear transformation resolves the correlation between the components, although it does not standardize their variance.
+
+The Moran Coefficient (MC) is the most commonly used measure of spatial autocorrelation. Given a spatial pattern (e.g., an image with \( n \) pixels) represented as a vector \( \mathbf{y}=\left(y_1, \ldots, y_n\right)^T \), the Moran Coefficient \( \text{MC} (\mathbf{y}) \) is a value that indicates the strength of a spatial correlation. Larger absolute value represent strong spatial patterns, while values close to 0 indicate randomness. The expression for \( \text{MC} (\mathbf{y}) \) is written as \cite{Griffith_Chun_2014}:
+\[
+  M C(\mathbf{y})=\frac{n}{\sum_{i=1}^n \sum_{j=1}^n c_{i j}} \frac{\sum_{i=1}^n\left(y_i-\bar{y}\right)\left[\sum_{j=1}^n c_{i j}\left(y_j-\bar{y}\right)\right]}{\sum_{i=1}^n\left(y_i-\bar{y}\right)^2}
+\]
+where \( c_{ij} \) represents the spatial closeness between items \( i \) and \( j \). In matrix notation, this can be expressed as:
+\[
+  M C(\mathbf{y})=\frac{n}{1^{\prime} \mathbf{C} 1} \frac{\mathbf{y}^{\prime} \mathbf{M C M y}}{\mathbf{y}^{\prime} \mathbf{My}}
+\]
+Here, \( \mathbf{M}=\mathbf{I}-11^{\prime} / n \) is the centering matrix, which centers the vector \( \mathbf{y} \) by subtracing the mean.
+
+Spatial filtering (\cite{Tiefelsdorf_Griffith_2007}) is a method [briefly describe what it does]. Eigenvector Spatial Filtering (ESF) is a methodology that utilizes eigenvectors extracted from the spatial closeness matrix \( \mathbf{C} \) to remove spatial dependencies. 
+
+The decomposition of the double-centered matrix \( \mathbf{M C M} \) can be written as:
+\[
+  \mathbf{M C M}=\mathbf{E} \boldsymbol{\Lambda} \mathbf{E}^{T}
+\]
+where \( \boldsymbol{\Lambda} \) is a diagonal matrix of eigenvalues (in descending order), and \( \mathbf{E} \) is the matrix of corresponding eigenvectors. The eigenvectors have the property that \( \mathbf{e}_i^T \mathbf{e}_j=0 \) for \( i \neq j \), and \( \mathbf{e}_i^T \mathbf{e}_i=1 \). In matrix form, this means \( \mathbf{E E}^T=\mathbf{I} \). Additionally, each eigenvector satisfies \( \mathbf{e}_i^T 1 = 0 \) [which I haven't verified it yet.] Another important property of \(\mathbf{M}\) is that it is idempotent, meaning \(\mathbf{M M}=\mathbf{M}\). The last fact we will prove is that: \( \mathbf{E}=\mathbf{M E} \).
+
+\begin{proof}
+
+  Since \(\mathbf{E}\) is the matrix of eigenvectors, we have:
+
+  \[
+    \mathbf{M C M E}=\mathbf{E} \boldsymbol{\Lambda}
+  \]
+
+  Multiplying both sides by \(\mathbf{M}\) gives:
+
+  \[
+    \mathbf{MMCME}=\mathbf{ME} \boldsymbol{\Lambda}
+  \]
+
+  Since \(\mathbf{M}\) is idempotent, this simplifies to:
+
+  \[
+    \mathbf{MCME}=\mathbf{ME} \Lambda
+  \]
+
+  Thus:
+
+  \[
+    \mathbf{E} \boldsymbol{\Lambda}=\mathbf{M E} \boldsymbol{\Lambda}
+  \]
+
+  Cancelling \(\boldsymbol{\Lambda}\) (which is nonzero) from both sides gives:
+
+  \[
+    \mathbf{E}=\mathbf{M E}
+  \]
+
+\end{proof}
+
+The Moran Coefficient for each eigenvector \(\mathbf{e}_i\) is proportional to its corresponding eigenvalue \(\lambda_i\). That is:
+
+\[
+  M C\left(\mathbf{e}_i\right)=\frac{n}{1^T \mathbf{C} 1} \lambda_i
+\]
+
+\begin{proof}
+
+  \[
+    M C\left(\mathbf{e}_i\right)=\frac{n}{\mathbf{1}^{\prime} \mathbf{C} \mathbf{1}} \frac{\mathbf{e}_i^{\prime} \mathbf{M C M e}_i}{\mathbf{e}_i^{\prime} \mathbf{M e}_i}
+  \]
+
+  Substituting \(\mathbf{M C M e}_i=\lambda_i \mathbf{e}_i\), we get:
+
+  \[
+    =\frac{n}{1^{\prime} \mathbf{C} 1} \frac{\mathbf{e}_i^{\prime} \mathbf{e}_i \lambda_i}{\mathbf{e}_i^{\prime} \mathbf{M e}_i}
+  \]
+
+  Since \(\mathbf{e}_i^{\prime} \mathbf{e}_i=1\) and \(\mathbf{M e}_i=\mathbf{e}_i\), this simplifies to:
+
+  \[
+    =\frac{n}{1^{\prime} \mathrm{C} 1} \lambda_i
   \]
 \end{proof}
 
