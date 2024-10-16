@@ -37,6 +37,17 @@ We investigate whether fitting LASSO in the frequency space improves feature sel
 
 \section*{Methods}
 
+From \cite{Griffith_Chun_2014}, a spatial variable could be decomposed into three components: spatially structured random components, trend and random noise. Spatial filtering is the process of separating spatially structured random components from the other two. Eigenvector spatial filtering (ESF) is one of the methods that could achieve this. Suppose \( \mathbf{C} \) is the spatial weight matrix, which represents the connectivity between objects within a spatial space. Then the ESF method gets the eigenvectors \( \mathbf{E} \) from the double-centered matrix \( \mathbf{MCM} \):
+\[
+  \mathbf{M C M}=\mathbf{E} \boldsymbol{\Lambda} \mathbf{E}^{T}
+\]
+Here
+\begin{itemize}
+  \item \( \mathbf{M}=\mathbf{I}-11^{\prime} / n \) is the centering matrix. \( \mathbf{MCM} \) centers each row and column of \( \mathbf{C} \) by subtracting its mean.
+  \item \( \boldsymbol{\Lambda} \) is a diagonal matrix of eigenvalues (in descending order)
+  \item \( \mathbf{E} \) is the matrix of corresponding eigenvectors.
+\end{itemize}
+
 Suppose \( \mathbf{x}=\left(x_1, \ldots, x_p\right)^T \) is a \( p \)-dimensional random vector. Its covariance matrix, \( \operatorname{var} (\mathbf{x}) = \boldsymbol{\Sigma} \), is a  \( p \times p \) matrix.
 
 Whitening is a linear transformation that converts \( \mathbf{x} \) into a new random vector \( \mathbf{z}=\left(z_1, \ldots, z_p\right)^T \), using the transformation:
