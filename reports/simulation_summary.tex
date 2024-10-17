@@ -37,7 +37,7 @@ We investigate whether fitting LASSO in the frequency space improves feature sel
 
 \section*{Methods}
 
-From \cite{Griffith_Chun_2014}, a spatial variable could be decomposed into three components: spatially structured random components, trend and random noise. Spatial filtering is the process of separating spatially structured random components from the other two. Eigenvector spatial filtering (ESF) is one of the methods that could achieve this. Suppose \( \mathbf{C} \) is the spatial weight matrix, which represents the connectivity between objects within a spatial space. Then the ESF method gets the eigenvectors \( \mathbf{E} \) from the double-centered matrix \( \mathbf{MCM} \):
+From \cite{Griffith_Chun_2014}, a spatial variable could be decomposed into three components: spatially structured random components, trend and random noise. Spatial filtering is the process of separating spatially structured random components from the other two. Eigenvector spatial filtering (ESF) is one of the methods that could achieve this. Suppose \( \mathbf{C} \) is the spatial weight matrix, where \( c_{ij} \) reflects the spatial connectivity between units \( i \) and \( j \). which represents the connectivity between objects within a spatial space. Then the ESF method gets the eigenvectors \( \mathbf{E} \) from the double-centered matrix \( \mathbf{MCM} \):
 \[
   \mathbf{M C M}=\mathbf{E} \boldsymbol{\Lambda} \mathbf{E}^{T}
 \]
