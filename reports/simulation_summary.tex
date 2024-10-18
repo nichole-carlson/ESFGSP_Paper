@@ -37,16 +37,98 @@ We investigate whether fitting LASSO in the frequency space improves feature sel
 
 \section*{Methods}
 
-From \cite{Griffith_Chun_2014}, a spatial variable could be decomposed into three components: spatially structured random components, trend and random noise. Spatial filtering is the process of separating spatially structured random components from the other two. Eigenvector spatial filtering (ESF) is one of the methods that could achieve this. Suppose \( \mathbf{C} \) is the spatial weight matrix, where \( c_{ij} \) reflects the spatial connectivity between units \( i \) and \( j \). which represents the connectivity between objects within a spatial space. Then the ESF method gets the eigenvectors \( \mathbf{E} \) from the double-centered matrix \( \mathbf{MCM} \):
+Suppose \( \mathbf{C} \) is a \( n \times n \) spatial weight matrix, where \( c_{ij} \) reflects the spatial connectivity between units \( i \) and \( j \). And the diagonal elements are zero. Let \( \mathbf{M}=\mathbf{I}-\mathbf{1} \mathbf{1}^{\prime} / n \), which is a centering matrix. \( \mathbf{MCM} \) centers each row and column of \( \mathbf{C} \) to mean zero. 
+
+Suppose \( \mathbf{y}=\left(y_1, \ldots, y_n\right)^T \) is a vector with the relationship between each pair of elements follow the weight matrix \( \mathbf{C} \). The Moran coefficient (MC), which is a commonly used measure of spatial autocorrelation, calculate the spatial autocorrelation of \( \mathbf{y} \) as \cite{Griffith_Chun_2014}
+\[
+  M C(\mathbf{y})=\frac{n}{\sum_{i=1}^n \sum_{j=1}^n c_{i j}} \frac{\sum_{i=1}^n\left(y_i-\bar{y}\right)\left[\sum_{j=1}^n c_{i j}\left(y_j-\bar{y}\right)\right]}{\sum_{i=1}^n\left(y_i-\bar{y}\right)^2}
+\]
+where \( c_{ij} \) represents an element of \( \mathbf{C} \). If we write this using matrix notations, then it will become:
+\[
+  M C(\mathbf{y})=\frac{n}{\mathbf{1}^{\prime} \mathbf{C} \mathbf{1}} \frac{\mathbf{y}^{\prime} \mathbf{M C M y}}{\mathbf{y}^{\prime} \mathbf{My}}
+\]
+When the MC value is around 0, it means there is no spatial autocorrelation among the elements of the vector, when it is around \( +1 \), it means there is positive spatial autocorrelation, and around \( -1 \) means there is negative autocorrelation. \cite{de1984extreme} proves that when \( \mathbf{C} \) is symmetric, then the largest and smallest value of MC value is achieved by the corresponding eigenvalue of \( \mathbf{MCM} \) (\cite{de1984extreme} cites a book \cite{bellman1997introduction} but I didn't find the proof on the page it mentioned (or I didn't understand what it said)). Then we can prove that the largest MC value is achieved by the corresponding eigenvector (and similarly for the smallest MC value).
+
+The decomposition of the double-centered matrix \( \mathbf{M C M} \) can be written as:
 \[
   \mathbf{M C M}=\mathbf{E} \boldsymbol{\Lambda} \mathbf{E}^{T}
 \]
 Here
 \begin{itemize}
-  \item \( \mathbf{M}=\mathbf{I}-11^{\prime} / n \) is the centering matrix. \( \mathbf{MCM} \) centers each row and column of \( \mathbf{C} \) by subtracting its mean.
   \item \( \boldsymbol{\Lambda} \) is a diagonal matrix of eigenvalues (in descending order)
-  \item \( \mathbf{E} \) is the matrix of corresponding eigenvectors.
+  \item \( \mathbf{E} \) is the matrix of corresponding eigenvectors, with each column as a eigenvector.
 \end{itemize}
+
+[Next step is to move the connection between MC(e) and eigenvalues here.]
+
+The eigenvectors have the property that \( \mathbf{e}_i^T \mathbf{e}_j=0 \) for \( i \neq j \), and \( \mathbf{e}_i^T \mathbf{e}_i=1 \). In matrix form, this means \( \mathbf{E E}^T=\mathbf{I} \). Additionally, each eigenvector satisfies \( \mathbf{e}_i^T 1 = 0 \) [which I haven't verified it yet.] Another important property of \(\mathbf{M}\) is that it is idempotent, meaning \(\mathbf{M M}=\mathbf{M}\). The last fact we will prove is that: \( \mathbf{E}=\mathbf{M E} \).
+
+\begin{proof}
+
+  Since \(\mathbf{E}\) is the matrix of eigenvectors, we have:
+
+  \[
+    \mathbf{M C M E}=\mathbf{E} \boldsymbol{\Lambda}
+  \]
+
+  Multiplying both sides by \(\mathbf{M}\) gives:
+
+  \[
+    \mathbf{MMCME}=\mathbf{ME} \boldsymbol{\Lambda}
+  \]
+
+  Since \(\mathbf{M}\) is idempotent, this simplifies to:
+
+  \[
+    \mathbf{MCME}=\mathbf{ME} \Lambda
+  \]
+
+  Thus:
+
+  \[
+    \mathbf{E} \boldsymbol{\Lambda}=\mathbf{M E} \boldsymbol{\Lambda}
+  \]
+
+  Cancelling \(\boldsymbol{\Lambda}\) (which is nonzero) from both sides gives:
+
+  \[
+    \mathbf{E}=\mathbf{M E}
+  \]
+
+\end{proof}
+
+The Moran Coefficient for each eigenvector \(\mathbf{e}_i\) is proportional to its corresponding eigenvalue \(\lambda_i\). That is:
+
+\[
+  M C\left(\mathbf{e}_i\right)=\frac{n}{1^T \mathbf{C} 1} \lambda_i
+\]
+
+\begin{proof}
+
+  \[
+    M C\left(\mathbf{e}_i\right)=\frac{n}{\mathbf{1}^{\prime} \mathbf{C} \mathbf{1}} \frac{\mathbf{e}_i^{\prime} \mathbf{M C M e}_i}{\mathbf{e}_i^{\prime} \mathbf{M e}_i}
+  \]
+
+  Substituting \(\mathbf{M C M e}_i=\lambda_i \mathbf{e}_i\), we get:
+
+  \[
+    =\frac{n}{1^{\prime} \mathbf{C} 1} \frac{\mathbf{e}_i^{\prime} \mathbf{e}_i \lambda_i}{\mathbf{e}_i^{\prime} \mathbf{M e}_i}
+  \]
+
+  Since \(\mathbf{e}_i^{\prime} \mathbf{e}_i=1\) and \(\mathbf{M e}_i=\mathbf{e}_i\), this simplifies to:
+
+  \[
+    =\frac{n}{1^{\prime} \mathrm{C} 1} \lambda_i
+  \]
+\end{proof}
+
+
+From \cite{Griffith_Chun_2014}, a spatial variable could be decomposed into three components: spatially structured random components, trend and random noise. Spatial filtering is the process of separating spatially structured random components from the other two. Eigenvector spatial filtering (ESF) is one of the methods that could achieve this. which represents the connectivity between objects within a spatial space. 
+
+
+
+We can prove that \( \mathbf{MM} = \mathbf{M} \) and also \( \mathbf{M} \) is symmetric.
+
 
 Suppose \( \mathbf{x}=\left(x_1, \ldots, x_p\right)^T \) is a \( p \)-dimensional random vector. Its covariance matrix, \( \operatorname{var} (\mathbf{x}) = \boldsymbol{\Sigma} \), is a  \( p \times p \) matrix.
 
@@ -113,82 +195,6 @@ Actually, a whitening matrix is not necessary to achieve uncorrelation. For exam
 
 Here, \( \Lambda \) is a diagonal matrix with eigenvalues on the diagonal. Therefore, we have shown that using the eigenvectors of a random vector's covariance matrix to perform a linear transformation resolves the correlation between the components, although it does not standardize their variance.
 
-The Moran Coefficient (MC) is the most commonly used measure of spatial autocorrelation. Given a spatial pattern (e.g., an image with \( n \) pixels) represented as a vector \( \mathbf{y}=\left(y_1, \ldots, y_n\right)^T \), the Moran Coefficient \( \text{MC} (\mathbf{y}) \) is a value that indicates the strength of a spatial correlation. Larger absolute value represent strong spatial patterns, while values close to 0 indicate randomness. The expression for \( \text{MC} (\mathbf{y}) \) is written as \cite{Griffith_Chun_2014}:
-\[
-  M C(\mathbf{y})=\frac{n}{\sum_{i=1}^n \sum_{j=1}^n c_{i j}} \frac{\sum_{i=1}^n\left(y_i-\bar{y}\right)\left[\sum_{j=1}^n c_{i j}\left(y_j-\bar{y}\right)\right]}{\sum_{i=1}^n\left(y_i-\bar{y}\right)^2}
-\]
-where \( c_{ij} \) represents the spatial closeness between items \( i \) and \( j \). In matrix notation, this can be expressed as:
-\[
-  M C(\mathbf{y})=\frac{n}{1^{\prime} \mathbf{C} 1} \frac{\mathbf{y}^{\prime} \mathbf{M C M y}}{\mathbf{y}^{\prime} \mathbf{My}}
-\]
-Here, \( \mathbf{M}=\mathbf{I}-11^{\prime} / n \) is the centering matrix, which centers the vector \( \mathbf{y} \) by subtracing the mean.
-
-Spatial filtering (\cite{Tiefelsdorf_Griffith_2007}) is a method [briefly describe what it does]. Eigenvector Spatial Filtering (ESF) is a methodology that utilizes eigenvectors extracted from the spatial closeness matrix \( \mathbf{C} \) to remove spatial dependencies. 
-
-The decomposition of the double-centered matrix \( \mathbf{M C M} \) can be written as:
-\[
-  \mathbf{M C M}=\mathbf{E} \boldsymbol{\Lambda} \mathbf{E}^{T}
-\]
-where \( \boldsymbol{\Lambda} \) is a diagonal matrix of eigenvalues (in descending order), and \( \mathbf{E} \) is the matrix of corresponding eigenvectors. The eigenvectors have the property that \( \mathbf{e}_i^T \mathbf{e}_j=0 \) for \( i \neq j \), and \( \mathbf{e}_i^T \mathbf{e}_i=1 \). In matrix form, this means \( \mathbf{E E}^T=\mathbf{I} \). Additionally, each eigenvector satisfies \( \mathbf{e}_i^T 1 = 0 \) [which I haven't verified it yet.] Another important property of \(\mathbf{M}\) is that it is idempotent, meaning \(\mathbf{M M}=\mathbf{M}\). The last fact we will prove is that: \( \mathbf{E}=\mathbf{M E} \).
-
-\begin{proof}
-
-  Since \(\mathbf{E}\) is the matrix of eigenvectors, we have:
-
-  \[
-    \mathbf{M C M E}=\mathbf{E} \boldsymbol{\Lambda}
-  \]
-
-  Multiplying both sides by \(\mathbf{M}\) gives:
-
-  \[
-    \mathbf{MMCME}=\mathbf{ME} \boldsymbol{\Lambda}
-  \]
-
-  Since \(\mathbf{M}\) is idempotent, this simplifies to:
-
-  \[
-    \mathbf{MCME}=\mathbf{ME} \Lambda
-  \]
-
-  Thus:
-
-  \[
-    \mathbf{E} \boldsymbol{\Lambda}=\mathbf{M E} \boldsymbol{\Lambda}
-  \]
-
-  Cancelling \(\boldsymbol{\Lambda}\) (which is nonzero) from both sides gives:
-
-  \[
-    \mathbf{E}=\mathbf{M E}
-  \]
-
-\end{proof}
-
-The Moran Coefficient for each eigenvector \(\mathbf{e}_i\) is proportional to its corresponding eigenvalue \(\lambda_i\). That is:
-
-\[
-  M C\left(\mathbf{e}_i\right)=\frac{n}{1^T \mathbf{C} 1} \lambda_i
-\]
-
-\begin{proof}
-
-  \[
-    M C\left(\mathbf{e}_i\right)=\frac{n}{\mathbf{1}^{\prime} \mathbf{C} \mathbf{1}} \frac{\mathbf{e}_i^{\prime} \mathbf{M C M e}_i}{\mathbf{e}_i^{\prime} \mathbf{M e}_i}
-  \]
-
-  Substituting \(\mathbf{M C M e}_i=\lambda_i \mathbf{e}_i\), we get:
-
-  \[
-    =\frac{n}{1^{\prime} \mathbf{C} 1} \frac{\mathbf{e}_i^{\prime} \mathbf{e}_i \lambda_i}{\mathbf{e}_i^{\prime} \mathbf{M e}_i}
-  \]
-
-  Since \(\mathbf{e}_i^{\prime} \mathbf{e}_i=1\) and \(\mathbf{M e}_i=\mathbf{e}_i\), this simplifies to:
-
-  \[
-    =\frac{n}{1^{\prime} \mathrm{C} 1} \lambda_i
-  \]
-\end{proof}
 
 
 
