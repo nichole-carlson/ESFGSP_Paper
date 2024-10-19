@@ -6,6 +6,7 @@
 \usepackage{multirow}
 \usepackage{booktabs}
 \usepackage{placeins}
+\usepackage[round]{natbib}
 
 \renewcommand{\baselinestretch}{1}
 \topmargin 0in \headheight 0.0in \textheight 9in \textwidth 6.5in
@@ -13,6 +14,7 @@
 
 \graphicspath{{../results/figures}}
 
+\bibliographystyle{plainnat}
 
 
 \begin{document}
@@ -37,98 +39,79 @@ We investigate whether fitting LASSO in the frequency space improves feature sel
 
 \section*{Methods}
 
-Suppose \( \mathbf{C} \) is a \( n \times n \) spatial weight matrix, where \( c_{ij} \) reflects the spatial connectivity between units \( i \) and \( j \). And the diagonal elements are zero. Let \( \mathbf{M}=\mathbf{I}-\mathbf{1} \mathbf{1}^{\prime} / n \), which is a centering matrix. \( \mathbf{MCM} \) centers each row and column of \( \mathbf{C} \) to mean zero. 
+Suppose \( \mathbf{C} \) is an \( n \times n \) spatial weight matrix, where each element \( c_{ij} \) represents the spatial connection between units \( i \) and \( j \). Additionally, the diagonal elements of \( \mathbf{C} \) are zero. Now, let \( \mathbf{M} = \mathbf{I} - \mathbf{1} \mathbf{1}^{\prime} / n \), which is a centering matrix. This matrix \( \mathbf{MCM} \) is used to center each row and column of \( \mathbf{C} \), ensuring their means are zero.
 
-Suppose \( \mathbf{y}=\left(y_1, \ldots, y_n\right)^T \) is a vector with the relationship between each pair of elements follow the weight matrix \( \mathbf{C} \). The Moran coefficient (MC), which is a commonly used measure of spatial autocorrelation, calculate the spatial autocorrelation of \( \mathbf{y} \) as \cite{Griffith_Chun_2014}
-\[
-  M C(\mathbf{y})=\frac{n}{\sum_{i=1}^n \sum_{j=1}^n c_{i j}} \frac{\sum_{i=1}^n\left(y_i-\bar{y}\right)\left[\sum_{j=1}^n c_{i j}\left(y_j-\bar{y}\right)\right]}{\sum_{i=1}^n\left(y_i-\bar{y}\right)^2}
-\]
-where \( c_{ij} \) represents an element of \( \mathbf{C} \). If we write this using matrix notations, then it will become:
-\[
-  M C(\mathbf{y})=\frac{n}{\mathbf{1}^{\prime} \mathbf{C} \mathbf{1}} \frac{\mathbf{y}^{\prime} \mathbf{M C M y}}{\mathbf{y}^{\prime} \mathbf{My}}
-\]
-When the MC value is around 0, it means there is no spatial autocorrelation among the elements of the vector, when it is around \( +1 \), it means there is positive spatial autocorrelation, and around \( -1 \) means there is negative autocorrelation. \cite{de1984extreme} proves that when \( \mathbf{C} \) is symmetric, then the largest and smallest value of MC value is achieved by the corresponding eigenvalue of \( \mathbf{MCM} \) (\cite{de1984extreme} cites a book \cite{bellman1997introduction} but I didn't find the proof on the page it mentioned (or I didn't understand what it said)). Then we can prove that the largest MC value is achieved by the corresponding eigenvector (and similarly for the smallest MC value).
+Consider a vector \( \mathbf{y} = \left( y_1, \dots, y_n \right)^T \), where the relationship between each pair of elements follows the spatial weight matrix \( \mathbf{C} \). To measure the spatial autocorrelation of \( \mathbf{y} \), we use the Moran coefficient (MC), a well-established statistic in spatial analysis. According to \citet{griffith2014spatial}, the MC is computed as follows:
 
-The decomposition of the double-centered matrix \( \mathbf{M C M} \) can be written as:
+\[
+M C(\mathbf{y}) = \frac{n}{\sum_{i=1}^n \sum_{j=1}^n c_{ij}} \cdot \frac{\sum_{i=1}^n \left(y_i - \bar{y} \right) \left[ \sum_{j=1}^n c_{ij} \left( y_j - \bar{y} \right) \right]}{\sum_{i=1}^n \left( y_i - \bar{y} \right)^2}
+\]
+
+In matrix notation, this expression simplifies to:
+
+\[
+M C(\mathbf{y}) = \frac{n}{\mathbf{1}^{\prime} \mathbf{C} \mathbf{1}} \cdot \frac{\mathbf{y}^{\prime} \mathbf{M C M y}}{\mathbf{y}^{\prime} \mathbf{M y}}
+\]
+
+When the MC is equal to \( -1 / (n-1) \), there is no spatial autocorrelation among the elements of \( \mathbf{y} \). Positive MC values indicate positive spatial autocorrelation, while negative values suggest negative spatial autocorrelation. 
+
+\citet{de1984extreme} demonstrated that, when \( \mathbf{C} \) is symmetric, the maximum and minimum possible values of the Moran coefficient correspond to the largest and smallest eigenvalues of the matrix \( \mathbf{MCM} \). Since the Moran coefficient for an eigenvector is a function of its corresponding eigenvalue (which we will prove later), the eigenvector associated with the largest eigenvalue of \( \mathbf{MCM} \) yields the highest Moran coefficient, indicating that this vector captures the strongest spatial autocorrelation among all vectors whose spatial structure is defined by \( \mathbf{C} \).
+
+\subsection*{Eigenvalue Decomposition and Key Properties}
+
+We begin by considering the eigendecomposition of \( \mathbf{M C M} \), which can be written as:
 \[
   \mathbf{M C M}=\mathbf{E} \boldsymbol{\Lambda} \mathbf{E}^{T}
 \]
-Here
-\begin{itemize}
-  \item \( \boldsymbol{\Lambda} \) is a diagonal matrix of eigenvalues (in descending order)
-  \item \( \mathbf{E} \) is the matrix of corresponding eigenvectors, with each column as a eigenvector.
-\end{itemize}
+where \( \boldsymbol{\Lambda} \) is a diagonal matrix of eigenvalues, and \( \mathbf{E} \) contains the corresponding eigenvectors as columns.
 
-[Next step is to move the connection between MC(e) and eigenvalues here.]
+Since \( \mathbf{M C M} \) is symmetric, the eigenvectors are orthogonal \( \left(\mathbf{E E}^{\prime}=\mathbf{I}\right) \). Additionally, the eigenvectors corresponding to non-zero eigenvalues are orthogonal to the vector of ones, \( \mathbf{E}^{\prime} \mathbf{1} = \mathbf{0} \), since \( \mathbf{M C M 1} = \mathbf{0} \).
 
-The eigenvectors have the property that \( \mathbf{e}_i^T \mathbf{e}_j=0 \) for \( i \neq j \), and \( \mathbf{e}_i^T \mathbf{e}_i=1 \). In matrix form, this means \( \mathbf{E E}^T=\mathbf{I} \). Additionally, each eigenvector satisfies \( \mathbf{e}_i^T 1 = 0 \) [which I haven't verified it yet.] Another important property of \(\mathbf{M}\) is that it is idempotent, meaning \(\mathbf{M M}=\mathbf{M}\). The last fact we will prove is that: \( \mathbf{E}=\mathbf{M E} \).
+Now, we prove that for any eigenvector \( \mathbf{e}_i \) corresponding to a non-zero eigenvalue \( \lambda_i \), it holds that \( \mathbf{M} \mathbf{e}_i = \mathbf{e}_i \).
 
 \begin{proof}
-
-  Since \(\mathbf{E}\) is the matrix of eigenvectors, we have:
-
-  \[
-    \mathbf{M C M E}=\mathbf{E} \boldsymbol{\Lambda}
-  \]
-
-  Multiplying both sides by \(\mathbf{M}\) gives:
+  Starting with the eigencomposition \( \mathbf{M C M}=\mathbf{E} \boldsymbol{\Lambda} \mathbf{E}^{T} \), multiply both sides by \( \mathbf{M} \) from the left:
 
   \[
-    \mathbf{MMCME}=\mathbf{ME} \boldsymbol{\Lambda}
+    \mathbf{M M C M E} = \mathbf{M E} \boldsymbol{\Lambda}.
   \]
 
-  Since \(\mathbf{M}\) is idempotent, this simplifies to:
+  Since \( \mathbf{M} \) is idempotent \( (\mathbf{M}^2 = \mathbf{M}) \), this simplifies to:
 
   \[
-    \mathbf{MCME}=\mathbf{ME} \Lambda
+    \mathbf{M C M E} = \mathbf{M E} \boldsymbol{\Lambda}.
   \]
 
-  Thus:
+  Substituting the eigendecomposition \( \mathbf{M C M} = \mathbf{E} \boldsymbol{\Lambda} \mathbf{E}^T \), we get:
 
   \[
-    \mathbf{E} \boldsymbol{\Lambda}=\mathbf{M E} \boldsymbol{\Lambda}
+    \mathbf{E} \boldsymbol{\Lambda} = \mathbf{M E} \boldsymbol{\Lambda}.
   \]
 
-  Cancelling \(\boldsymbol{\Lambda}\) (which is nonzero) from both sides gives:
+  For any eigenvector \( \mathbf{e}_i \) corresponding to \( \lambda_i \neq 0 \), it follows that:
 
   \[
-    \mathbf{E}=\mathbf{M E}
+    \mathbf{E e}_i = \mathbf{e}_i.
   \]
-
 \end{proof}
 
-The Moran Coefficient for each eigenvector \(\mathbf{e}_i\) is proportional to its corresponding eigenvalue \(\lambda_i\). That is:
+\subsection*{Proving the Relationship Between Moran Coefficient and Eigenvalues}
+
+Now that we've estabilished this property, we can show that the Moran coefficient for each eigenvector is proportional to its corresponding eigenvalue. The Moran coefficient of \( \mathbf{e}_i \) is given by:
 
 \[
-  M C\left(\mathbf{e}_i\right)=\frac{n}{1^T \mathbf{C} 1} \lambda_i
+  M C\left(\mathbf{e}_i\right)=\frac{n}{\mathbf{1}^{\prime} \mathbf{C} \mathbf{1}} \frac{\mathbf{e}_i^{\prime} \mathbf{M C M e}_i}{\mathbf{e}_i^{\prime} \mathbf{M e}_i} .
 \]
 
-\begin{proof}
+Using \( \mathbf{M C M e}_i = \lambda_i \mathbf{e}_i \) and \( \mathbf{M e}_i = \mathbf{e}_i \), this simplifies to:
 
-  \[
-    M C\left(\mathbf{e}_i\right)=\frac{n}{\mathbf{1}^{\prime} \mathbf{C} \mathbf{1}} \frac{\mathbf{e}_i^{\prime} \mathbf{M C M e}_i}{\mathbf{e}_i^{\prime} \mathbf{M e}_i}
-  \]
+\[
+  M C\left(\mathbf{e}_i\right)=\frac{n}{1^T \mathbf{C} 1} \lambda_i.
+\]
 
-  Substituting \(\mathbf{M C M e}_i=\lambda_i \mathbf{e}_i\), we get:
+Therefore, the Moran coefficient is directly proportional to the eigenvalue \( \lambda_i \), as required.
 
-  \[
-    =\frac{n}{1^{\prime} \mathbf{C} 1} \frac{\mathbf{e}_i^{\prime} \mathbf{e}_i \lambda_i}{\mathbf{e}_i^{\prime} \mathbf{M e}_i}
-  \]
-
-  Since \(\mathbf{e}_i^{\prime} \mathbf{e}_i=1\) and \(\mathbf{M e}_i=\mathbf{e}_i\), this simplifies to:
-
-  \[
-    =\frac{n}{1^{\prime} \mathrm{C} 1} \lambda_i
-  \]
-\end{proof}
-
-
-From \cite{Griffith_Chun_2014}, a spatial variable could be decomposed into three components: spatially structured random components, trend and random noise. Spatial filtering is the process of separating spatially structured random components from the other two. Eigenvector spatial filtering (ESF) is one of the methods that could achieve this. which represents the connectivity between objects within a spatial space. 
-
-
-
-We can prove that \( \mathbf{MM} = \mathbf{M} \) and also \( \mathbf{M} \) is symmetric.
-
+[Below is the content about whitening, which I haven't been able to build the connection with the content above.]
 
 Suppose \( \mathbf{x}=\left(x_1, \ldots, x_p\right)^T \) is a \( p \)-dimensional random vector. Its covariance matrix, \( \operatorname{var} (\mathbf{x}) = \boldsymbol{\Sigma} \), is a  \( p \times p \) matrix.
 
@@ -162,7 +145,7 @@ We will show that in order for \( \mathbf{W} \) to be a valid whitening matrix, 
   Thus, \( \mathbf{W}^T \mathbf{W} = \boldsymbol{\Sigma}^{-1} \), as required.
 \end{proof}
 
-However, this constraint does not uniquely determine the whitening matrix \( \mathbf{W} \) \cite{Kessy_Lewin_Strimmer_2018}.
+However, this constraint does not uniquely determine the whitening matrix \( \mathbf{W} \) \cite{kessy2018optimal}.
 
 Whitening is useful because it ensures uncorrelation among variables, a desirable property in many analyses. A common choice of \( \mathbf{W} \) is
 \[
@@ -208,7 +191,7 @@ where \( \operatorname{dist}(i,j) \) is the distance between pixels \( i \) and 
 \[
 \mathbf{MCM} = \mathbf{E}_{\text{full}} \mathbf{\Lambda}_{\text{full}} \mathbf{E}_{\text{full}}^{\prime},
 \]
-where \( \mathbf{E}_{\text{full}} \) represents the eigenvectors, and \( \mathbf{\Lambda}_{\text{full}} \) the diagonal matrix of eigenvalues \cite{murakami_eigenvector_2019}. The transformation of the pixel values \( \mathbf{x} \) into the frequency space is then:
+where \( \mathbf{E}_{\text{full}} \) represents the eigenvectors, and \( \mathbf{\Lambda}_{\text{full}} \) the diagonal matrix of eigenvalues \cite{murakami2019eigenvector}. The transformation of the pixel values \( \mathbf{x} \) into the frequency space is then:
 \[
 \mathbf{x}_{\text{freq}} = \mathbf{E}^T \mathbf{x}.
 \]
