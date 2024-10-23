@@ -39,130 +39,130 @@ We investigate whether fitting LASSO in the frequency space improves feature sel
 
 \section*{Methods}
 
-Suppose \( \mathbf{C} \) is an \( n \times n \) spatial weight matrix, where each element \( c_{ij} \) represents the spatial connection between units \( i \) and \( j \). Additionally, the diagonal elements of \( \mathbf{C} \) are zero. Now, let \( \mathbf{M} = \mathbf{I} - \mathbf{1} \mathbf{1}^{\prime} / n \), which is a centering matrix. This matrix \( \mathbf{MCM} \) is used to center each row and column of \( \mathbf{C} \), ensuring their means are zero.
+Suppose \( C \) is an \( n \times n \) spatial weight matrix, where each element \( c_{ij} \) represents the spatial connection between units \( i \) and \( j \). Additionally, the diagonal elements of \( C \) are zero. Now, let \( M = I - 1 1^{\prime} / n \), which is a centering matrix. This matrix \( MCM \) is used to center each row and column of \( C \), ensuring their means are zero.
 
-Consider a vector \( \mathbf{y} = \left( y_1, \dots, y_n \right)^T \), where the relationship between each pair of elements follows the spatial weight matrix \( \mathbf{C} \). To measure the spatial autocorrelation of \( \mathbf{y} \), we use the Moran coefficient (MC), a well-established statistic in spatial analysis. According to \citet{griffith2014spatial}, the MC is computed as follows:
+Consider a vector \( y = \left( y_1, \dots, y_n \right)^T \), where the relationship between each pair of elements follows the spatial weight matrix \( C \). To measure the spatial autocorrelation of \( y \), we use the Moran coefficient (MC), a well-established statistic in spatial analysis. According to \citet{griffith2014spatial}, the MC is computed as follows:
 
 \[
-M C(\mathbf{y}) = \frac{n}{\sum_{i=1}^n \sum_{j=1}^n c_{ij}} \cdot \frac{\sum_{i=1}^n \left(y_i - \bar{y} \right) \left[ \sum_{j=1}^n c_{ij} \left( y_j - \bar{y} \right) \right]}{\sum_{i=1}^n \left( y_i - \bar{y} \right)^2}
+M C(y) = \frac{n}{\sum_{i=1}^n \sum_{j=1}^n c_{ij}} \cdot \frac{\sum_{i=1}^n \left(y_i - \bar{y} \right) \left[ \sum_{j=1}^n c_{ij} \left( y_j - \bar{y} \right) \right]}{\sum_{i=1}^n \left( y_i - \bar{y} \right)^2}
 \]
 
 In matrix notation, this expression simplifies to:
 
 \[
-M C(\mathbf{y}) = \frac{n}{\mathbf{1}^{\prime} \mathbf{C} \mathbf{1}} \cdot \frac{\mathbf{y}^{\prime} \mathbf{M C M y}}{\mathbf{y}^{\prime} \mathbf{M y}}
+  M C(y) = \frac{n}{1}^{\prime} C 1 \cdot \frac{y^{\prime} M C M y}{y^{\prime} M y}
 \]
 
-When the MC is equal to \( -1 / (n-1) \), there is no spatial autocorrelation among the elements of \( \mathbf{y} \). Positive MC values indicate positive spatial autocorrelation, while negative values suggest negative spatial autocorrelation. 
+When the MC is equal to \( -1 / (n-1) \), there is no spatial autocorrelation among the elements of \( y \). Positive MC values indicate positive spatial autocorrelation, while negative values suggest negative spatial autocorrelation. 
 
-\citet{de1984extreme} demonstrated that, when \( \mathbf{C} \) is symmetric, the maximum and minimum possible values of the Moran coefficient correspond to the largest and smallest eigenvalues of the matrix \( \mathbf{MCM} \). Since the Moran coefficient for an eigenvector is a function of its corresponding eigenvalue (which we will prove later), the eigenvector associated with the largest eigenvalue of \( \mathbf{MCM} \) yields the highest Moran coefficient, indicating that this vector captures the strongest spatial autocorrelation among all vectors whose spatial structure is defined by \( \mathbf{C} \).
+\citet{de1984extreme} demonstrated that, when \( C \) is symmetric, the maximum and minimum possible values of the Moran coefficient correspond to the largest and smallest eigenvalues of the matrix \( MCM \). Since the Moran coefficient for an eigenvector is a function of its corresponding eigenvalue (which we will prove later), the eigenvector associated with the largest eigenvalue of \( MCM \) yields the highest Moran coefficient, indicating that this vector captures the strongest spatial autocorrelation among all vectors whose spatial structure is defined by \( C \).
 
 \subsection*{Eigenvalue Decomposition and Key Properties}
 
-We begin by considering the eigendecomposition of \( \mathbf{M C M} \), which can be written as:
+We begin by considering the eigendecomposition of \( M C M \), which can be written as:
 \[
-  \mathbf{M C M}=\mathbf{E} \boldsymbol{\Lambda} \mathbf{E}^{T}
+  M C M = E \Lambda E^{T}
 \]
-where \( \boldsymbol{\Lambda} \) is a diagonal matrix of eigenvalues, and \( \mathbf{E} \) contains the corresponding eigenvectors as columns.
+where \( \Lambda \) is a diagonal matrix of eigenvalues, and \( E \) contains the corresponding eigenvectors as columns.
 
-Since \( \mathbf{M C M} \) is symmetric, the eigenvectors are orthogonal \( \left(\mathbf{E E}^{\prime}=\mathbf{I}\right) \). Additionally, the eigenvectors corresponding to non-zero eigenvalues are orthogonal to the vector of ones, \( \mathbf{E}^{\prime} \mathbf{1} = \mathbf{0} \), since \( \mathbf{M C M 1} = \mathbf{0} \).
+Since \( M C M \) is symmetric, the eigenvectors are orthogonal \( \left(E E^{\prime}=I \right) \). Additionally, the eigenvectors corresponding to non-zero eigenvalues are orthogonal to the vector of ones, \( E^{\prime} 1 = 0 \), since \( M C M 1 = 0 \).
 
-Now, we prove that for any eigenvector \( \mathbf{e}_i \) corresponding to a non-zero eigenvalue \( \lambda_i \), it holds that \( \mathbf{M} \mathbf{e}_i = \mathbf{e}_i \).
+Now, we prove that for any eigenvector \( e_i \) corresponding to a non-zero eigenvalue \( \lambda_i \), it holds that \( M e_i = e_i \).
 
 \begin{proof}
-  Starting with the eigencomposition \( \mathbf{M C M}=\mathbf{E} \boldsymbol{\Lambda} \mathbf{E}^{T} \), multiply both sides by \( \mathbf{M} \) from the left:
+  Starting with the eigencomposition \( M C M = E \Lambda E^{T} \), multiply both sides by \( M \) from the left:
 
   \[
-    \mathbf{M M C M E} = \mathbf{M E} \boldsymbol{\Lambda}.
+    M M C M E = M E \Lambda.
   \]
 
-  Since \( \mathbf{M} \) is idempotent \( (\mathbf{M}^2 = \mathbf{M}) \), this simplifies to:
+  Since \( M \) is idempotent \( (M^2 = M) \), this simplifies to:
 
   \[
-    \mathbf{M C M E} = \mathbf{M E} \boldsymbol{\Lambda}.
+    M C M E = M E \Lambda.
   \]
 
-  Substituting the eigendecomposition \( \mathbf{M C M} = \mathbf{E} \boldsymbol{\Lambda} \mathbf{E}^T \), we get:
+  Substituting the eigendecomposition \( M C M = E \Lambda E^T \), we get:
 
   \[
-    \mathbf{E} \boldsymbol{\Lambda} = \mathbf{M E} \boldsymbol{\Lambda}.
+    E \Lambda = M E \Lambda.
   \]
 
-  For any eigenvector \( \mathbf{e}_i \) corresponding to \( \lambda_i \neq 0 \), it follows that:
+  For any eigenvector \( e_i \) corresponding to \( \lambda_i \neq 0 \), it follows that:
 
   \[
-    \mathbf{E e}_i = \mathbf{e}_i.
+    E e_i = e_i.
   \]
 \end{proof}
 
 \subsection*{Proving the Relationship Between Moran Coefficient and Eigenvalues}
 
-Now that we've estabilished this property, we can show that the Moran coefficient for each eigenvector is proportional to its corresponding eigenvalue. The Moran coefficient of \( \mathbf{e}_i \) is given by:
+Now that we've estabilished this property, we can show that the Moran coefficient for each eigenvector is proportional to its corresponding eigenvalue. The Moran coefficient of \( e_i \) is given by:
 
 \[
-  M C\left(\mathbf{e}_i\right)=\frac{n}{\mathbf{1}^{\prime} \mathbf{C} \mathbf{1}} \frac{\mathbf{e}_i^{\prime} \mathbf{M C M e}_i}{\mathbf{e}_i^{\prime} \mathbf{M e}_i} .
+  M C\left(e_i\right)=\frac{n}{1^{\prime} C 1} \frac{e_i^{\prime} M C M e_i}{e_i^{\prime} M e_i} .
 \]
 
-Using \( \mathbf{M C M e}_i = \lambda_i \mathbf{e}_i \) and \( \mathbf{M e}_i = \mathbf{e}_i \), this simplifies to:
+Using \( M C M e_i = \lambda_i e_i \) and \( M e_i = e_i \), this simplifies to:
 
 \[
-  M C\left(\mathbf{e}_i\right)=\frac{n}{1^T \mathbf{C} 1} \lambda_i.
+  M C\left(e_i\right)=\frac{n}{1^T C 1} \lambda_i.
 \]
 
 Therefore, the Moran coefficient is directly proportional to the eigenvalue \( \lambda_i \), as required.
 
 [Below is the content about whitening, which I haven't been able to build the connection with the content above.]
 
-Suppose \( \mathbf{x}=\left(x_1, \ldots, x_p\right)^T \) is a \( p \)-dimensional random vector. Its covariance matrix, \( \operatorname{var} (\mathbf{x}) = \boldsymbol{\Sigma} \), is a  \( p \times p \) matrix.
+Suppose \( x=\left(x_1, \ldots, x_p\right)^T \) is a \( p \)-dimensional random vector. Its covariance matrix, \( \operatorname{var} (x) = \Sigma \), is a  \( p \times p \) matrix.
 
-Whitening is a linear transformation that converts \( \mathbf{x} \) into a new random vector \( \mathbf{z}=\left(z_1, \ldots, z_p\right)^T \), using the transformation:
+Whitening is a linear transformation that converts \( x \) into a new random vector \( z=\left(z_1, \ldots, z_p\right)^T \), using the transformation:
 \[
-  \mathbf{z}=\mathbf{W} \mathbf{x}
+  z = W x
 \]
-where \( \mathbf{W} \) is a whitening matrix. The goal of whitening is to ensure that the covirance matrix of \( \mathbf{z} \) is the identity matrix \( \mathbf{I} \), meaning that all components of \( \mathbf{z} \) are uncorrelated and have unit variance:
+where \( W \) is a whitening matrix. The goal of whitening is to ensure that the covirance matrix of \( z \) is the identity matrix \( I \), meaning that all components of \( z \) are uncorrelated and have unit variance:
 \[
-  \operatorname{var}(\mathbf{z})=\mathbf{I}
+  \operatorname{var}(z)=I
 \]
 
-We will show that in order for \( \mathbf{W} \) to be a valid whitening matrix, it must satisfy the condition:
+We will show that in order for \( W \) to be a valid whitening matrix, it must satisfy the condition:
 \[
-  \mathbf{W}^T \mathbf{W}=\boldsymbol{\Sigma}^{-1}
+  W^T W=\Sigma^{-1}
 \]
 
 \begin{proof}
-  Let \( \mathbf{z} = \mathbf{W} \mathbf{x} \). The covariance of \( \mathbf{z} \) is:
+  Let \( z = W x \). The covariance of \( z \) is:
   \[
-    \operatorname{cov}(\mathbf{z}) = \mathbf{W} \operatorname{cov}(\mathbf{x}) \mathbf{W}^T = \mathbf{W} \boldsymbol{\Sigma} \mathbf{W}^T
+    \operatorname{cov}(z) = W \operatorname{cov}(x) W^T = W \Sigma W^T
   \]
-  Since whitening ensures \( \operatorname{cov}(\mathbf{z}) = \mathbf{I} \), we have:
+  Since whitening ensures \( \operatorname{cov}(z) = I \), we have:
   \[
-    \mathbf{W} \boldsymbol{\Sigma} \mathbf{W}^T = \mathbf{I}
+    W \Sigma W^T = I
   \]
-  Multiplying both sides by \( \mathbf{W} \) gives:
+  Multiplying both sides by \( W \) gives:
   \[
-    \boldsymbol{\Sigma} (\mathbf{W}^T \mathbf{W}) = \mathbf{I}
+    \Sigma (W^T W) = I
   \]
-  Thus, \( \mathbf{W}^T \mathbf{W} = \boldsymbol{\Sigma}^{-1} \), as required.
+  Thus, \( W^T W = \Sigma^{-1} \), as required.
 \end{proof}
 
-However, this constraint does not uniquely determine the whitening matrix \( \mathbf{W} \) \cite{kessy2018optimal}.
+However, this constraint does not uniquely determine the whitening matrix \( W \) \cite{kessy2018optimal}.
 
-Whitening is useful because it ensures uncorrelation among variables, a desirable property in many analyses. A common choice of \( \mathbf{W} \) is
+Whitening is useful because it ensures uncorrelation among variables, a desirable property in many analyses. A common choice of \( W \) is
 \[
-  \mathbf{W}=\boldsymbol{\Lambda}^{-1 / 2} \mathbf{U}^T
+  W=\Lambda^{-1 / 2} U^T
 \]
-where \( \boldsymbol{\Sigma}=\mathbf{U} \boldsymbol{\Lambda} \mathbf{U}^T \) is the eigen-decomposition of the covariance matrix. 
+where \( \Sigma=U \Lambda U^T \) is the eigen-decomposition of the covariance matrix. 
 
 \begin{proof}
   \[
-    \mathbf{W}^T \mathbf{W}=\mathbf{U} \boldsymbol{\Lambda}^{-1 / 2} \boldsymbol{\Lambda}^{-1 / 2} \mathbf{U}^T=\mathbf{U} \boldsymbol{\Lambda}^{-1} \mathbf{U}^T
+    W^T W=U \Lambda^{-1 / 2} \Lambda^{-1 / 2} U^T=U \Lambda^{-1} U^T
   \]
-  Since \( \boldsymbol{\Sigma} \) is a covariance matrix, it is symmetric, which implies that \( \mathbf{U} \) is orthogonal, meaning \( \mathbf{U U}^T = \mathbf{I} \), so \( \mathbf{U}^T = \mathbf{U}^{-1} \). Therefore,
+  Since \( \Sigma \) is a covariance matrix, it is symmetric, which implies that \( U \) is orthogonal, meaning \( U U^T = I \), so \( U^T = U^{-1} \). Therefore,
   \[
     \begin{aligned}
-      \mathbf{U} \boldsymbol{\Lambda}^{-1} \mathbf{U}^T & = \left(\mathbf{U}^T\right)^{-1} \boldsymbol{\Lambda} \mathbf{U}^{-1} \\
-                                                        & = \left(\mathbf{U} \boldsymbol{\Lambda} \mathbf{U}^T\right)^{-1} \\
-                                                        & = \boldsymbol{\Sigma}^{-1}
+      U \Lambda^{-1} U^T & = \left(U^T\right)^{-1} \Lambda U^{-1} \\
+                                                        & = \left(U \Lambda U^T\right)^{-1} \\
+                                                        & = \Sigma^{-1}
   \end{aligned}
   \]
 \end{proof}
@@ -171,9 +171,9 @@ Actually, a whitening matrix is not necessary to achieve uncorrelation. For exam
 
 \begin{proof}
   \[
-    \operatorname{cov}\left(\mathbf{W}^{\prime} \mathbf{x}\right)=\mathbf{W}^{\prime} \boldsymbol{\Sigma} \mathbf{W}^{\prime T}=\mathbf{U}^T \boldsymbol{\Sigma} \mathbf{U}=\mathbf{U}^T \mathbf{U} \boldsymbol{\Lambda} \mathbf{U}^T \mathbf{U}=\boldsymbol{\Lambda}
+    \operatorname{cov}\left(W^{\prime} x\right)=W^{\prime} \Sigma W^{\prime T}=U^T \Sigma U=U^T U \Lambda U^T U=\Lambda
   \]
-  (since \( \mathbf{U}^T \mathbf{U}=\mathbf{I} \))
+  (since \( U^T U=I \))
 \end{proof}
 
 Here, \( \Lambda \) is a diagonal matrix with eigenvalues on the diagonal. Therefore, we have shown that using the eigenvectors of a random vector's covariance matrix to perform a linear transformation resolves the correlation between the components, although it does not standardize their variance.
@@ -202,15 +202,15 @@ For each simulation, \( \mathbf{X} \) represents the matrix of observations, wit
 \mathbf{X}_{\mathrm{freq}} = \mathbf{X} \mathbf{E}.
 \]
 
-We define the coefficient vectors in both spaces as follows: \( \boldsymbol{\beta} \) for the pixel space and \( \mathbf{b} \) for the frequency space. The relationship between the two is:
+We define the coefficient vectors in both spaces as follows: \( \beta \) for the pixel space and \( \mathbf{b} \) for the frequency space. The relationship between the two is:
 \[
-\boldsymbol{\beta} = \mathbf{E} \mathbf{b},
+\beta = \mathbf{E} \mathbf{b},
 \]
-ensuring that \( \mathbf{X} \boldsymbol{\beta} = \mathbf{X}_{\mathrm{freq}} \mathbf{b} \).
+ensuring that \( \mathbf{X} \beta = \mathbf{X}_{\mathrm{freq}} \mathbf{b} \).
 
 Two simulation scenarios are considered:
 \begin{enumerate}
-  \item \textbf{Pixel space sparsity:} Here, \( \boldsymbol{\beta} \) is sparse, with non-zero values limited to a central \( 8 \times 8 \) region of the pixel grid. The covariate matrix \( \mathbf{X} \) is generated from a multivariate normal distribution with mean 0 and covariance matrix \( \mathbf{C} \). The response variable \( \mathbf{y} \) is binomial, with success probability determined by \( \boldsymbol{\eta} = \mathbf{X} \boldsymbol{\beta} \), where the non-zero entries in \( \boldsymbol{\beta} \) are constant and ensure that the success probability \( \mathbf{p} = \frac{1}{1 + \exp(-\boldsymbol{\eta})} \) is uniformly distributed in \( [0, 1] \).
+  \item \textbf{Pixel space sparsity:} Here, \( \beta \) is sparse, with non-zero values limited to a central \( 8 \times 8 \) region of the pixel grid. The covariate matrix \( \mathbf{X} \) is generated from a multivariate normal distribution with mean 0 and covariance matrix \( \mathbf{C} \). The response variable \( \mathbf{y} \) is binomial, with success probability determined by \( \eta = \mathbf{X} \beta \), where the non-zero entries in \( \beta \) are constant and ensure that the success probability \( \mathbf{p} = \frac{1}{1 + \exp(-\eta}) \) is uniformly distributed in \( [0, 1] \).
   
   \item \textbf{Frequency space sparsity:} In this scenario, the coefficient vector \( \mathbf{b} \) is sparse, with 10\% of its 256 entries randomly set to non-zero values. The covariate matrix \( \mathbf{X}_{\mathrm{freq}} \) is generated from a multivariate normal distribution with zero mean and a diagonal covariance matrix, where the eigenvalues decrease along the diagonal [I am considering different options for the step size in the diagonal covariance matrix. Currently, I am using a constant step size, but further investigation may be needed to determine the most appropriate choice.]. The non-zero entries in \( \mathbf{b} \) are constant, and \( \mathbf{y} \) is drawn from a binomial distribution with a success probability \( \mathbf{p} \) uniformly distributed in \( [0, 1] \).
 
@@ -242,7 +242,7 @@ P-values are computed using the \texttt{hdi} package [need to provide further de
 
 \subsection*{Effect Size Determination}
 
-In Simulation 1, we evaluated the distribution of the success probability \( \mathbf{p} \) at different non-zero values of \( \boldsymbol{\beta} \) (0.01, 0.05, 0.1, 0.2, and 1). As shown in Figure \ref{fig:sim1_p_dist}, a value of 0.1 produced the most uniform distribution of \( \mathbf{p} \), making it the optimal choice for model fitting in this scenario.
+In Simulation 1, we evaluated the distribution of the success probability \( \mathbf{p} \) at different non-zero values of \( \beta \) (0.01, 0.05, 0.1, 0.2, and 1). As shown in Figure \ref{fig:sim1_p_dist}, a value of 0.1 produced the most uniform distribution of \( \mathbf{p} \), making it the optimal choice for model fitting in this scenario.
 
 Similarly, in Simulation 2, we assessed the distribution of \( \mathbf{p} \) at various non-zero values for \( \mathbf{b} \) (0.1, 0.15, 0.2, 0.25, and 0.3). As shown in Figure \ref{fig:sim2_p_dist}, the value of 0.2 resulted in the most uniform distribution of \( \mathbf{p} \), making it the best option for this simulation.
 
@@ -266,7 +266,7 @@ Similarly, in Simulation 2, we assessed the distribution of \( \mathbf{p} \) at 
 
 In this subsection, we examine the group mean differences in covariate values between instances where \( y = 1 \) and \( y = 0 \) for both Simulation 1 and Simulation 2.
 
-Figure \ref{fig:group_diff1} presents the group mean differences for Simulation 1, with the heatmap on the left showing that regions corresponding to non-zero coefficients in \( \boldsymbol{\beta} \) exhibit larger mean differences between \( y = 1 \) and \( y = 0 \), as larger covariate values in these locations have higher probabilities of being assigned to \( y = 1 \). The scatterplot on the right displays the group mean differences in the frequency domain, where each point represents a frequency component; frequencies associated with larger eigenvalues tend to have larger mean differences. Figure \ref{fig:coefs_sim1} shows the actual coefficients used in Simulation 1, where non-zero coefficients in \( \boldsymbol{\beta} \) are localized to specific pixels, corresponding to the areas with larger mean differences in the group comparison.
+Figure \ref{fig:group_diff1} presents the group mean differences for Simulation 1, with the heatmap on the left showing that regions corresponding to non-zero coefficients in \( \beta \) exhibit larger mean differences between \( y = 1 \) and \( y = 0 \), as larger covariate values in these locations have higher probabilities of being assigned to \( y = 1 \). The scatterplot on the right displays the group mean differences in the frequency domain, where each point represents a frequency component; frequencies associated with larger eigenvalues tend to have larger mean differences. Figure \ref{fig:coefs_sim1} shows the actual coefficients used in Simulation 1, where non-zero coefficients in \( \beta \) are localized to specific pixels, corresponding to the areas with larger mean differences in the group comparison.
 
 \begin{figure}[h!]
 	\centering
@@ -330,7 +330,7 @@ Table~\ref*{tab:auc_acc_table} summarizes the average AUCs and accuracies over 5
 
 Figure \ref{fig:b_estimates} presents the mean estimated \( b \) values plotted against the order of eigenvalues. The order of eigenvalues are calculated the same way as above. For Simulation 1, \texttt{lambda.1se} shrinks the estimated coefficients more than \texttt{lambda.min}, as it provides a larger panelty on it. For Simulation 2, even though it is not obvious, I feel the estimated values has an increase trend as the eigenvalues increase. [Still, I am wondering whether this is related to the covariance matrix, the decreased diagonal values, consider math proof?].
 
-The mean estimated coefficients across iterations were calculated, and Figure \ref{fig:beta_estimates} displays the mean estimated \( \boldsymbol{\beta} \) values. Two key observations can be made: (1) There is no significant difference in the estimated coefficients when using \texttt{lambda.min} versus \texttt{lambda.1se}, and (2) the estimated values align well with the actual values, indicating that the model is accurately identifying the relevant features.
+The mean estimated coefficients across iterations were calculated, and Figure \ref{fig:beta_estimates} displays the mean estimated \( \beta \) values. Two key observations can be made: (1) There is no significant difference in the estimated coefficients when using \texttt{lambda.min} versus \texttt{lambda.1se}, and (2) the estimated values align well with the actual values, indicating that the model is accurately identifying the relevant features.
 
 Figure \ref{fig:b_estimates} shows the mean estimated \( \mathbf{b} \) values plotted against the order of eigenvalues. The eigenvalue ordering is consistent with earlier calculations. In Simulation 1, \texttt{lambda.1se} applies a stronger regularization penalty, shrinking the estimated coefficients more than \texttt{lambda.min}. For Simulation 2, although the trend is less clear, there seems to be an upward trend in the estimated values as the eigenvalues increase. This trend may be related to the structure of the covariance matrix, specifically its decreasing diagonal values [consider math proof?].
 
@@ -354,7 +354,7 @@ Figure \ref{fig:b_estimates} shows the mean estimated \( \mathbf{b} \) values pl
 
 \subsection*{Significant P-values}
 
-It is interesting to observe that, although the heatmap for significance of \( \boldsymbol{\beta} \) in Simulation 1 follows the pattern of the actual non-zero values, the percentage of significance is relatively low (Figure \ref{fig:perc_sign_beta} left). In contrast, the non-zero values of \( \mathbf{b} \) (Figure \ref{fig:perc_sign_b} left) show a much higher percentage of significance, reaching as high as 100\% across iterations.
+It is interesting to observe that, although the heatmap for significance of \( \beta \) in Simulation 1 follows the pattern of the actual non-zero values, the percentage of significance is relatively low (Figure \ref{fig:perc_sign_beta} left). In contrast, the non-zero values of \( \mathbf{b} \) (Figure \ref{fig:perc_sign_b} left) show a much higher percentage of significance, reaching as high as 100\% across iterations.
 
 Another observation is that, although the non-zero effect size for \( \mathbf{b} \) is constant in Simulation 2, the percentage of significant p-values increases as the eigenvalues grow (Figure \ref{fig:perc_sign_b} right). [I am considering creating a plot to visualize the actual \( \beta \) values in Simulation 2 and the actual \( b \) values in Simulation 1, where the non-zero values vary, and compare them with the corresponding percentage of significant p-values. The goal is to examine whether the size of the actual non-zero values correlates with the percentage of significance. I suspect that a larger absolute effect size should result in a higher percentage of significance, but this doesn’t seem to be the case for \( b \) in Simulation 2, so I want to investigate other factors as well.]
 
