@@ -63,50 +63,35 @@ We begin by considering the eigendecomposition of \( M C M \), which can be writ
 \[
   M C M = E \Lambda E^{T}
 \]
-where \( \Lambda \) is a diagonal matrix of eigenvalues, and \( E \) contains the corresponding eigenvectors as columns.
+where \( \Lambda \) is a diagonal matrix of eigenvalues, and \( E \) contains the corresponding eigenvectors as columns. Also we define \( \lambda_i \) and \( v_i \) to be the \( i \) th eigenvalue and eigenvector respectively.
 
 Since \( M C M \) is symmetric, the eigenvectors are orthogonal \( \left(E E^T = I \right) \). Additionally, the eigenvectors corresponding to non-zero eigenvalues are orthogonal to the vector of ones, \( E^T 1 = 0 \), since \( M C M 1 = 0 \).
 
-Now, we prove that for any eigenvector \( e_i \) corresponding to a non-zero eigenvalue \( \lambda_i \), it holds that \( M e_i = e_i \).
+Now, we prove that for any eigenvector \( v_i \), \( M v_i = v_i \).
 
 \begin{proof}
-  Starting with the eigencomposition \( M C M = E \Lambda E^{T} \), multiply both sides by \( M \) from the left:
+  \begin{align*}
+    M C M v_i & = \lambda_i v_i \\
+    M^2 C M v_i & = \lambda_i M v_i \\
+    M C M v_i & = \lambda_i M v_i \\
+    \lambda_i v_i & = \lambda_i M v_i \\
+  \end{align*}
 
-  \[
-    M M C M E = M E \Lambda.
-  \]
-
-  Since \( M \) is idempotent \( (M^2 = M) \), this simplifies to:
-
-  \[
-    M C M E = M E \Lambda.
-  \]
-
-  Substituting the eigendecomposition \( M C M = E \Lambda E^T \), we get:
-
-  \[
-    E \Lambda = M E \Lambda.
-  \]
-
-  For any eigenvector \( e_i \) corresponding to \( \lambda_i \neq 0 \), it follows that:
-
-  \[
-    E e_i = e_i.
-  \]
+  For \( \lambda_i \neq 0 \), \( M v_i = v_i \).
 \end{proof}
 
 \subsection*{Proving the Relationship Between Moran Coefficient and Eigenvalues}
 
-Now that we've estabilished this property, we can show that the Moran coefficient for each eigenvector is proportional to its corresponding eigenvalue. The Moran coefficient of \( e_i \) is given by:
+Now that we've estabilished this property, we can show that the Moran coefficient for each eigenvector is proportional to its corresponding eigenvalue. The Moran coefficient of \( v_i \) is given by:
 
 \[
-  M C\left(e_i\right)=\frac{n}{1^T C 1} \frac{e_i^T M C M e_i}{e_i^T M e_i} .
+  M C (v_i)=\frac{n}{1^T C 1} \frac{v_i^T M C M v_i}{v_i^T M v_i} .
 \]
 
-Using \( M C M e_i = \lambda_i e_i \) and \( M e_i = e_i \), this simplifies to:
+Using \( M C M v_i = \lambda_i v_i \) and \( M v_i = v_i \), this simplifies to:
 
 \[
-  M C\left(e_i\right)=\frac{n}{1^T C 1} \lambda_i.
+  M C (v_i)=\frac{n}{1^T C 1} \lambda_i.
 \]
 
 Therefore, the Moran coefficient is directly proportional to the eigenvalue \( \lambda_i \), as required.
