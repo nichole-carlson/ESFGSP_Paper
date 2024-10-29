@@ -39,7 +39,7 @@ We investigate whether fitting LASSO in the frequency space improves feature sel
 
 \section*{Methods}
 
-Suppose \( C \) is an \( n \times n \) spatial weight matrix, where each element \( c_{ij} \) represents the spatial connection between units \( i \) and \( j \). Additionally, the diagonal elements of \( C \) are zero. Now, let \( M = I - 1 1^{\prime} / n \), which is a centering matrix. This matrix \( MCM \) is used to center each row and column of \( C \), ensuring their means are zero.
+Suppose \( C \) is an \( n \times n \) spatial weight matrix, where each element \( c_{ij} \) represents the spatial connection between units \( i \) and \( j \). Additionally, the diagonal elements of \( C \) are zero. Now, let \( M = I - 1 1^T / n \), which is a centering matrix. This matrix \( MCM \) is used to center each row and column of \( C \), ensuring their means are zero.
 
 Consider a vector \( y = \left( y_1, \dots, y_n \right)^T \), where the relationship between each pair of elements follows the spatial weight matrix \( C \). To measure the spatial autocorrelation of \( y \), we use the Moran coefficient (MC), a well-established statistic in spatial analysis. According to \citet{griffith2014spatial}, the MC is computed as follows:
 
@@ -50,7 +50,7 @@ M C(y) = \frac{n}{\sum_{i=1}^n \sum_{j=1}^n c_{ij}} \cdot \frac{\sum_{i=1}^n \le
 In matrix notation, this expression simplifies to:
 
 \[
-  M C(y) = \frac{n}{1}^{\prime} C 1 \cdot \frac{y^{\prime} M C M y}{y^{\prime} M y}
+  M C(y) = \frac{n}{1^T C 1} \cdot \frac{y^T M C M y}{y^T M y}
 \]
 
 When the MC is equal to \( -1 / (n-1) \), there is no spatial autocorrelation among the elements of \( y \). Positive MC values indicate positive spatial autocorrelation, while negative values suggest negative spatial autocorrelation. 
@@ -65,7 +65,7 @@ We begin by considering the eigendecomposition of \( M C M \), which can be writ
 \]
 where \( \Lambda \) is a diagonal matrix of eigenvalues, and \( E \) contains the corresponding eigenvectors as columns.
 
-Since \( M C M \) is symmetric, the eigenvectors are orthogonal \( \left(E E^{\prime}=I \right) \). Additionally, the eigenvectors corresponding to non-zero eigenvalues are orthogonal to the vector of ones, \( E^{\prime} 1 = 0 \), since \( M C M 1 = 0 \).
+Since \( M C M \) is symmetric, the eigenvectors are orthogonal \( \left(E E^T = I \right) \). Additionally, the eigenvectors corresponding to non-zero eigenvalues are orthogonal to the vector of ones, \( E^T 1 = 0 \), since \( M C M 1 = 0 \).
 
 Now, we prove that for any eigenvector \( e_i \) corresponding to a non-zero eigenvalue \( \lambda_i \), it holds that \( M e_i = e_i \).
 
@@ -100,7 +100,7 @@ Now, we prove that for any eigenvector \( e_i \) corresponding to a non-zero eig
 Now that we've estabilished this property, we can show that the Moran coefficient for each eigenvector is proportional to its corresponding eigenvalue. The Moran coefficient of \( e_i \) is given by:
 
 \[
-  M C\left(e_i\right)=\frac{n}{1^{\prime} C 1} \frac{e_i^{\prime} M C M e_i}{e_i^{\prime} M e_i} .
+  M C\left(e_i\right)=\frac{n}{1^T C 1} \frac{e_i^T M C M e_i}{e_i^T M e_i} .
 \]
 
 Using \( M C M e_i = \lambda_i e_i \) and \( M e_i = e_i \), this simplifies to:
