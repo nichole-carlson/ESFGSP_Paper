@@ -59,6 +59,17 @@ When the MC is equal to \( -1 / (n-1) \), there is no spatial autocorrelation am
 
 \subsection*{Eigenvalue Decomposition and Key Properties}
 
+{\bf Claim:} \( M \), the centering matrix, is idempotent \( (M^2 = M) \)
+
+\begin{proof}
+  \begin{align*}
+    M^2 = M M & = (I - \frac{1 1^T}{n}) (I - \frac{1 1^T}{n}) \\
+              & = I - \frac{1 1^T}{n} - \frac{1 1^T}{n} + \frac{1 1^T 1 1^T}{n^2} \\
+              & = I - \frac{2}{n} 1 1^T + \frac{n 1 1^T}{n^2} \\
+              & = I - \frac{1 1^T}{n} = M
+  \end{align*}
+\end{proof}
+
 We begin by considering the eigendecomposition of \( M C M \), which can be written as:
 \[
   M C M = E \Lambda E^{T}
