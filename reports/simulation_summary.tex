@@ -7,6 +7,7 @@
 \usepackage{booktabs}
 \usepackage{placeins}
 \usepackage[round]{natbib}
+\usepackage{hyperref}
 
 \renewcommand{\baselinestretch}{1}
 \topmargin 0in \headheight 0.0in \textheight 9in \textwidth 6.5in
@@ -74,10 +75,18 @@ Also, since \( M \) is the centering matrix, \( [M y]_i = y_i - \bar{y} \). Then
 \end{align*}
 Overall, it can be writte as:
 \[
-  M C(y) = \frac{n}{1^T C 1} \cdot \frac{y^T M C M y}{y^T M y}
+  M C(y) = \frac{n}{\vec{1}^T C \vec{1}} \cdot \frac{y^T M C M y}{y^T M y}
 \]
 
-When the MC is equal to \( -1 / (n-1) \), there is no spatial autocorrelation among the elements of \( y \). Positive MC values indicate positive spatial autocorrelation, while negative values suggest negative spatial autocorrelation. 
+The matrix notation can further be written as:
+\[
+  M C (y) = \frac{(M y)^T C (M y)}{\vec{1}^T C \vec{1}} / \frac{(M y)^T I (M y)}{\vec{1}^T I \vec{1}}
+\]
+
+Where the numerator is the covariance of \( y \) with itself along spatial structure \( C \), and the denominator is the covariance of \( y \) along an independence structure \( I \) [I don't understand what it means by ``covariance along a structure''].
+
+[About the expectation of \( \mathcal{M C} \): I didn't get the difference between ``the expected value when there is no correlation in the assumed model'' and ``the value when there is no correlation in the input''. What is the ``correlation'' referring to here? Wikipedia says the expectation of \( \mathcal{M C} \) under the null hypothesis of no spatial autocorrelation is \( -1 / (n - 1) \), and I found a proof \href{https://stats.stackexchange.com/questions/567411/expectation-and-variance-of-morans-i-under-the-null}{here} which I don't understand. In my understanding, no spatial autocorrelation means all elements of \( C \) equals 0 (seems conflict with the statement of \( -1 / (n - 1) \) ). ]
+
 
 \citet{de1984extreme} demonstrated that, when \( C \) is symmetric, the maximum and minimum possible values of the Moran coefficient correspond to the largest and smallest eigenvalues of the matrix \( MCM \). Since the Moran coefficient for an eigenvector is a function of its corresponding eigenvalue (which we will prove later), the eigenvector associated with the largest eigenvalue of \( MCM \) yields the highest Moran coefficient, indicating that this vector captures the strongest spatial autocorrelation among all vectors whose spatial structure is defined by \( C \).
 
