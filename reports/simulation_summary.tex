@@ -40,6 +40,24 @@ We investigate whether fitting LASSO in the frequency space improves feature sel
 
 \section*{Methods}
 
+When we are dealing with imaging data, either by predicting images with some predictors, or using images as predictors to predict some labels, one issue may cause low efficiency and inaccuracy is that the pixels within the same image are correlated with each other. When images are used as predictors, with each pixel as a single predictor, suppose we have \( s \) pixels for each image, then the model can be written as:
+\[
+  y_i = x_{i \cdot} \beta + \epsilon_i
+\]
+where \( i \) indexes an observation, \( j \) indexes the pixel. \( y_i \) is a scalar indicating perhaps group label, \( x_{i \cdot} \) is an horizontal vector indicating an image with \( s \) pixels, \( \beta \) is a column vector with \( s \) items, and \( \epsilon_i \) is the error scalar follows normal distribution with mean 0 and a constant variance across observations. Then the issue of having correlation between predictors is called multicollinearity.
+
+When we have the same size of images and now predicting them with \( p \) predictors, then the model could be written as:
+\[
+  y_{i \cdot} = x_{i \cdot} \beta + \epsilon_{i \cdot}
+\]
+where \( y_{i \cdot} \) is a \( 1 \times s \) vector representing an image, \( x_{i \cdot} \) is a \( 1 \times p \) vector representing \( p \) predictors, \( \beta \) is a \( p \times 1 \) vector [William, is \( \beta \) a vector or a matrix?], and \( \epsilon_{i \cdot} \) is a \( 1 \times s \) vector representing the errors with distribution \( \mathcal{N} (0, \Sigma) \) to reflect the correlation between pixels. One of the assumptions we made when fitting this model is that the covariance structure \( \Sigma \) is shared across images.
+
+Just like in GEE, picking an optimal covariance structure \( \Sigma \) is a trade-off between low representative, high computational efficiency and high representative, low computationaly efficiency.
+
+No matter we use the image data as predictors or outcomes, we need to deal with the correlation between pixels. There are two main directions: performing dimension reduction (e.g. perform PCA and keep the top PCs) or reduce the covariance complexity of the image.
+
+In this paper, we are focusing on the second direction. A common approach to reduce (not diminish because we don't know the true covariance matrix) the covariance complexity is using whitening transformation, which could transform a vector of random variables (e.g. an image) to have a diagonal covariance matrix, which means there is no correlation between pixels [the definition of whitening transformation is to get an identity correlation matrix, not a diagonal one, so I am thinking whether whitening is not the accurate word to use here. Maybe we actually mean a decorrelation transformation? Anyway I will keep using ``whitening'' for the following content].
+
 Suppose \( C \) is an \( n \times n \) spatial weight matrix, where each element \( c_{ij} \) represents the spatial connection between units \( i \) and \( j \). Additionally, the diagonal elements of \( C \) are zero. Now, let \( M = I - 1 1^T / n \), which is a centering matrix. This matrix \( MCM \) is used to center each row and column of \( C \), ensuring their means are zero.
 
 Consider a vector \( y = \left( y_1, \dots, y_n \right)^T \), where the relationship between each pair of elements follows the spatial weight matrix \( C \). To measure the spatial autocorrelation of \( y \), we use the Moran coefficient (MC), a well-established statistic in spatial analysis. According to \citet{griffith2014spatial}, the MC is computed as follows:
