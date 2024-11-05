@@ -40,11 +40,17 @@ We investigate whether fitting LASSO in the frequency space improves feature sel
 
 \section*{Methods}
 
-When we are dealing with imaging data, either by predicting images with some predictors, or using images as predictors to predict some labels, one issue may cause low efficiency and inaccuracy is that the pixels within the same image are correlated with each other. When images are used as predictors, with each pixel as a single predictor, suppose we have \( s \) pixels for each image, then the model can be written as:
+When dealing with image data, we can imagine that pixels nearby could have similar values, which in another term, they have spatial autocorrelation. When using the image data in models, no matter use them as predictors or outcomes, the correlation between pixels could lower the computational efficiency and stability of the models if we are not handling them well. Here we discuss its affect in two scenarios: when using images as predictors and using it as outcomes.
+
+\subsubsection*{Image data as the predictor}
+
+Suppose we have a sample of images registered to the same template and we want to fit a linear model predicting some scalar outcome \( y \) with the images \( x \), which has \( s \) pixels. When we use each pixel as a predictor, the model could be written in the individual level as:
 \[
   y_i = x_{i \cdot} \beta + \epsilon_i
 \]
 where \( i \) indexes an observation, \( j \) indexes the pixel. \( y_i \) is a scalar indicating perhaps group label, \( x_{i \cdot} \) is an horizontal vector indicating an image with \( s \) pixels, \( \beta \) is a column vector with \( s \) items, and \( \epsilon_i \) is the error scalar follows normal distribution with mean 0 and a constant variance across observations. Then the issue of having correlation between predictors is called multicollinearity.
+
+\subsubsection*{Image data as the outcome}
 
 When we have the same size of images and now predicting them with \( p \) predictors, then the model could be written as:
 \[
@@ -54,17 +60,16 @@ where \( y_{i \cdot} \) is a \( 1 \times s \) vector representing an image, \( x
 
 Just like in GEE, picking an optimal covariance structure \( \Sigma \) is a trade-off between low representative, high computational efficiency and high representative, low computationaly efficiency.
 
-No matter we use the image data as predictors or outcomes, we need to deal with the correlation between pixels. There are two main directions: performing dimension reduction (e.g. perform PCA and keep the top PCs) or reduce the covariance complexity of the image.
+No matter we use the image data as predictors or outcomes, we need to deal with the correlation between pixels. There are two main directions: performing dimension reduction (e.g. perform PCA and keep the top PCs) or reduce the covariance complexity of the image. In this paper, we are focusing on the second direction. But before we introduce how we want to deal with the spatial autocorrelation within an image, we will firstly introduce the Moran's coefficient (MC), which is a common measurement of spatial autocorrelation, and some properties come with it.
 
-In this paper, we are focusing on the second direction. A common approach to reduce (not diminish because we don't know the true covariance matrix) the covariance complexity is using whitening transformation, which could transform a vector of random variables (e.g. an image) to have a diagonal covariance matrix, which means there is no correlation between pixels [the definition of whitening transformation is to get an identity correlation matrix, not a diagonal one, so I am thinking whether whitening is not the accurate word to use here. Maybe we actually mean a decorrelation transformation? Anyway I will keep using ``whitening'' for the following content].
+\subsection*{Moran's Coefficient and Eigenvector Spatial Filtering}
 
-Suppose \( C \) is an \( n \times n \) spatial weight matrix, where each element \( c_{ij} \) represents the spatial connection between units \( i \) and \( j \). Additionally, the diagonal elements of \( C \) are zero. Now, let \( M = I - 1 1^T / n \), which is a centering matrix. This matrix \( MCM \) is used to center each row and column of \( C \), ensuring their means are zero.
-
-Consider a vector \( y = \left( y_1, \dots, y_n \right)^T \), where the relationship between each pair of elements follows the spatial weight matrix \( C \). To measure the spatial autocorrelation of \( y \), we use the Moran coefficient (MC), a well-established statistic in spatial analysis. According to \citet{griffith2014spatial}, the MC is computed as follows:
-
+When we have data with spatial autocorrelation, such as an image, which means the correlation between pixels of the same image depend on their location within the image, a commonly used measurement of spatial autocorrelation is the Moran coefficient (MC). Suppose a vector \( y = (y_1, \ldots, y_s)^T \) represents an image with \( s \) pixels, and the spatial relationship between each pair of pixels can be denoted by a matrix \( C \), where element \( C_{ij} \) represents the spatial connection between pixel \( i \) and \( j \), and the diagonal elements are zero, then according to \citet{griffith2014spatial}, the MC can be computed by:
 \[
-M C(y) = \frac{n}{\sum_{i=1}^n \sum_{j=1}^n c_{ij}} \cdot \frac{\sum_{i=1}^n \left(y_i - \bar{y} \right) \left[ \sum_{j=1}^n c_{ij} \left( y_j - \bar{y} \right) \right]}{\sum_{i=1}^n \left( y_i - \bar{y} \right)^2}
+M C(y) = \frac{s}{\sum_{i=1}^s \sum_{j=1}^s c_{ij}} \cdot \frac{\sum_{i=1}^s \left(y_i - \bar{y} \right) \left[ \sum_{j=1}^s c_{ij} \left( y_j - \bar{y} \right) \right]}{\sum_{i=1}^s \left( y_i - \bar{y} \right)^2}
 \]
+
+Now let's define a centering matrix \( M = I - 1 1^T / s \), the show how the MC above can be expressed in a matrix notation. Since \( M \) is the centering matrix, \( [M y]_i = y_i - \bar{y} \).
 
 {\bf Claim:} Suppose \( \vec{a} \), \( \vec{c} \) are column vectors of length \( n \), and \( B \) is a matrix of size \( n \times n \),  then the expression \( \vec{a}^T B \vec{c} \) can be expressed in a summation form as:
 \[
@@ -77,13 +82,13 @@ M C(y) = \frac{n}{\sum_{i=1}^n \sum_{j=1}^n c_{ij}} \cdot \frac{\sum_{i=1}^n \le
   \]
 \end{proof}
 
-Also, since \( M \) is the centering matrix, \( [M y]_i = y_i - \bar{y} \). Then we show how the Moran's coefficient can be expressed in matrix form.
+Then we show how the Moran's coefficient can be expressed in matrix form.
 \[
-  \vec{1}^T C \vec{1} = \sum_{i=1}^n \sum_{j=1}^n 1 \cdot c_{i j} \cdot 1 = \sum_{i=1}^n \sum_{j=1}^n c_{i j} 
+  \vec{1}^T C \vec{1} = \sum_{i=1}^s \sum_{j=1}^s 1 \cdot c_{i j} \cdot 1 = \sum_{i=1}^s \sum_{j=1}^s c_{i j} 
 \]
 \begin{align*}
-  (M y)^T C (M y) & = \sum_{i=1}^n \sum_{j=1}^n (y_i - \bar{y}) c_{ij} (y_{j} - \bar{y}) \\
-                  & = \sum_{i=1}^n(y_i-\bar{y})[\sum_{j=1}^n c_{i j}(y_j-\bar{y})]  \\
+  (M y)^T C (M y) & = \sum_{i=1}^s \sum_{j=1}^s (y_i - \bar{y}) c_{ij} (y_{j} - \bar{y}) \\
+                  & = \sum_{i=1}^s(y_i-\bar{y})[\sum_{j=1}^s c_{i j}(y_j-\bar{y})]  \\
 \end{align*}
 \begin{align*}
   y^T M y & = y^T M M y \\
@@ -93,7 +98,7 @@ Also, since \( M \) is the centering matrix, \( [M y]_i = y_i - \bar{y} \). Then
 \end{align*}
 Overall, it can be writte as:
 \[
-  M C(y) = \frac{n}{\vec{1}^T C \vec{1}} \cdot \frac{y^T M C M y}{y^T M y}
+  M C(y) = \frac{s}{\vec{1}^T C \vec{1}} \cdot \frac{y^T M C M y}{y^T M y}
 \]
 
 The matrix notation can further be written as:
@@ -108,7 +113,7 @@ Where the numerator is the covariance of \( y \) with itself along spatial struc
 
 \citet{de1984extreme} demonstrated that, when \( C \) is symmetric, the maximum and minimum possible values of the Moran coefficient correspond to the largest and smallest eigenvalues of the matrix \( MCM \). Since the Moran coefficient for an eigenvector is a function of its corresponding eigenvalue (which we will prove later), the eigenvector associated with the largest eigenvalue of \( MCM \) yields the highest Moran coefficient, indicating that this vector captures the strongest spatial autocorrelation among all vectors whose spatial structure is defined by \( C \).
 
-\subsection*{Eigenvalue Decomposition and Key Properties}
+\subsubsection*{Eigenvalue Decomposition and Key Properties}
 
 {\bf Claim:} \( M \), the centering matrix, is idempotent \( (M^2 = M) \)
 
@@ -142,7 +147,7 @@ Now, we prove that for any eigenvector \( v_i \), \( M v_i = v_i \).
   For \( \lambda_i \neq 0 \), \( M v_i = v_i \).
 \end{proof}
 
-\subsection*{Proving the Relationship Between Moran Coefficient and Eigenvalues}
+\subsubsection*{Proving the Relationship Between Moran Coefficient and Eigenvalues}
 
 Now that we've estabilished this property, we can show that the Moran coefficient for each eigenvector is proportional to its corresponding eigenvalue. The Moran coefficient of \( v_i \) is given by:
 
@@ -158,74 +163,23 @@ Using \( M C M v_i = \lambda_i v_i \) and \( M v_i = v_i \), this simplifies to:
 
 Therefore, the Moran coefficient is directly proportional to the eigenvalue \( \lambda_i \), as required.
 
-[Below is the content about whitening, which I haven't been able to build the connection with the content above.]
+\subsection*{Whitening Transformations}
 
-Suppose \( x=\left(x_1, \ldots, x_p\right)^T \) is a \( p \)-dimensional random vector. Its covariance matrix, \( \operatorname{var} (x) = \Sigma \), is a  \( p \times p \) matrix.
+We then go back to show how the properties we just found about Moran's coefficient of eigenvectors of \( M C M \) can be used to reduce the data complexity when fitting image data into models.
 
-Whitening is a linear transformation that converts \( x \) into a new random vector \( z=\left(z_1, \ldots, z_p\right)^T \), using the transformation:
-\[
-  z = W x
-\]
-where \( W \) is a whitening matrix. The goal of whitening is to ensure that the covirance matrix of \( z \) is the identity matrix \( I \), meaning that all components of \( z \) are uncorrelated and have unit variance:
-\[
-  \operatorname{var}(z)=I
-\]
+In simple linear regression, we assume the error term follows a normal distribution with mean 0 and a constant variance. Similarly, when using each image vector as the outcome, we assume each error vector follows a normal distribution with mean 0 and a covariance matrix \( \Sigma \). Just like in GEE, when fitting models, a too complex covariance structure we assumed means the actual covariance is more adequately captured but with the cost of low computational efficiency and higher demand of data. While a simple structure of \( \Sigma \) means high computational efficiency but may be different from the actual covariance structure at all. If we could find a way to reduce the correlation between pixels, then a very simple \( \Sigma \), for example an diagonal matrix, would be enough to represent the actual covariance structure.
 
-We will show that in order for \( W \) to be a valid whitening matrix, it must satisfy the condition:
-\[
-  W^T W=\Sigma^{-1}
-\]
+Similarly, when image data is used as predictors, models require predictors to be independent with each other to be efficient and accurate. In this scenario, decorrelate predictors is also desired to resolve the issue of multicollinearity.
+
+A common approach to reduce (not diminish because we don't know the true covariance matrix) the covariance complexity is using whitening transformation, which could transform a vector of random variables (e.g. an image) to have a diagonal covariance matrix, which means there is no correlation between pixels [the definition of whitening transformation is to get an identity correlation matrix, not a diagonal one, so I am thinking whether whitening is not the accurate word to use here. Maybe we actually mean a decorrelation transformation? Anyway I will keep using ``whitening'' for the followinf content]. There are more than one choices to do whitening (decorrelation) transformation, orthogonal transformations is a popular choice though it is not the only one. [Here I had a hard time to understand/explain why orthogonal transformation is useful. I know it can be considered as rotation/reflection and keep the length of each vector (image). What I don't understand is how these properties valuable]. If we flatten a 2D image to a 1D column vector, \( \vec{x} \), then an orthogonal transformation can be considered as a rotation or reflection of this vector without rescaling it.
 
 \begin{proof}
-  Let \( z = W x \). The covariance of \( z \) is:
-  \[
-    \operatorname{cov}(z) = W \operatorname{cov}(x) W^T = W \Sigma W^T
-  \]
-  Since whitening ensures \( \operatorname{cov}(z) = I \), we have:
-  \[
-    W \Sigma W^T = I
-  \]
-  Multiplying both sides by \( W \) gives:
-  \[
-    \Sigma (W^T W) = I
-  \]
-  Thus, \( W^T W = \Sigma^{-1} \), as required.
+  Suppose \( x \) is a column vector, then its length can be expressed as \( x^T x \). If an orthogonal matrix \( Q \), which satisfies that \( Q Q^T = I \), is applied to \( x \), then the length of the transformed vector \( Q x \) is \( (Q x)^T (Q x) = x^T x \).
 \end{proof}
 
-However, this constraint does not uniquely determine the whitening matrix \( W \) \cite{kessy2018optimal}.
+A common way to find orthogonal matrix is to eigendecompose some symmetric matrix, which will give us a diagonal matrix of eigenvalues and an orthogonal matrix of eigenvectors, the latter of which we will use as a transformation. Among the many options, eigendecompose from the centered adjacency matrix \( (M C M) \) as we just introduced is preferred for transforming data with spatial autocorrelation because of its easy explaianability. In that case, the eigenvector corresponding to the \( n \)-th largest eigenvalue represents the direction with the \( n \)-th strongest spatial autocorrelation we can get under the spatial structure defined by \( C \). The orthogonal transformation can be considered as rotate/reflect the original data to the new directions indicated by the eigenvectors [I'm trying to image what an image will look at along the largest spatial autocorrelation direction]. Since this eigendecomposition is not done at the actual covariance of the dataset, it is not guaranteed that the correlation will be reduced exactly to zero, but if we estimate the \( C \) pretty well, we hope the transformed data will have small enough correlation between pixels so we could improve the computational efficiency.
 
-Whitening is useful because it ensures uncorrelation among variables, a desirable property in many analyses. A common choice of \( W \) is
-\[
-  W=\Lambda^{-1 / 2} U^T
-\]
-where \( \Sigma=U \Lambda U^T \) is the eigen-decomposition of the covariance matrix. 
-
-\begin{proof}
-  \[
-    W^T W=U \Lambda^{-1 / 2} \Lambda^{-1 / 2} U^T=U \Lambda^{-1} U^T
-  \]
-  Since \( \Sigma \) is a covariance matrix, it is symmetric, which implies that \( U \) is orthogonal, meaning \( U U^T = I \), so \( U^T = U^{-1} \). Therefore,
-  \[
-    \begin{aligned}
-      U \Lambda^{-1} U^T & = \left(U^T\right)^{-1} \Lambda U^{-1} \\
-                                                        & = \left(U \Lambda U^T\right)^{-1} \\
-                                                        & = \Sigma^{-1}
-  \end{aligned}
-  \]
-\end{proof}
-
-Actually, a whitening matrix is not necessary to achieve uncorrelation. For example, using \( W^{\prime} = U^T \) from the eigen-decomposition is sufficient for this purpose.
-
-\begin{proof}
-  \[
-    \operatorname{cov}\left(W^{\prime} x\right)=W^{\prime} \Sigma W^{\prime T}=U^T \Sigma U=U^T U \Lambda U^T U=\Lambda
-  \]
-  (since \( U^T U=I \))
-\end{proof}
-
-Here, \( \Lambda \) is a diagonal matrix with eigenvalues on the diagonal. Therefore, we have shown that using the eigenvectors of a random vector's covariance matrix to perform a linear transformation resolves the correlation between the components, although it does not standardize their variance.
-
-
+Then it comes to the question of how to pick a proper network \( C \). [Skip talking about the three ways to pick a network for now as William has really stated them very well. Will add how 2-neighbor adjacency lattice is defined in the next section.]
 
 
 \subsection*{Data Simulation}
