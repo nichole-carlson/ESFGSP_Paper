@@ -33,9 +33,9 @@ Everything surrounded by [] are my thoughts/questions/to-dos.
 
 \section*{Introduction}
 
-This study evaluates the performance of LASSO models in high-dimensional feature selection by comparing results from two different data representations: the original pixel space and a frequency space derived from eigen decomposition using Moran’s eigenvectors. The pixel space corresponds to the raw data where each feature is a pixel, while the frequency space transforms these features into frequency components.
+Spatial correlations in image data can significantly influence the performance of predictive models. When using images as predictors or outcomes, the inherent correlations between neighboring pixels often lead to challenges such as multicollinearity and reduced computational efficiency. To address the challenges posed by spatial correlations in image data, this study investigates whether using the eigendecomposition of \( M C M \) and its eigenvectors can effectively reduce spatial dependencies and improve model efficiency. Here, \( M \) is the centering matrix, and \( C \) is the spatial weights matrix, which encodes the assumed spatial relationships between pixels. The eigenvectors derived from \( M C M \) are used to transform the data into what is referred to as the ``frequency space''. This terminology reflects the analogy to signal processing, where the transformation decomposes data into spatially independent components, akin to frequencies. By reducing pixel correlations, this transformation may improve the efficiency and predictive performanace compared to use raw image data in analyses.
 
-We investigate whether fitting LASSO in the frequency space improves feature selection and prediction accuracy compared to the pixel space. Two simulation scenarios are used: one assuming sparsity in the pixel space and the other assuming sparsity in the frequency space. By comparing the results, we aim to determine which representation provides better performance for LASSO in high-dimensional datasets.
+To test this hypothesis, we perform data simulations under different sparsity assumptions and compare the performance of LASSO models fitted in the original pixel space versus the frequency space. The results aim to provide insight into whether such spatial transformations enhance feature selection and prediction accuracy in high-dimensional datasets.
 
 
 \section*{Methods}
@@ -182,6 +182,8 @@ Another approach is data-independent but weighted, assigning adjacency values ba
 
 
 \subsection*{Data Simulation}
+
+Suppose \( y \) is a column vector represents an image with 256 pixels.
 
 Let \( \mathbf{x} \) be a column vector representing the pixel values of a single observation, where the total number of pixels is \( n = 256 \). The covariance matrix \( \mathbf{C} \) follows an exponential correlation structure:
 \[
