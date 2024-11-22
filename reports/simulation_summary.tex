@@ -73,7 +73,7 @@ M C(y) = \frac{s}{\sum_{i=1}^s \sum_{j=1}^s c_{ij}} \cdot \frac{\sum_{i=1}^s \le
 
 \subsubsection*{Write Moran's coefficient in the matrix form}
 
-Let us define a centering matrix \( M = I - \frac{1 1^T}{s} \) to express the MC in matrix notation. Since \( M \) is the centering matrix, \( [M y]_i = y_i - \bar{y} \).
+To express Moran's coefficient (MC) in matrix form, we begin by defining the centering matrix \( M = I - \frac{1 1^T}{s} \), where \( I \) is the identity matrix and \( 1 \) is a column vector of ones. This matrix \( M \) is used to center the vector \( y \), ensuring it has a mean of zero. Specifically, applying \( M \) to \( y \) results in \( [M y]_i = y_i - \bar{y} \).
 
 {\bf Claim:} Suppose \( \vec{a} \) and \( \vec{c} \) are column vectors of length \( n \), and \( B \) is an \( n \times n \) matrix. Then the expression \( \vec{a}^T B \vec{c} \) can be written as:
 \[
@@ -166,9 +166,9 @@ We now explain how the properties we established about the Moran coefficient and
 
 A common approach to reducing covariance complexity is the whitening transformation, which transforms a vector of random variables (e.g., an image) to yield a diagonal covariance matrix, meaning no correlation between pixels [Note: strictly speaking, the whitening transformation yields an identity covariance matrix, not just diagonal, so ``whitening'' may not be the most accurate term here. Perhaps ``decorrelation transformation'' is more appropriate. For now, I'll use ``whitening'' for consistency]. Multiple whitening (decorrelation) transformations are possible, but orthogonal transformations are popular due to their preservation of vector length. [I understand that orthogonal transformations maintain vector length (image size) and can be thought of as a rotation/reflection, but it’s unclear why this property is advantageous.]
 
-If we flatten a 2D image into a 1D column vector \( \vec{x} \), an orthogonal transformation can be viewed as a rotation or reflection of this vector without changing its length.
+If we flatten a 2D image into a 1D column vector \( x \), an orthogonal transformation can be viewed as a rotation or reflection of this vector without changing its length.
 \begin{proof}
-  Suppose \( x \) is a column vector; its length can be expressed as \( x^T x \). Applying an orthogonal matrix \( Q \), which satisfies \( Q Q^T = I \), to \( x \), the length of the transformed vector \( Q x \) is \( (Q x)^T (Q x) = x^T x \).
+  The length of \( x \) can be expressed as \( x^T x \). Applying an orthogonal matrix \( E \), which satisfies \( E E^T = I \), to \( x \), the length of the transformed vector \( E x \) is \( (E x)^T (E x) = x^T x \).
 \end{proof}
 
 A common way to find an orthogonal matrix is through eigen decomposition of a symmetric matrix, which provides a diagonal matrix of eigenvalues and an orthogonal matrix of eigenvectors. Here, we perform eigen decomposition on the centered adjacency matrix \( M C M \) as described earlier. This approach is particularly useful for transforming data with spatial autocorrelation due to its interpretability. In this case, the eigenvector associated with the \( n \)-th largest eigenvalue captures the \( n \)-th strongest spatial autocorrelation direction, as defined by \( C \). This orthogonal transformation can thus be viewed as rotating or reflecting the original data to align with these spatial directions [I'm trying to picture how an image would appear along the direction of strongest spatial autocorrelation]. Since this decomposition is not based on the actual covariance of the dataset, it may not fully eliminate pixel correlation. However, if the adjacency matrix \( C \) is well estimated, we expect the transformed data to have sufficiently reduced pixel correlations, improving computational efficiency.
@@ -183,7 +183,16 @@ Another approach is data-independent but weighted, assigning adjacency values ba
 
 \subsection*{Data Simulation}
 
-Suppose \( y \) is a column vector represents an image with 256 pixels.
+Our simulation starts from assuming a data-independent, weighted spatial adjacency matrix as we just introduced. The adjacency between any two pixels \( i \) and \( j \) are exponentially decay based on their Eucliden distance in the 2D image. 
+\[
+  C_{ij} = 
+  \begin{cases}
+    - \exp (\text{dist} (i, j)) & \quad i \neq j \\
+    0                           & \quad i = j
+  \end{cases}
+\]
+
+Suppose \( x \) is a column vector representing
 
 Let \( \mathbf{x} \) be a column vector representing the pixel values of a single observation, where the total number of pixels is \( n = 256 \). The covariance matrix \( \mathbf{C} \) follows an exponential correlation structure:
 \[
