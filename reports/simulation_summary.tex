@@ -183,16 +183,17 @@ Another approach is data-independent but weighted, assigning adjacency values ba
 
 \subsection*{Data Simulation}
 
-Our simulation starts from assuming a data-independent, weighted spatial adjacency matrix as we just introduced. The adjacency between any two pixels \( i \) and \( j \) are exponentially decay based on their Eucliden distance in the 2D image. 
+Our simulation starts from simulating the scenario where we want to classify images into a binary class. Supoose we have images each with \( 16 \times 16 \) pixels, and they share a spatial pattern which could be denoted by a spatial adjacency matrix \( C \). To fit in the model, each image is flatten into a vector of length 256, with each element as a predictor in the logistic model. Suppose this flattened vector is \( x \). And \( y \) is a binary indicator indicates the class an image belongs to. We want to simulate an scenario that an image as labeled as 1 when its center \( 8 \times 8 \) area are darker than the surrounding area, with 0 
+
+The first spatial adjacency matrix we tried is a data-independent, weighted \( C \). For any two elements of \( x \), \( x_i \) and \( x_j \), their adjacency are exponentialy decay based on their Euclidean distance in the 2D image. This can be expressed as:
 \[
   C_{ij} = 
   \begin{cases}
-    - \exp (\text{dist} (i, j)) & \quad i \neq j \\
-    0                           & \quad i = j
+    - \exp (\text{dist} (x_i, x_j))  & \quad x_i \neq x_j \\
+    0                                & \quad x_i = x_j
   \end{cases}
 \]
 
-Suppose \( x \) is a column vector representing
 
 Let \( \mathbf{x} \) be a column vector representing the pixel values of a single observation, where the total number of pixels is \( n = 256 \). The covariance matrix \( \mathbf{C} \) follows an exponential correlation structure:
 \[
