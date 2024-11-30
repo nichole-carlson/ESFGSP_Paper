@@ -31,11 +31,13 @@
 Everything surrounded by [] are my thoughts/questions/to-dos.
 
 
+
 \section*{Introduction}
 
 Spatial correlations in image data can significantly influence the performance of predictive models. When using images as predictors or outcomes, the inherent correlations between neighboring pixels often lead to challenges such as multicollinearity and reduced computational efficiency. To address the challenges posed by spatial correlations in image data, this study investigates whether using the eigendecomposition of \( M C M \) and its eigenvectors can effectively reduce spatial dependencies and improve model efficiency. Here, \( M \) is the centering matrix, and \( C \) is the spatial weights matrix, which encodes the assumed spatial relationships between pixels. The eigenvectors derived from \( M C M \) are used to transform the data into what is referred to as the ``frequency space''. This terminology reflects the analogy to signal processing, where the transformation decomposes data into spatially independent components, akin to frequencies. By reducing pixel correlations, this transformation may improve the efficiency and predictive performanace compared to use raw image data in analyses.
 
 To test this hypothesis, we perform data simulations under different sparsity assumptions and compare the performance of LASSO models fitted in the original pixel space versus the frequency space. The results aim to provide insight into whether such spatial transformations enhance feature selection and prediction accuracy in high-dimensional datasets.
+
 
 
 \section*{Methods}
@@ -66,14 +68,14 @@ No matter whether we use the image data as predictors or outcomes, we need to ad
 
 \subsection*{Moran's Coefficient and Eigenvector Spatial Filtering}
 
-When dealing with spatially correlated data, like an image where pixel correlations depend on their relative positions, Moran’s Coefficient (MC) is a widely used measure of spatial autocorrelation. Suppose a vector \( y = (y_1, \ldots, y_s)^T \) represents an image with \( s \) pixels, and the spatial relationship between each pair of pixels is represented by a matrix \( C \), where \( C_{ij} \) indicates the spatial connection between pixels \( i \) and \( j \) (with diagonal elements equal to zero). According to \citet{griffith2014spatial}, the MC can be computed as follows:
+When dealing with spatially correlated data, like an image where pixel correlations depend on their relative positions, Moran’s Coefficient (MC) is a widely used measure of spatial autocorrelation. Suppose a vector \( x = (x_1, \ldots, x_s)^T \) represents an image with \( s \) pixels, and the spatial relationship between each pair of pixels is represented by a matrix \( C \), where \( C_{ij} \) indicates the spatial connection between pixels \( i \) and \( j \) (with diagonal elements equal to zero). According to \citet{griffith2014spatial}, the MC can be computed as follows:
 \[
-M C(y) = \frac{s}{\sum_{i=1}^s \sum_{j=1}^s c_{ij}} \cdot \frac{\sum_{i=1}^s \left(y_i - \bar{y} \right) \left[ \sum_{j=1}^s c_{ij} \left( y_j - \bar{y} \right) \right]}{\sum_{i=1}^s \left( y_i - \bar{y} \right)^2}
+M C(x) = \frac{s}{\sum_{i=1}^s \sum_{j=1}^s c_{ij}} \cdot \frac{\sum_{i=1}^s \left(x_i - \bar{x} \right) \left[ \sum_{j=1}^s c_{ij} \left( x_j - \bar{x} \right) \right]}{\sum_{i=1}^s \left( x_i - \bar{x} \right)^2}
 \]
 
 \subsubsection*{Write Moran's coefficient in the matrix form}
 
-To express Moran's coefficient (MC) in matrix form, we begin by defining the centering matrix \( M = I - \frac{1 1^T}{s} \), where \( I \) is the identity matrix and \( 1 \) is a column vector of ones. This matrix \( M \) is used to center the vector \( y \), ensuring it has a mean of zero. Specifically, applying \( M \) to \( y \) results in \( [M y]_i = y_i - \bar{y} \).
+To express Moran's coefficient (MC) in matrix form, we begin by defining the centering matrix \( M = I - \frac{1 1^T}{s} \), where \( I \) is the identity matrix and \( 1 \) is a column vector of ones. This matrix \( M \) is used to center the vector \( x \), ensuring it has a mean of zero. Specifically, applying \( M \) to \( x \) results in \( [M x]_i = x_i - \bar{x} \).
 
 {\bf Claim:} Suppose \( \vec{a} \) and \( \vec{c} \) are column vectors of length \( n \), and \( B \) is an \( n \times n \) matrix. Then the expression \( \vec{a}^T B \vec{c} \) can be written as:
 \[
@@ -91,25 +93,25 @@ Using this, we can express the terms in the MC in matrix form:
   \vec{1}^T C \vec{1} = \sum_{i=1}^s \sum_{j=1}^s 1 \cdot c_{i j} \cdot 1 = \sum_{i=1}^s \sum_{j=1}^s c_{i j} 
 \]
 \begin{align*}
-  (M y)^T C (M y) & = \sum_{i=1}^s \sum_{j=1}^s (y_i - \bar{y}) c_{ij} (y_{j} - \bar{y}) \\
-                  & = \sum_{i=1}^s (y_i - \bar{y}) \left( \sum_{j=1}^s c_{ij} (y_j - \bar{y}) \right)
+  (M x)^T C (M x) & = \sum_{i=1}^s \sum_{j=1}^s (x_i - \bar{x}) c_{ij} (x_{j} - \bar{x}) \\
+                  & = \sum_{i=1}^s (x_i - \bar{x}) \left( \sum_{j=1}^s c_{ij} (x_j - \bar{x}) \right)
 \end{align*}
 \begin{align*}
-  y^T M y & = y^T M M y \\
-          & = y^T M^T M y \\
-          & = (M y)^T (M y) \\
-          & = \sum_i (y_i - \bar{y})^2
+  x^T M x & = x^T M M x \\
+          & = x^T M^T M x \\
+          & = (M x)^T (M x) \\
+          & = \sum_i (x_i - \bar{x})^2
 \end{align*}
 Thus, MC can be expressed as:
 \[
-  M C(y) = \frac{s}{\vec{1}^T C \vec{1}} \cdot \frac{y^T M C M y}{y^T M y}
+  M C(x) = \frac{s}{\vec{1}^T C \vec{1}} \cdot \frac{x^T M C M x}{x^T M x}
 \]
 
 The matrix form can further be reorganized as:
 \[
-  M C (y) = \frac{(M y)^T C (M y)}{\vec{1}^T C \vec{1}} / \frac{(M y)^T I (M y)}{\vec{1}^T I \vec{1}}
+  M C (x) = \frac{(M x)^T C (M x)}{\vec{1}^T C \vec{1}} / \frac{(M x)^T I (M x)}{\vec{1}^T I \vec{1}}
 \]
-where the numerator represents the covariance of \( y \) along the spatial structure \( C \), and the denominator represents the covariance of \( y \) assuming an independence structure \( I \) [I'm still unclear about the interpretation of ``covariance along a structure''].
+where the numerator represents the covariance of \( x \) along the spatial structure \( C \), and the denominator represents the covariance of \( x \) assuming an independence structure \( I \) [I'm still unclear about the interpretation of ``covariance along a structure''].
 
 [Regarding the expectation of \( M C \): I'm unclear on the distinction between ``the expected value when there is no correlation in the assumed model'' and ``the value when there is no correlation in the input.'' What does ``correlation'' refer to in each context? According to Wikipedia, the expectation of \( M C \) under the null hypothesis of no spatial autocorrelation is \( -1 / (n - 1) \), and I found a proof \href{https://stats.stackexchange.com/questions/567411/expectation-and-variance-of-morans-i-under-the-null}{here} which I don’t fully understand. In my understanding, no spatial autocorrelation means all elements of \( C \) equal zero (which seems to conflict with the \( -1 / (n - 1) \) expectation).]
 
@@ -168,7 +170,7 @@ A common approach to reducing covariance complexity is the whitening transformat
 
 If we flatten a 2D image into a 1D column vector \( x \), an orthogonal transformation can be viewed as a rotation or reflection of this vector without changing its length.
 \begin{proof}
-  The length of \( x \) can be expressed as \( x^T x \). Applying an orthogonal matrix \( E \), which satisfies \( E E^T = I \), to \( x \), the length of the transformed vector \( E x \) is \( (E x)^T (E x) = x^T x \).
+  The length of \( x \) can be expressed as \( x^T x \). Applying an orthogonal matrix \( E \), which satisfies \( E E^T = I \), to \( x \), the length of the transformed vector \( E^T x \) is \( (E^T x)^T (E^T x) = x^T x \).
 \end{proof}
 
 A common way to find an orthogonal matrix is through eigen decomposition of a symmetric matrix, which provides a diagonal matrix of eigenvalues and an orthogonal matrix of eigenvectors. Here, we perform eigen decomposition on the centered adjacency matrix \( M C M \) as described earlier. This approach is particularly useful for transforming data with spatial autocorrelation due to its interpretability. In this case, the eigenvector associated with the \( n \)-th largest eigenvalue captures the \( n \)-th strongest spatial autocorrelation direction, as defined by \( C \). This orthogonal transformation can thus be viewed as rotating or reflecting the original data to align with these spatial directions [I'm trying to picture how an image would appear along the direction of strongest spatial autocorrelation]. Since this decomposition is not based on the actual covariance of the dataset, it may not fully eliminate pixel correlation. However, if the adjacency matrix \( C \) is well estimated, we expect the transformed data to have sufficiently reduced pixel correlations, improving computational efficiency.
@@ -183,9 +185,13 @@ Another approach is data-independent but weighted, assigning adjacency values ba
 
 \subsection*{Data Simulation}
 
-Our simulation starts from simulating the scenario where we want to classify images into a binary class. Supoose we have images each with \( 16 \times 16 \) pixels, and they share a spatial pattern which could be denoted by a spatial adjacency matrix \( C \). To fit in the model, each image is flatten into a vector of length 256, with each element as a predictor in the logistic model. Suppose this flattened vector is \( x \). And \( y \) is a binary indicator indicates the class an image belongs to. We want to simulate an scenario that an image as labeled as 1 when its center \( 8 \times 8 \) area are darker than the surrounding area, with 0 
+Our simulation starts from simulating the scenario where we want to classify images into a binary class. Suppose \( X \) represents a \( 1000 \times 256 \) matrix of 1000 observed images, with each row corresponding to one image. The pixel values of each image was randomly generated from a multivariate normal distribution with zero mean and a \( 256 \times 256 \) covariance matrix \( C_{\text{cov}} = - \exp (\text{dist} (x_i, x_j)) \), where \( \text{dist} (x_i, x_j) \) represents the Euclidean distance between any two pixels \( i \) and \( j \) in an 2D image. The simulated image will then be flattened into a 1D sequence of length 256, with each pixel be used as a predictor in the model.
 
-The first spatial adjacency matrix we tried is a data-independent, weighted \( C \). For any two elements of \( x \), \( x_i \) and \( x_j \), their adjacency are exponentialy decay based on their Euclidean distance in the 2D image. This can be expressed as:
+We are planning to simulate the scenario that the center \( 8 \times 8 \) area decides the classification results of an image, with larger values (meaning darker colors) be class 1, and others as class 0. To realize this, we define the coefficient vector \( \vec{\beta} \) to have value 0 in the positions corresponding to the surrounding area in an image, and value \( \beta \) in the positions corresponding to the center \( 8 \times 8 \) area in the image. The response vector \( y \), which will be a vector of 0 and 1, will be simulated from binomial distributions for each position independently. The success probability of \( y_i = 1 \) will be \( p_i = 1 / (1 + \exp (- X_{i \cdot} \vec{\beta})) \).
+
+We then evaluate the ability of Logistic regression to identify the pixels that decide the classification of an image, in other words, the coefficients with non-zero values. A logistic regression with L1 penalty will be applied.
+
+Then, we need to test whether the white transformation using the eigendecomposition results we just proposed could significantly reduce the correlation between predictors and thus improve the model performance. Since in practice we don't know the actual covariance matrix of \( X \), with the assumption that the covariance between two pixels are reflected in their spatial adjacency matrix, and the whitening transformation method we just proposed, we assume a spatial adjacency matrix \( C_{\text{adj}} \), which is in the format of:
 \[
   C_{ij} = 
   \begin{cases}
@@ -193,42 +199,30 @@ The first spatial adjacency matrix we tried is a data-independent, weighted \( C
     0                                & \quad x_i = x_j
   \end{cases}
 \]
+Note here we assume that the spatial adjacency matrix is identical to the actual covariance matrix (ignore the diagonal elements), and we will evaluate in the future the scenario that they are not identical.
 
-
-Let \( \mathbf{x} \) be a column vector representing the pixel values of a single observation, where the total number of pixels is \( n = 256 \). The covariance matrix \( \mathbf{C} \) follows an exponential correlation structure:
+We then perform the eigendecomposition of \( M C M \), which can be written as:
 \[
-\mathbf{C}_{ij} = -\exp(\operatorname{dist}(i,j)),
+  M C M = E \Lambda E^T
 \]
-where \( \operatorname{dist}(i,j) \) is the distance between pixels \( i \) and \( j \) on a \( 16 \times 16 \) grid. To center the data, we use the centering matrix \( \mathbf{M} = \mathbf{I} - \mathbf{1} \mathbf{1}^{\prime} / n \). The decomposition of \( \mathbf{MCM} \) is given by:
+where \( \Lambda \) is a diagonal matrix of eigenvalues, and \( E \) contains the corresponding eigenvectors as columns. We then transform the original image matrix \( X \) using the matrix of eigenvectors, 
 \[
-\mathbf{MCM} = \mathbf{E}_{\text{full}} \mathbf{\Lambda}_{\text{full}} \mathbf{E}_{\text{full}}^{\prime},
+  X_{\text{freq}} = X \times E
 \]
-where \( \mathbf{E}_{\text{full}} \) represents the eigenvectors, and \( \mathbf{\Lambda}_{\text{full}} \) the diagonal matrix of eigenvalues \cite{murakami2019eigenvector}. The transformation of the pixel values \( \mathbf{x} \) into the frequency space is then:
+We call the original data is transformed into the ``frequency space'', which is a terminology frequently used in signal processing, reflecting the transformation decomposes data into spatially independent components, akin to frequencies, though here we are just reducing the correlation between pixels, not extinct them. To ensure the probability of \( y_i = 1 \) remain unchanged for all \( i \)s, assuming the coefficient vector in the frequency space is \( \vec{b} \), we can get its relationship with the \( \vec{\beta} \) as:
 \[
-\mathbf{x}_{\text{freq}} = \mathbf{E}^T \mathbf{x}.
-\]
-Here, the covariance matrix of \( \mathbf{x}_{\text{freq}} \), \( \mathbf{E}^T \mathbf{C} \mathbf{E} \), is expected to be diagonal [this requires verification of \( \mathbf{E} \)'s orthogonality].
-
-For each simulation, \( \mathbf{X} \) represents the matrix of observations, with each row corresponding to one of the 1000 total observations. The transformation of \( \mathbf{X} \) into the frequency domain is:
-\[
-\mathbf{X}_{\mathrm{freq}} = \mathbf{X} \mathbf{E}.
+  \vec{\beta} = E^T \vec{b}
 \]
 
-We define the coefficient vectors in both spaces as follows: \( \beta \) for the pixel space and \( \mathbf{b} \) for the frequency space. The relationship between the two is:
-\[
-\beta = \mathbf{E} \mathbf{b},
-\]
-ensuring that \( \mathbf{X} \beta = \mathbf{X}_{\mathrm{freq}} \mathbf{b} \).
+Similarly, we will fit a Logistic regression model with L1 penalty with \( y \) on \( X_{\text{freq}} \) again, and compare the predicted coefficients with \( \vec{b} \).
 
-Two simulation scenarios are considered:
-\begin{enumerate}
-  \item \textbf{Pixel space sparsity:} Here, \( \beta \) is sparse, with non-zero values limited to a central \( 8 \times 8 \) region of the pixel grid. The covariate matrix \( \mathbf{X} \) is generated from a multivariate normal distribution with mean 0 and covariance matrix \( \mathbf{C} \). The response variable \( \mathbf{y} \) is binomial, with success probability determined by \( \eta = \mathbf{X} \beta \), where the non-zero entries in \( \beta \) are constant and ensure that the success probability \( \mathbf{p} = \frac{1}{1 + \exp(-\eta}) \) is uniformly distributed in \( [0, 1] \).
-  
-  \item \textbf{Frequency space sparsity:} In this scenario, the coefficient vector \( \mathbf{b} \) is sparse, with 10\% of its 256 entries randomly set to non-zero values. The covariate matrix \( \mathbf{X}_{\mathrm{freq}} \) is generated from a multivariate normal distribution with zero mean and a diagonal covariance matrix, where the eigenvalues decrease along the diagonal [I am considering different options for the step size in the diagonal covariance matrix. Currently, I am using a constant step size, but further investigation may be needed to determine the most appropriate choice.]. The non-zero entries in \( \mathbf{b} \) are constant, and \( \mathbf{y} \) is drawn from a binomial distribution with a success probability \( \mathbf{p} \) uniformly distributed in \( [0, 1] \).
+The experiment above compares the performance of Logistic regression model with L1 penalty when the predictors are correlated with each other, and only a proportion of them are significant (in other words, there are sparsity in the coefficient vector \( \vec{\beta} \)), we next evaluate how the model performance by fitting with the predictors in the original space and frequency space when the coefficient vector in the frequency space is sparse (in other words, \( \vec{b} \) is sparse). This represents the scenario that the image is dominated by a few spatial patterns.
 
-\end{enumerate}
+Since we hope that after whitening transformation, the correlation between the frequencies could be eliminated to almost zero. To simplify the simulation, we simulated \( X_{\text{freq}} \) by drawing 1000 samples from a muitivariate normal distribution with mean 0 and a diagonal covariance matrix of size \( 256 \times 256 \). Currently we are simulating the diagonal values to be decreasing with a constant step, but are open to more options. Then we randomly assign 10\% of values in \( \vec{b} \) to be a constant non-zero value \( b \), with all other values to be 0. The response vector \( y \) is simulated from binomial distributions independently, with the probability of \( y_i = 1 \) be \( p_i = 1 / ( 1 + \exp (- {X_{\text{freq}}}_{i \cdot} \vec{b} ) ) \).
 
-After simulating data from either space, the values in the alternate space are calculated using the described transformations. When simulating data from the frequency space, even though the diagonal covariance matrix is chosen randomly and not calculated via \( \mathbf{E}^T \mathbf{C} \mathbf{E} \), \( \mathbf{E} \) is still used to transform the data back to the pixel space.
+We can calculate the corresponding predictors and coefficient vectors in the original space \( X \) and \( \vec{\beta} \) using the transformation stated above. Two logistic regression models with L1 penalty, one for \( X \) and another for \( X_{\text{freq}} \), will be fitted, and we will compare the model performance.
+
+
 
 \subsection*{Model Evaluation}
 
