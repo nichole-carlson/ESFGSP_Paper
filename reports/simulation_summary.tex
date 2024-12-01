@@ -32,7 +32,7 @@ Everything surrounded by [] are my thoughts/questions/to-dos.
 
 
 
-\section*{Introduction}
+\section{Introduction}
 
 Spatial correlations in image data can significantly influence the performance of predictive models. When using images as predictors or outcomes, the inherent correlations between neighboring pixels often lead to challenges such as multicollinearity and reduced computational efficiency. To address the challenges posed by spatial correlations in image data, this study investigates whether using the eigendecomposition of \( M C M \) and its eigenvectors can effectively reduce spatial dependencies and improve model efficiency. Here, \( M \) is the centering matrix, and \( C \) is the spatial weights matrix, which encodes the assumed spatial relationships between pixels. The eigenvectors derived from \( M C M \) are used to transform the data into what is referred to as the ``frequency space''. This terminology reflects the analogy to signal processing, where the transformation decomposes data into spatially independent components, akin to frequencies. By reducing pixel correlations, this transformation may improve the efficiency and predictive performanace compared to use raw image data in analyses.
 
@@ -40,17 +40,17 @@ To test this hypothesis, we perform data simulations under different sparsity as
 
 
 
-\section*{Methods}
+\section{Methods}
 
 When dealing with image data, it's reasonable to assume that nearby pixels could have similar values, indicating spatial autocorrelation. Whether we use images as predictors or as outcomes, pixel correlations can impact model performance by reducing computational efficiency and stability if left unaddressed. Here, we discuss this effect in two scenarios: using images as predictors and as outcomes.
 
 \subsubsection*{Image data as the predictor}
 
-Suppose we have a set of images registered to the same template, and we want to predict a scalar outcome \( y \) using these images \( x \), where each has \( s \) pixels. If each pixel serves as a predictor, we can express the model for each observation as:
+Suppose we have a set of images registered to the same template, and we want to predict a scalar outcome \( y \) using these images \( x \), where each has \( p \) pixels. If each pixel serves as a predictor, we can express the model for each observation as:
 \[
   y_i = x_{i \cdot} \beta + \epsilon_i
 \]
-where \( i \) is the observation index and \( j \) is the pixel index. Here, \( y_i \) is the outcome, \( x_{i \cdot} \) represents an image as a row vector with \( s \) pixels, \( \beta \) is a column vector of \( s \) coefficients, and \( \epsilon_i \) is the error term, following a normal distribution with mean 0 and constant variance across observations. With many correlated pixels as predictors, multicollinearity can be an issue.
+where \( i \) is the observation index and \( j \) is the pixel index. Here, \( y_i \) is the outcome, \( x_{i \cdot} \) represents an image as a row vector with \( p \) pixels, \( \beta \) is a column vector of \( p \) coefficients, and \( \epsilon_i \) is the error term, following a normal distribution with mean 0 and constant variance across observations. With many correlated pixels as predictors, multicollinearity can be an issue.
 
 \subsubsection*{Image data as the outcome}
 
@@ -62,20 +62,23 @@ where \( y_{i \cdot} \) is a \( 1 \times s \) vector representing an image, \( x
 
 As in generalized estimating equations (GEE), choosing an optimal covariance structure \( \Sigma \) involves balancing representation detail with computational efficiency: a simpler structure allows faster computation but may capture less detail, while a more complex structure provides a better fit but increases computational demands.
 
+No matter whether we use the image data as predictors or outcomes, we need to address the correlation between pixels. Two main approaches are available: performing dimension reduction (e.g., applying PCA and retaining the top principal components) or reducing the complexity of the covariance structure of the image. In this paper, we focus on the second approach. Just as we used eigendecomposition on the Laplacian matrix for graph signal processing, and use the eigenvectors to transform the signal into frequency domain, here we use a different matrix to reflect spatial adjacency, not the Laplacian matrix, but one commonly used by Eigenvector Spatial Filtering, and perform a similar eigendecomposition and transform the image into a frequency space. We will design a few simulations to show that, the projected predictors in the frequency space has more prediction power than in the pixel space since the spatial autocorrelation is significantly reduced, and also because of the way we design the spatial adjacency matrix, it allows more interpretability in the frequency space we constructed.
 
-No matter whether we use the image data as predictors or outcomes, we need to address the correlation between pixels. Two main approaches are available: performing dimension reduction (e.g., applying PCA and retaining the top principal components) or reducing the complexity of the covariance structure of the image. In this paper, we focus on the second approach. But before discussing our approach to managing spatial autocorrelation within an image, we first introduce Moran's Coefficient (MC), a common measure of spatial autocorrelation, and some key properties associated with it.
 
+\subsection{Frequency Space}
 
-\subsection*{Moran's Coefficient and Eigenvector Spatial Filtering}
+In this subection, we firstly introduce Moran's Coefficient (MC), a common measure of spatial autocorrelation, and then introduce a specially constructed spatial adjacency matrix combination, \( M C M \), and then show how the eigenvectors calculated by eigendecomposition on \( M C M \) have good explanation in the perspectivity of Moran's Coefficient.
 
-When dealing with spatially correlated data, like an image where pixel correlations depend on their relative positions, Moran’s Coefficient (MC) is a widely used measure of spatial autocorrelation. Suppose a vector \( x = (x_1, \ldots, x_s)^T \) represents an image with \( s \) pixels, and the spatial relationship between each pair of pixels is represented by a matrix \( C \), where \( C_{ij} \) indicates the spatial connection between pixels \( i \) and \( j \) (with diagonal elements equal to zero). According to \citet{griffith2014spatial}, the MC can be computed as follows:
+\subsubsection{Moran's Coefficient and Eigenvector Spatial Filtering}
+
+When dealing with spatially correlated data, like an image where pixel correlations depend on their relative positions, Moran’s Coefficient (MC) is a widely used measure of spatial autocorrelation. Suppose a vector \( x = (x_1, \ldots, x_p)^T \) represents an image with \( p \) pixels, and the spatial relationship between each pair of pixels is represented by a matrix \( C \), where \( C_{ij} \) indicates the spatial connection between pixels \( i \) and \( j \) (with diagonal elements equal to zero). According to \citet{griffith2014spatial}, the MC can be computed as follows:
 \[
-M C(x) = \frac{s}{\sum_{i=1}^s \sum_{j=1}^s c_{ij}} \cdot \frac{\sum_{i=1}^s \left(x_i - \bar{x} \right) \left[ \sum_{j=1}^s c_{ij} \left( x_j - \bar{x} \right) \right]}{\sum_{i=1}^s \left( x_i - \bar{x} \right)^2}
+M C(x) = \frac{p}{\sum_{i=1}^p \sum_{j=1}^p c_{ij}} \cdot \frac{\sum_{i=1}^p \left(x_i - \bar{x} \right) \left[ \sum_{j=1}^p c_{ij} \left( x_j - \bar{x} \right) \right]}{\sum_{i=1}^p \left( x_i - \bar{x} \right)^2}
 \]
 
-\subsubsection*{Write Moran's coefficient in the matrix form}
+\paragraph{Write Moran's coefficient in the matrix form}
 
-To express Moran's coefficient (MC) in matrix form, we begin by defining the centering matrix \( M = I - \frac{1 1^T}{s} \), where \( I \) is the identity matrix and \( 1 \) is a column vector of ones. This matrix \( M \) is used to center the vector \( x \), ensuring it has a mean of zero. Specifically, applying \( M \) to \( x \) results in \( [M x]_i = x_i - \bar{x} \).
+To express Moran's coefficient (MC) in matrix form, we begin by defining the centering matrix \( M = I - \frac{1 1^T}{p} \), where \( I \) is the identity matrix and \( 1 \) is a column vector of ones. This matrix \( M \) is used to center the vector \( x \), ensuring it has a mean of zero. Specifically, applying \( M \) to \( x \) results in \( [M x]_i = x_i - \bar{x} \).
 
 {\bf Claim:} Suppose \( \vec{a} \) and \( \vec{c} \) are column vectors of length \( n \), and \( B \) is an \( n \times n \) matrix. Then the expression \( \vec{a}^T B \vec{c} \) can be written as:
 \[
@@ -90,11 +93,11 @@ To express Moran's coefficient (MC) in matrix form, we begin by defining the cen
 
 Using this, we can express the terms in the MC in matrix form:
 \[
-  \vec{1}^T C \vec{1} = \sum_{i=1}^s \sum_{j=1}^s 1 \cdot c_{i j} \cdot 1 = \sum_{i=1}^s \sum_{j=1}^s c_{i j} 
+  \vec{1}^T C \vec{1} = \sum_{i=1}^p \sum_{j=1}^p 1 \cdot c_{i j} \cdot 1 = \sum_{i=1}^p \sum_{j=1}^p c_{i j} 
 \]
 \begin{align*}
-  (M x)^T C (M x) & = \sum_{i=1}^s \sum_{j=1}^s (x_i - \bar{x}) c_{ij} (x_{j} - \bar{x}) \\
-                  & = \sum_{i=1}^s (x_i - \bar{x}) \left( \sum_{j=1}^s c_{ij} (x_j - \bar{x}) \right)
+  (M x)^T C (M x) & = \sum_{i=1}^p \sum_{j=1}^p (x_i - \bar{x}) c_{ij} (x_{j} - \bar{x}) \\
+                  & = \sum_{i=1}^p (x_i - \bar{x}) \left( \sum_{j=1}^p c_{ij} (x_j - \bar{x}) \right)
 \end{align*}
 \begin{align*}
   x^T M x & = x^T M M x \\
@@ -104,7 +107,7 @@ Using this, we can express the terms in the MC in matrix form:
 \end{align*}
 Thus, MC can be expressed as:
 \[
-  M C(x) = \frac{s}{\vec{1}^T C \vec{1}} \cdot \frac{x^T M C M x}{x^T M x}
+  M C(x) = \frac{p}{\vec{1}^T C \vec{1}} \cdot \frac{x^T M C M x}{x^T M x}
 \]
 
 The matrix form can further be reorganized as:
@@ -115,7 +118,7 @@ where the numerator represents the covariance of \( x \) along the spatial struc
 
 [Regarding the expectation of \( M C \): I'm unclear on the distinction between ``the expected value when there is no correlation in the assumed model'' and ``the value when there is no correlation in the input.'' What does ``correlation'' refer to in each context? According to Wikipedia, the expectation of \( M C \) under the null hypothesis of no spatial autocorrelation is \( -1 / (n - 1) \), and I found a proof \href{https://stats.stackexchange.com/questions/567411/expectation-and-variance-of-morans-i-under-the-null}{here} which I don’t fully understand. In my understanding, no spatial autocorrelation means all elements of \( C \) equal zero (which seems to conflict with the \( -1 / (n - 1) \) expectation).]
 
-\subsubsection*{Eigendecompose MCM and its key properties}
+\paragraph{Eigendecompose MCM and its key properties}
 
 \citet{de1984extreme} demonstrated that, when \( C \) is symmetric, the maximum and minimum possible values of the Moran coefficient correspond to the largest and smallest eigenvalues of the matrix \( MCM \). Since the Moran coefficient for an eigenvector is a function of its corresponding eigenvalue (which we will prove later), the eigenvector associated with the largest eigenvalue of \( MCM \) yields the highest Moran coefficient. This indicates that this vector captures the strongest spatial autocorrelation among all vectors, given the spatial structure defined by \( C \).
 
@@ -162,7 +165,7 @@ Using \( M C M v_i = \lambda_i v_i \) and \( M v_i = v_i \), this expression sim
 
 Thus, the Moran coefficient is directly proportional to the eigenvalue \( \lambda_i \), as required.
 
-\subsection*{Whitening Transformations}
+\subsubsection{Whitening Transformations}
 
 We now explain how the properties we established about the Moran coefficient and the eigenvectors of \( M C M \) can be used to reduce data complexity when fitting image data into models.
 
@@ -181,9 +184,26 @@ One approach is data-independent and unweighted, where only 0 or 1 values are as
 
 Another approach is data-independent but weighted, assigning adjacency values based on the distance between two pixels. Suppose the distance between pixels \( i \) and \( j \) is \( d_{ij} \), calculated using their Euclidean distance in the image; then the adjacency \( C_{ij} = - \exp(d_{ij}) \). Both methods define adjacency based on relative pixel positions rather than their actual values.
 
+After choosing an adjacency matrix \( C \), we can apply the eigendecomposition of \( M C M \) as we discussed above, and get the \( E \) contains the eigenvectors as columns. The eigenvector \( v_i \), corresponding to the \( i \)-th largest eigenvalue, represents the \( i \)-th strongest spatial autocorrelation that could be captured by a vector among all possible vectors. Suppose \( X \) represents a \( n \times p \) matrix, representing \( n \) images, with each row corresponding to one image follow the spatial adjacency we just specified. Transforming images \( X \) to the frequency space is achieved by projecting it onto the matrix of eigenvectors:
+\[
+  X_{\text{freq}} = X \cdot E
+\]
+
+Suppose \( X \) can be labeled into two classes, 0 and 1, decided by some pattern of it. The labels represented by a vector \( y \), with the probability of \( y_i = 1 \) decided by \( \eta_i = 1 / (1 + \exp(-X \cdot \vec{\beta})) \). Here \( \vec{\beta} \) is a coefficient vector of length \( p \), with values equals to a constant non-zero value \( \beta \), indicating the area deciding the label, and values equal to 0 for the other areas. Then to ensure each \( \eta \) remains the same before and after whitening transformation, the coefficient vector \( \vec{\beta} \) can be transformed into the coefficient vector in the frequency space, denoted by \( \vec{b} \).
+\[
+  X \cdot \vec{\beta} = X_{\text{freq}} \cdot \vec{b} = (X \cdot E) \cdot \vec{b} = X \cdot (E \cdot \vec{b})
+\]
+so \( \vec{\beta} = E \cdot \vec{b} \).
 
 
-\subsection*{Data Simulation}
+\subsection{Models}
+
+\subsection{Simulations}
+
+Our first simulation simulates the scenario that images are used as predictors for binary classification problem.
+
+\subsection{Analyses}
+
 
 Our simulation starts from simulating the scenario where we want to classify images into a binary class. Suppose \( X \) represents a \( 1000 \times 256 \) matrix of 1000 observed images, with each row corresponding to one image. The pixel values of each image was randomly generated from a multivariate normal distribution with zero mean and a \( 256 \times 256 \) covariance matrix \( C_{\text{cov}} = - \exp (\text{dist} (x_i, x_j)) \), where \( \text{dist} (x_i, x_j) \) represents the Euclidean distance between any two pixels \( i \) and \( j \) in an 2D image. The simulated image will then be flattened into a 1D sequence of length 256, with each pixel be used as a predictor in the model.
 
@@ -201,26 +221,13 @@ Then, we need to test whether the white transformation using the eigendecomposit
 \]
 Note here we assume that the spatial adjacency matrix is identical to the actual covariance matrix (ignore the diagonal elements), and we will evaluate in the future the scenario that they are not identical.
 
-We then perform the eigendecomposition of \( M C M \), which can be written as:
-\[
-  M C M = E \Lambda E^T
-\]
-where \( \Lambda \) is a diagonal matrix of eigenvalues, and \( E \) contains the corresponding eigenvectors as columns. We then transform the original image matrix \( X \) using the matrix of eigenvectors, 
-\[
-  X_{\text{freq}} = X \times E
-\]
-We call the original data is transformed into the ``frequency space'', which is a terminology frequently used in signal processing, reflecting the transformation decomposes data into spatially independent components, akin to frequencies, though here we are just reducing the correlation between pixels, not extinct them. To ensure the probability of \( y_i = 1 \) remain unchanged for all \( i \)s, assuming the coefficient vector in the frequency space is \( \vec{b} \), we can get its relationship with the \( \vec{\beta} \) as:
-\[
-  \vec{\beta} = E^T \vec{b}
-\]
+
 
 Similarly, we will fit a Logistic regression model with L1 penalty with \( y \) on \( X_{\text{freq}} \) again, and compare the predicted coefficients with \( \vec{b} \).
 
 The experiment above compares the performance of Logistic regression model with L1 penalty when the predictors are correlated with each other, and only a proportion of them are significant (in other words, there are sparsity in the coefficient vector \( \vec{\beta} \)), we next evaluate how the model performance by fitting with the predictors in the original space and frequency space when the coefficient vector in the frequency space is sparse (in other words, \( \vec{b} \) is sparse). This represents the scenario that the image is dominated by a few spatial patterns.
 
-Since we hope that after whitening transformation, the correlation between the frequencies could be eliminated to almost zero. To simplify the simulation, we simulated \( X_{\text{freq}} \) by drawing 1000 samples from a muitivariate normal distribution with mean 0 and a diagonal covariance matrix of size \( 256 \times 256 \). Currently we are simulating the diagonal values to be decreasing with a constant step, but are open to more options. Then we randomly assign 10\% of values in \( \vec{b} \) to be a constant non-zero value \( b \), with all other values to be 0. The response vector \( y \) is simulated from binomial distributions independently, with the probability of \( y_i = 1 \) be \( p_i = 1 / ( 1 + \exp (- {X_{\text{freq}}}_{i \cdot} \vec{b} ) ) \).
 
-We can calculate the corresponding predictors and coefficient vectors in the original space \( X \) and \( \vec{\beta} \) using the transformation stated above. Two logistic regression models with L1 penalty, one for \( X \) and another for \( X_{\text{freq}} \), will be fitted, and we will compare the model performance.
 
 
 
