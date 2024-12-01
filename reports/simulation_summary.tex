@@ -198,40 +198,50 @@ so \( \vec{\beta} = E \cdot \vec{b} \).
 
 \subsection{Models}
 
+When the outcome is a binary, and predictors are sparse, a commonly used model is Logistic regression with L1 penalty. For a Logistic model without penalty,
+\[
+  \begin{gathered}
+    y_i \sim \operatorname{Bernoulli} (p_i) \\
+    \operatorname{logit} (p_i) = x_i^T \cdot \vec{\beta}
+  \end{gathered}
+\]
+Here \( y_i \) is a scalar representing the label for one observation, \( x_i \) is a column vector representing the flattened image, and \( \vec{\beta} \) is a column coefficient vector. The goal is find the optimal \( \vec{\beta} \) such that when \( y_i = 1 \), the corresponding \( p_i \) could be as large as possible, while when \( y_i = 0 \), \( (1 - p_i) \) could be as large as possible. We can thus the define the likelihood function as:
+\[
+  L = \prod_i p_i^{y_i} (1 - p_i)^{1 - y_i}
+\]
+The goal is to maximize this function. To simplify the derivatives and improve numerical stability, we usually not directly maximize this function, but instead, minizmize the negative log-likelihood:
+\[
+  \begin{aligned}
+    - \ell = - \ln(L) & =  - \sum_i^N (y_i \ln(p_i) + (1 - y_i) \ln(1 - p_i) ) \\
+                      & = \sum_i^N \left[ \ln \left(1 + \exp(x_i^T \vec{\beta}) \right) + y_i (x_i^T \vec{\beta}) \right]
+  \end{aligned}
+\]
+
+When there are a lot of coefficient values equal to zero, in another word, a lot of sparsity in coefficient vector, we add L1 penalty to the negative log-likehood function:
+\[
+  \min_{\vec{\beta}} - \ell + \sum_j^p \lambda | \beta_j |
+\]
+
+Here \( p \) represents the number of features, and \( \lambda \) is a positive hyperparameter represents the penalty strength we apply for having too many non-zero coefficients. To minimize this function, \( \beta_j \)s with small absolute values, representing not important features, will be shrink to zero. The larger \( \lambda \) is, the more coefficients will be shrink to zero. This model is well suited for the scenario that we know there are sparsity in the features.
+
+To balance between achieving a log-likelihood as large as possible, and have as few non-zero coefficients as possible, we need to choose an optimal \( \lambda \). This step is usually produced by doing cross-validation. Using 5-fold cross-validation as an example, the dataset will be randomly split into 5 batches, with almost identity number of samples in each. The model we specified will be fit on 4-folds, and then predict on the other fold. Some performance metric will be used to evaluate the model performance on that fold. This process will be repeated for 4 more times, using each of the other 4 folds as the evaluation set. The model performance will be averaged across the 5 iterations. We do this process under several options of \( \lambda \) values, and the \( \lambda \) provides the best model performance will be used. WE split the dataset into 80\% training set (used for cross-validation and select optimal parameter), and the chosen parameter will be used to fit model and evaluate on the 20\% test set.
+
+There are several metrics that could used to evaluate the model performance on the test set. After we get the predicted probabilities of \( y=1 \),
+
+
+
 \subsection{Simulations}
 
-Our first simulation simulates the scenario that images are used as predictors for binary classification problem.
+Our simulation starts from using images as predictors for binary classification problem. We are simulating the scenario that an fixed area of images decide whether a patient has disease or not. We assume that pixels from an image follows a multivariate normal distribution with zero mean and a \( 256 \times 256 \) covariance matrix \( C_{\text{cov}} - \exp (\text{dist} (x_i, x_j )) \), where \( \text{dist}(x_i, x_j) \) represents the Euclidean distance between any two pixels \( i \) and \( j \) in a 2D image. We simulate 1000 such images, flatten each image into a 1D sequence of length 256, and thus create \( X \) as a \( 1000 \times 256 \) matrix, representing 1000 images, and each pixel will be used as a predictor. \( \vec{\beta} \) as the coefficient vector, with each value indicating whether the corresponding pixel is important in deciding the classification. We use 0 for the pixels outside of the central \( 8 \times 8 \) area, and use a constant non-zero value \( \beta \) for the central area. The value of \( \beta \) will be decided aiming to make the distribution of \( p = 1 / (1 + \exp (- X \vec{\beta})) \) evenly distributed around 0 and 1. Since a too large \( \beta \) will make the probabilities either near 0 or near 1, make the task too simple, and a too small \( \beta \) makes all probabilities around 0.5, make the classification too hard.
+And \( y \) is the outcome vector with values of 0 and 1. The outcome vector will be simulated from binomial distributions for each position independently. The probability of \( y_i = 1 \) will be decided by \( p_i \).
+
+After generating the data, we will simulate the step of assuming a spatial adjacency matrix \( C_{\text{adj}} \) for the images, performing eigendecomposition on \( M C M \), and use the eigenvectors to transform the original images to the frequency space, which will be called \( X_{\text{freq}} \). Simultaneously, we will transform the coefficient vector \( \vec{\beta} \) into the frequency space as well, labeled as \( \vec{b} \). This way, we are able to fit Logistic models with L1 penalty on the original images \( X \), and on the transformed data \( X_{\text{freq}} \) can compare if the coefficient estimation is improved after whitening transformation. In this first scenario, we assume the estimated spatial adjacency matrix \( C_{\text{adj}} \) correctly reflects the true underlying covariance matrix \( C_{text{cosv}} \), the only difference will be that the diagonal elements in the spatial adjacency matrix are 0s while they are 1s in the covariance matrix.
+
+The above simulation covers the scenario that there is sparsity in the coefficients in the original space. We also want to test how the two models perform when there is sparsity in the coefficients in the frequency space. It represents when the pattern of the image is dominated by a few spatial patterns. We will start from simulating \( X_{\text{freq}} \) this time. We expect our whitening transformation could perform similarly to the whitening transformation using eigencomposition of the true covariance matrix. Thus, to simplify the simulation, we randomly draw \( X_{\text{freq}} \) with 1000 observations from a multivariate normal distribution with mean zero, and a diagonal \( 256 \times 256 \) covariance matrix, with the diagonal values decreasing with a constant step size. To simulate the sparsity in the coefficient in the frequency space, we create \( \vec{b} \) as a vector of length 256, with 10\% items randomly assigned a non-zero constant value \( b \), while all other values equal 0. Similar to the previous simulation, the value of \( b \) will be decided aiming to make the probability of \( y=1 \) evenly along the range from 0 to 1. Since the transformation between \( X \) and \( X_{\text{freq}} \) solely depends on our assumption of the spatial adjacency matrix \( C_{\text{adj}} \), not the actual covariance \( C_{\text{cov}} \), here we still use the same matrix of eigenvectors to transform \( X_{\text{freq}} \) to its original space: \( X = X_{\text{freq}} \cdot E^T \), and transform \( \vec{b} \) back to the coefficients in the original space \( \vec{\beta} \).
+
+
 
 \subsection{Analyses}
-
-
-Our simulation starts from simulating the scenario where we want to classify images into a binary class. Suppose \( X \) represents a \( 1000 \times 256 \) matrix of 1000 observed images, with each row corresponding to one image. The pixel values of each image was randomly generated from a multivariate normal distribution with zero mean and a \( 256 \times 256 \) covariance matrix \( C_{\text{cov}} = - \exp (\text{dist} (x_i, x_j)) \), where \( \text{dist} (x_i, x_j) \) represents the Euclidean distance between any two pixels \( i \) and \( j \) in an 2D image. The simulated image will then be flattened into a 1D sequence of length 256, with each pixel be used as a predictor in the model.
-
-We are planning to simulate the scenario that the center \( 8 \times 8 \) area decides the classification results of an image, with larger values (meaning darker colors) be class 1, and others as class 0. To realize this, we define the coefficient vector \( \vec{\beta} \) to have value 0 in the positions corresponding to the surrounding area in an image, and value \( \beta \) in the positions corresponding to the center \( 8 \times 8 \) area in the image. The response vector \( y \), which will be a vector of 0 and 1, will be simulated from binomial distributions for each position independently. The success probability of \( y_i = 1 \) will be \( p_i = 1 / (1 + \exp (- X_{i \cdot} \vec{\beta})) \).
-
-We then evaluate the ability of Logistic regression to identify the pixels that decide the classification of an image, in other words, the coefficients with non-zero values. A logistic regression with L1 penalty will be applied.
-
-Then, we need to test whether the white transformation using the eigendecomposition results we just proposed could significantly reduce the correlation between predictors and thus improve the model performance. Since in practice we don't know the actual covariance matrix of \( X \), with the assumption that the covariance between two pixels are reflected in their spatial adjacency matrix, and the whitening transformation method we just proposed, we assume a spatial adjacency matrix \( C_{\text{adj}} \), which is in the format of:
-\[
-  C_{ij} = 
-  \begin{cases}
-    - \exp (\text{dist} (x_i, x_j))  & \quad x_i \neq x_j \\
-    0                                & \quad x_i = x_j
-  \end{cases}
-\]
-Note here we assume that the spatial adjacency matrix is identical to the actual covariance matrix (ignore the diagonal elements), and we will evaluate in the future the scenario that they are not identical.
-
-
-
-Similarly, we will fit a Logistic regression model with L1 penalty with \( y \) on \( X_{\text{freq}} \) again, and compare the predicted coefficients with \( \vec{b} \).
-
-The experiment above compares the performance of Logistic regression model with L1 penalty when the predictors are correlated with each other, and only a proportion of them are significant (in other words, there are sparsity in the coefficient vector \( \vec{\beta} \)), we next evaluate how the model performance by fitting with the predictors in the original space and frequency space when the coefficient vector in the frequency space is sparse (in other words, \( \vec{b} \) is sparse). This represents the scenario that the image is dominated by a few spatial patterns.
-
-
-
-
-
-\subsection*{Model Evaluation}
 
 To compare the performance of LASSO in both the pixel space and frequency space, we fit two models: one using covariates in the pixel space and another using covariates in the frequency space. The optimal regularization parameter \( \lambda \) is selected via cross-validation, using the binomial deviance as the performance metric. The dataset is split into training (80\%) and test (20\%) sets, and the cross-validation is performed using 10 folds.
 
