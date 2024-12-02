@@ -37,7 +37,7 @@ High-dimensional imaging data present unique challenges for predictive modeling 
 
 This study explores the use of eigendecomposition on the matrix \( MCM \), where \( M \) is a centering matrix and \( C \) is a spatial adjacency matrix encoding pixel adjacency. The eigenvectors derived from \( MCM \) are used to transform imaging data into a "frequency space." While this transformation does not fully decorrelate the data spatially, it reduces spatial dependencies significantly and introduces a structure that enhances interpretability, making \( MCM \) a uniquely advantageous choice for such analyses.
 
-To assess the utility of this approach, we simulate imaging datasets with specific sparsity patterns and apply LASSO in both the pixel space and the transformed frequency space. By comparing the performance of these models, we aim to demonstrate the benefits of leveraging \( \mathbf{MCM} \)-based transformations in improving feature selection and predictive performance in high-dimensional imaging data.
+To assess the utility of this approach, we simulate imaging datasets with specific sparsity patterns and apply LASSO in both the pixel space and the transformed frequency space. By comparing the performance of these models, we aim to demonstrate the benefits of leveraging \( MCM \)-based transformations in improving feature selection and predictive performance in high-dimensional imaging data.
 
 
 
@@ -73,54 +73,50 @@ This study focuses on modifying the covariance structure by leveraging the eigen
 
 \subsection{Frequency Space}
 
-In this subection, we firstly introduce Moran's Coefficient (MC), a common measure of spatial autocorrelation, and then introduce a specially constructed spatial adjacency matrix combination, \( M C M \), and then show how the eigenvectors calculated by eigendecomposition on \( M C M \) have good explanation in the perspectivity of Moran's Coefficient.
+Reducing spatial dependencies in imaging data requires a transformation that leverages the underlying spatial structure. Moran's Coefficient, a widely used measure of spatial autocorrelation, quantifies the degree to which neighboring pixels exhibit similar values. Importantly, the eigendecomposition of \( MCM \)—a matrix constructed from the spatial adjacency matrix \( C \) and the centering matrix \( M \)—directly relates to Moran's Coefficient. The eigenvalues of \( MCM \) represent the strength of spatial autocorrelation along each eigenvector, while the eigenvectors capture distinct spatial patterns inherent to the structure of \( C \). By projecting imaging data onto these eigenvectors, we transform it into a frequency space where spatial dependencies are significantly reduced, yet meaningful spatial relationships are preserved.
 
 \subsubsection{Moran's Coefficient and Eigenvector Spatial Filtering}
 
-When dealing with spatially correlated data, like an image where pixel correlations depend on their relative positions, Moran’s Coefficient (MC) is a widely used measure of spatial autocorrelation. Suppose a vector \( x = (x_1, \ldots, x_p)^T \) represents an image with \( p \) pixels, and the spatial relationship between each pair of pixels is represented by a matrix \( C \), where \( C_{ij} \) indicates the spatial connection between pixels \( i \) and \( j \) (with diagonal elements equal to zero). According to \citet{griffith2014spatial}, the MC can be computed as follows:
+Moran’s Coefficient (MC) is a widely used statistic for quantifying spatial autocorrelation, measuring the degree to which similar values cluster in space. For an image represented as a vector \( x = (x_1, x_2, \dots, x_p)^T \) of length \( p \), where \( x_i \) denotes the intensity of the \( i \)-th pixel, and a spatial adjacency matrix \( C \) of size \( p \times p \), Moran’s Coefficient is defined in summation form as:
+
 \[
-M C(x) = \frac{p}{\sum_{i=1}^p \sum_{j=1}^p c_{ij}} \cdot \frac{\sum_{i=1}^p \left(x_i - \bar{x} \right) \left[ \sum_{j=1}^p c_{ij} \left( x_j - \bar{x} \right) \right]}{\sum_{i=1}^p \left( x_i - \bar{x} \right)^2}
+  M C(x) = \frac{p}{\sum_{i=1}^p \sum_{j=1}^p C_{ij}} \cdot \frac{\sum_{i=1}^p \left(x_i - \bar{x} \right) \left[ \sum_{j=1}^p C_{ij} \left( x_j - \bar{x} \right) \right]}{\sum_{i=1}^p \left( x_i - \bar{x} \right)^2}
 \]
 
-\paragraph{Write Moran's coefficient in the matrix form}
+as introduced in \citet{griffith2014spatial}. Here \( C_{ij} \) is the spatial adjacency between pixels \( i \) and \( j \), representing their spatial connection (e.g., adjacency or distance-based).
 
-To express Moran's coefficient (MC) in matrix form, we begin by defining the centering matrix \( M = I - \frac{1 1^T}{p} \), where \( I \) is the identity matrix and \( 1 \) is a column vector of ones. This matrix \( M \) is used to center the vector \( x \), ensuring it has a mean of zero. Specifically, applying \( M \) to \( x \) results in \( [M x]_i = x_i - \bar{x} \).
+This summation form can be expressed in a compact matrix notation. Let \( M = I - \frac{1}{p} 1 1^T \) be the centering matrix, where \( I \) is the \( p \times p \) identity matrix and \( 1 \) is a column vector of ones of length \( p \). The vector \( Mx \) represents the centered version of \( x \), such that \( Mx = x - \bar{x}1 \).
 
-{\bf Claim:} Suppose \( \vec{a} \) and \( \vec{c} \) are column vectors of length \( n \), and \( B \) is an \( n \times n \) matrix. Then the expression \( \vec{a}^T B \vec{c} \) can be written as:
-\[
-  \vec{a}^T B \vec{c} = \sum_i \sum_j a_i B_{ij} c_j
-\]
-\begin{proof}
-  The product \( B \vec{c} \) results in a column vector of size \( n \), with each entry \( i \) being \( \sum_j B_{ij} c_j \). Then, by multiplying with \( \vec{a}^T \):
-  \[
-    \vec{a}^T B \vec{c} = \sum_i a_i \left( \sum_j B_{ij} c_j \right) = \sum_i \sum_j a_i B_{ij} c_j.
-  \]
-\end{proof}
+To derive the matrix form, we note the following general property: for any two column vectors \( a \) and \( c \) of length \( n \), and a matrix \( B \) of size \( n \times n \), the expression \( a^T B c \) can be written in summation form as:
 
-Using this, we can express the terms in the MC in matrix form:
 \[
-  \vec{1}^T C \vec{1} = \sum_{i=1}^p \sum_{j=1}^p 1 \cdot c_{i j} \cdot 1 = \sum_{i=1}^p \sum_{j=1}^p c_{i j} 
-\]
-\begin{align*}
-  (M x)^T C (M x) & = \sum_{i=1}^p \sum_{j=1}^p (x_i - \bar{x}) c_{ij} (x_{j} - \bar{x}) \\
-                  & = \sum_{i=1}^p (x_i - \bar{x}) \left( \sum_{j=1}^p c_{ij} (x_j - \bar{x}) \right)
-\end{align*}
-\begin{align*}
-  x^T M x & = x^T M M x \\
-          & = x^T M^T M x \\
-          & = (M x)^T (M x) \\
-          & = \sum_i (x_i - \bar{x})^2
-\end{align*}
-Thus, MC can be expressed as:
-\[
-  M C(x) = \frac{p}{\vec{1}^T C \vec{1}} \cdot \frac{x^T M C M x}{x^T M x}
+  a^T B c = \sum_{i=1}^n \sum_{j=1}^n a_i B_{ij} c_j.
 \]
 
-The matrix form can further be reorganized as:
+This property can be understood by examining the operations step-by-step. First, the matrix-vector product \( Bc \) produces a column vector of size \( n \), where the \( i \)-th entry is given by \( \sum_{j=1}^n B_{ij} c_j \). Multiplying this result by the vector \( a^T \) computes the weighted sum of these entries, leading to:
+
 \[
-  M C (x) = \frac{(M x)^T C (M x)}{\vec{1}^T C \vec{1}} / \frac{(M x)^T I (M x)}{\vec{1}^T I \vec{1}}
+  a^T B c = \sum_{i=1}^n a_i \left( \sum_{j=1}^n B_{ij} c_j \right) = \sum_{i=1}^n \sum_{j=1}^n a_i B_{ij} c_j.
 \]
-where the numerator represents the covariance of \( x \) along the spatial structure \( C \), and the denominator represents the covariance of \( x \) assuming an independence structure \( I \).
+
+Using this property, the numerator of Moran's Coefficient, \( \sum_{i=1}^p \sum_{j=1}^p C_{ij} (x_i - \bar{x})(x_j - \bar{x}) \), can be expressed as:
+
+\[
+  (Mx)^T C (Mx) = \sum_{i=1}^p \sum_{j=1}^p (x_i - \bar{x}) C_{ij} (x_j - \bar{x}),
+\]
+
+where \( Mx \) is the centered vector. The centering matrix \( M \) satisfies \( M^2 = M \) (idempotent) and \( M = M^T \) (symmetric), as \( M = I - 1 1^T/p \), where both \( I \) and \( 1 1^T/p \) are symmetric and \( 1^T 1 = p \). With this, the denominator \( \sum_{i=1}^p (x_i - \bar{x})^2 \) becomes \( (Mx)^T (Mx) \), and the normalization factor \( \sum_{i=1}^p \sum_{j=1}^p C_{ij} \) becomes \( 1^T C 1 \), the total weight of the spatial adjacency matrix. Combining these terms, the matrix form of Moran's Coefficient is:
+
+\[
+  MC(x) = \frac{p}{1^T C 1} \cdot \frac{(Mx)^T C (Mx)}{(Mx)^T (Mx)}.
+\]
+
+In this formulation:
+\begin{itemize}
+    \item \( (Mx)^T C (Mx) \) represents the covariance of \( x \) along the spatial structure defined by \( C \), capturing how pixel intensities vary together based on their spatial relationships.
+    \item \( (Mx)^T (Mx) \) calculates the covariance of \( x \) under an independence structure, as it measures the variance of the centered vector \( x \) without considering spatial dependencies.
+    \item \( 1^T C 1 \) represents the total connectivity within the spatial structure, summing all adjacency weights in \( C \).
+\end{itemize}
 
 [Regarding the expectation of \( M C \): I'm unclear on the distinction between ``the expected value when there is no correlation in the assumed model'' and ``the value when there is no correlation in the input.'' What does ``correlation'' refer to in each context? According to Wikipedia, the expectation of \( M C \) under the null hypothesis of no spatial autocorrelation is \( -1 / (n - 1) \), and I found a proof \href{https://stats.stackexchange.com/questions/567411/expectation-and-variance-of-morans-i-under-the-null}{here} which I don’t fully understand. In my understanding, no spatial autocorrelation means all elements of \( C \) equal zero (which seems to conflict with the \( -1 / (n - 1) \) expectation).]
 
@@ -236,7 +232,7 @@ We can also simulate data and coefficients directly on the frequency space, and 
 
 \subsection{Simulations}
 
-The first two simulations, one simulate data on the pixel space, and another simulate data on the frequency space, will assume the estimated spatial adjaceny matrix reflects the true covariance in the data. The first simulation we simulate \( X \) as a \( 1000 \times 256 \) matrix, representing 1000 images, each with \( 16 \times \16 \) pixels. They were simulated from a multivariate normal distribution with mean zero and a \( 256 \times 256 \) covariance matrix \( C_{\text{cov}} - \exp (\text{dist} (x_i, x_j )) \), where \( \text{dist}(x_i, x_j) \) represents the Euclidean distance between any two pixels \( i \) and \( j \) in a 2D image. We simulate 1000 such images, flatten each image into a 1D sequence of length 256, and thus create \( X \) as a \( 1000 \times 256 \) matrix, representing 1000 images, and each pixel will be used as a predictor. \( \beta \) as the coefficient vector, with each value indicating whether the corresponding pixel is important in deciding the classification. We use 0 for the pixels outside of the central \( 8 \times 8 \) area, and use a constant non-zero value \( \beta \) for the central area. The value of \( \beta \) will be decided aiming to make the distribution of \( p = 1 / (1 + \exp (- X \beta)) \) evenly distributed around 0 and 1. Since a too large \( \beta \) will make the probabilities either near 0 or near 1, make the task too simple, and a too small \( \beta \) makes all probabilities around 0.5, make the classification too hard.
+The first two simulations, one simulate data on the pixel space, and another simulate data on the frequency space, will assume the estimated spatial adjaceny matrix reflects the true covariance in the data. The first simulation we simulate \( X \) as a \( 1000 \times 256 \) matrix, representing 1000 images, each with \( 16 \times 16 \) pixels. They were simulated from a multivariate normal distribution with mean zero and a \( 256 \times 256 \) covariance matrix \( C_{\text{cov}} - \exp (\text{dist} (x_i, x_j )) \), where \( \text{dist}(x_i, x_j) \) represents the Euclidean distance between any two pixels \( i \) and \( j \) in a 2D image. We simulate 1000 such images, flatten each image into a 1D sequence of length 256, and thus create \( X \) as a \( 1000 \times 256 \) matrix, representing 1000 images, and each pixel will be used as a predictor. \( \beta \) as the coefficient vector, with each value indicating whether the corresponding pixel is important in deciding the classification. We use 0 for the pixels outside of the central \( 8 \times 8 \) area, and use a constant non-zero value \( \beta \) for the central area. The value of \( \beta \) will be decided aiming to make the distribution of \( p = 1 / (1 + \exp (- X \beta)) \) evenly distributed around 0 and 1. Since a too large \( \beta \) will make the probabilities either near 0 or near 1, make the task too simple, and a too small \( \beta \) makes all probabilities around 0.5, make the classification too hard.
 And \( y \) is the outcome vector with values of 0 and 1. The outcome vector will be simulated from binomial distributions for each position independently. The probability of \( y_i = 1 \) will be decided by \( p_i \).
 
 After generating the data, we will simulate the step of assuming a spatial adjacency matrix \( C_{\text{adj}} \) for the images, performing eigendecomposition on \( M C M \), and use the eigenvectors to transform the original images to the frequency space, which will be called \( X_{\text{freq}} \). Simultaneously, we will transform the coefficient vector \( \beta \) into the frequency space as well, labeled as \( b \). This way, we are able to fit Logistic models with L1 penalty on the original images \( X \), and on the transformed data \( X_{\text{freq}} \) can compare if the coefficient estimation is improved after whitening transformation. In this first scenario, we assume the estimated spatial adjacency matrix \( C_{\text{adj}} \) correctly reflects the true underlying covariance matrix \( C_{text{cosv}} \), the only difference will be that the diagonal elements in the spatial adjacency matrix are 0s while they are 1s in the covariance matrix.
