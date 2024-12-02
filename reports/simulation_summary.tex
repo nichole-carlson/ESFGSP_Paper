@@ -31,38 +31,44 @@
 Everything surrounded by [] are my thoughts/questions/to-dos.
 
 
-
 \section{Introduction}
 
-Spatial correlations in image data can significantly influence the performance of predictive models. When using images as predictors or outcomes, the inherent correlations between neighboring pixels often lead to challenges such as multicollinearity and reduced computational efficiency. To address the challenges posed by spatial correlations in image data, this study investigates whether using the eigendecomposition of \( M C M \) and its eigenvectors can effectively reduce spatial dependencies and improve model efficiency. Here, \( M \) is the centering matrix, and \( C \) is the spatial weights matrix, which encodes the assumed spatial relationships between pixels. The eigenvectors derived from \( M C M \) are used to transform the data into what is referred to as the ``frequency space''. This terminology reflects the analogy to signal processing, where the transformation decomposes data into spatially independent components, akin to frequencies. By reducing pixel correlations, this transformation may improve the efficiency and predictive performanace compared to use raw image data in analyses.
+High-dimensional imaging data present unique challenges for predictive modeling and feature selection, largely due to the spatial correlations between neighboring pixels. These correlations can lead to multicollinearity, affecting the stability and efficiency of models. When LASSO is applied to imaging datasets, such spatial dependencies can obscure important features and reduce predictive accuracy if not properly addressed.
 
-To test this hypothesis, we perform data simulations under different sparsity assumptions and compare the performance of LASSO models fitted in the original pixel space versus the frequency space. The results aim to provide insight into whether such spatial transformations enhance feature selection and prediction accuracy in high-dimensional datasets.
+This study explores the use of eigendecomposition on the matrix \( MCM \), where \( M \) is a centering matrix and \( C \) is a spatial adjacency matrix encoding pixel adjacency. The eigenvectors derived from \( MCM \) are used to transform imaging data into a "frequency space." While this transformation does not fully decorrelate the data spatially, it reduces spatial dependencies significantly and introduces a structure that enhances interpretability, making \( MCM \) a uniquely advantageous choice for such analyses.
+
+To assess the utility of this approach, we simulate imaging datasets with specific sparsity patterns and apply LASSO in both the pixel space and the transformed frequency space. By comparing the performance of these models, we aim to demonstrate the benefits of leveraging \( \mathbf{MCM} \)-based transformations in improving feature selection and predictive performance in high-dimensional imaging data.
 
 
 
 \section{Methods}
 
-When dealing with image data, it's reasonable to assume that nearby pixels could have similar values, indicating spatial autocorrelation. Whether we use images as predictors or as outcomes, pixel correlations can impact model performance by reducing computational efficiency and stability if left unaddressed. It can also have diffuse spatial signals obscured becuase they're spread out over so many features. Here, we discuss this effect in two scenarios: using images as predictors and as outcomes.
+This section outlines the methodology used to analyze high-dimensional imaging data, focusing on the transformation of data into a frequency space using spatial adjacency matrices and applying LASSO for feature selection. The narrative progresses from the challenges of spatial correlations in imaging to the construction of the frequency space and evaluation through simulated datasets.
 
-\subsubsection*{Image data as the predictor}
 
-Suppose we have a set of images registered to the same template, and we want to predict a scalar outcome \( y \) using these images \( x \), where each has \( p \) pixels. If each pixel serves as a predictor, we can express the model for each observation as:
+\subsection{Spatial Correlations in Imaging Data}
+
+Imaging data are often characterized by spatial autocorrelation, where neighboring pixels exhibit similar values due to their proximity. This spatial dependency introduces challenges in predictive modeling, such as multicollinearity, reduced computational efficiency, and obscured spatial signals.
+
+When image data are used as predictors, each pixel serves as a feature to predict a scalar outcome \( y \). Let \( X \) represent a dataset of images, where each image \( x_i \) is a row vector of \( p \) pixels. The predictive model can be expressed as:
+
 \[
-  y_i = x_{i \cdot} \beta + \epsilon_i
+  y_i = x_{i \cdot} \beta + \epsilon_i,
 \]
-where \( i \) is the observation index and \( j \) is the pixel index. Here, \( y_i \) is the outcome, \( x_{i \cdot} \) represents an image as a row vector with \( p \) pixels, \( \beta \) is a column vector of \( p \) coefficients, and \( \epsilon_i \) is the error term, following a normal distribution with mean 0 and constant variance across observations. With many correlated pixels as predictors, multicollinearity can be an issue.
 
-\subsubsection*{Image data as the outcome}
+where \( \beta \) is a vector of regression coefficients, and \( \epsilon_i \sim N (0, \sigma^2) \) is the error term. In this scenario, the inherent correlations among pixels can lead to multicollinearity, which reduces the stability of coefficient estimation and complicates feature selection.
 
-If we instead treat the images as outcomes, with \( p \) predictors, the model can be written as:
+Alternatively, when image data are treated as outcomes, each pixel becomes a response variable, modeled as a function of predictors. Suppose \( x_i \) is a vector of predictors and \( y_i \) represents an image outcome with \( s \) pixels. The model can be written as:
+
 \[
-  y_{i \cdot} = x_{i \cdot} \beta + \epsilon_{i \cdot}
+y_i = x_i \beta + \epsilon_i,
 \]
-where \( y_{i \cdot} \) is a \( 1 \times s \) vector representing an image, \( x_{i \cdot} \) is a \( 1 \times p \) vector representing \( p \) predictors, \( \beta \) is a \( p \times s \) matrix , and \( \epsilon_{i \cdot} \) is a \( 1 \times s \) vector of errors, which follows a distribution \( \mathcal{N}(0, \Sigma) \) that accounts for the correlation between pixels. One key assumption here is that the covariance structure \( \Sigma \) is shared across images.
 
-As in generalized estimating equations (GEE), choosing an optimal covariance structure \( \Sigma \) involves balancing representation detail with computational efficiency: a simpler structure allows faster computation but may capture less detail, while a more complex structure provides a better fit but increases computational demands.
+where \( \beta \) is a \( p \times s \) matrix of coefficients and \( \epsilon_i \sim \mathcal{N}(0, \Sigma) \) captures the covariance among pixels. A key consideration in this case is the structure of the covariance matrix \( \Sigma \), which determines how spatial relationships between pixels are modeled. Simplifying \( \Sigma \) improves computational efficiency but may sacrifice accuracy, while a more complex structure captures fine details but increases computational demands.
 
-No matter whether we use the image data as predictors or outcomes, we need to address the correlation between pixels. Two main approaches are available: performing dimension reduction (e.g., applying PCA and retaining the top principal components) or reducing the complexity of the covariance structure of the image. In this paper, we focus on the second approach. Just as we used eigendecomposition on the Laplacian matrix for graph signal processing, and use the eigenvectors to transform the signal into frequency domain, here we use a different matrix to reflect spatial adjacency, not the Laplacian matrix, but one commonly used by Eigenvector Spatial Filtering, and perform a similar eigendecomposition and transform the image into a frequency space. We will design a few simulations to show that, the projected predictors in the frequency space has more prediction power than in the pixel space since the spatial autocorrelation is significantly reduced, and also because of the way we design the spatial adjacency matrix, it allows more interpretability in the frequency space we constructed.
+In both scenarios, the spatial correlations between pixels necessitate strategies to reduce dependencies and improve model performance. Two common approaches are dimension reduction, such as principal component analysis (PCA), and modifying the covariance structure. While PCA effectively reduces dimensionality, it often sacrifices interpretability, as the components are linear combinations of the original features.
+
+This study focuses on modifying the covariance structure by leveraging the eigendecomposition of \( MCM \), where \( M \) is a centering matrix and \( C \) is a spatial adjacency matrix encoding pixel relationships. The eigenvectors of \( MCM \) transform the data into a frequency space, aligning features along orthogonal spatial patterns and reducing spatial dependencies. These eigenvectors are interpretable because they represent spatial patterns inherent to the adjacency structure defined by \( C \). Each eigenvector corresponds to a distinct spatial variation, ordered by its associated eigenvalue, which quantifies the strength of spatial autocorrelation along that pattern. Although the transformation does not fully decorrelate the data, it balances reduced spatial autocorrelation with the preservation of meaningful spatial relationships. This interpretability, combined with computational efficiency, makes \( MCM \)-based transformations particularly suitable for high-dimensional imaging analyses with LASSO.
 
 
 \subsection{Frequency Space}
