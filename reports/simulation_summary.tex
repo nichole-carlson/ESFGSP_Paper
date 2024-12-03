@@ -71,101 +71,134 @@ In both scenarios, the spatial correlations between pixels necessitate strategie
 This study focuses on modifying the covariance structure by leveraging the eigendecomposition of \( MCM \), where \( M \) is a centering matrix and \( C \) is a spatial adjacency matrix encoding pixel relationships. The eigenvectors of \( MCM \) transform the data into a frequency space, aligning features along orthogonal spatial patterns and reducing spatial dependencies. These eigenvectors are interpretable because they represent spatial patterns inherent to the adjacency structure defined by \( C \). Each eigenvector corresponds to a distinct spatial variation, ordered by its associated eigenvalue, which quantifies the strength of spatial autocorrelation along that pattern. Although the transformation does not fully decorrelate the data, it balances reduced spatial autocorrelation with the preservation of meaningful spatial relationships. This interpretability, combined with computational efficiency, makes \( MCM \)-based transformations particularly suitable for high-dimensional imaging analyses with LASSO.
 
 
+
 \subsection{Frequency Space}
 
-Reducing spatial dependencies in imaging data requires a transformation that leverages the underlying spatial structure. Moran's Coefficient, a widely used measure of spatial autocorrelation, quantifies the degree to which neighboring pixels exhibit similar values. Importantly, the eigendecomposition of \( MCM \)—a matrix constructed from the spatial adjacency matrix \( C \) and the centering matrix \( M \)—directly relates to Moran's Coefficient. The eigenvalues of \( MCM \) represent the strength of spatial autocorrelation along each eigenvector, while the eigenvectors capture distinct spatial patterns inherent to the structure of \( C \). By projecting imaging data onto these eigenvectors, we transform it into a frequency space where spatial dependencies are significantly reduced, yet meaningful spatial relationships are preserved.
+Reducing spatial dependencies in imaging data requires a transformation that leverages the inherent spatial structure. Moran's Coefficient, a widely used measure of spatial autocorrelation, quantifies the degree to which neighboring pixels exhibit similar values. Importantly, the eigendecomposition of \( MCM \)—a matrix constructed from the spatial adjacency matrix \( C \) and the centering matrix \( M \)—establishes a connection with Moran's Coefficient. The eigenvalues of \( MCM \) represent the strength of spatial autocorrelation along each eigenvector, while the eigenvectors capture distinct spatial patterns defined by the structure of \( C \). By projecting imaging data onto these eigenvectors, the data are transformed into a frequency space where spatial dependencies are reduced while preserving meaningful spatial relationships.
+
 
 \subsubsection{Moran's Coefficient and Eigenvector Spatial Filtering}
 
-Moran’s Coefficient (MC) is a widely used statistic for quantifying spatial autocorrelation, measuring the degree to which similar values cluster in space. For an image represented as a vector \( x = (x_1, x_2, \dots, x_p)^T \) of length \( p \), where \( x_i \) denotes the intensity of the \( i \)-th pixel, and a spatial adjacency matrix \( C \) of size \( p \times p \), Moran’s Coefficient is defined in summation form as:
+This subsection introduces Moran’s Coefficient as a measure of spatial autocorrelation, describes the concept of Eigenvector Spatial Filtering, and establishes the connection between them through the eigendecomposition of \( MCM \).
+
+
+\paragraph{Moran’s Coefficient}
+
+Moran’s Coefficient (MC) is a widely used statistic for quantifying spatial autocorrelation, which measures the degree to which similar values cluster in space. For an image represented as a vector \( x = (x_1, x_2, \dots, x_p)^T \) of length \( p \), where \( x_i \) denotes the intensity of the \( i \)-th pixel, and a spatial adjacency matrix \( C \) of size \( p \times p \), Moran’s Coefficient is defined in summation form as follows \citet{griffith2014spatial}:
 
 \[
   M C(x) = \frac{p}{\sum_{i=1}^p \sum_{j=1}^p C_{ij}} \cdot \frac{\sum_{i=1}^p \left(x_i - \bar{x} \right) \left[ \sum_{j=1}^p C_{ij} \left( x_j - \bar{x} \right) \right]}{\sum_{i=1}^p \left( x_i - \bar{x} \right)^2}
 \]
+where \( C_{ij} \) encodes the spatial relationship between pixels \( i \) and \( j \). 
 
-as introduced in \citet{griffith2014spatial}. Here \( C_{ij} \) is the spatial adjacency between pixels \( i \) and \( j \), representing their spatial connection (e.g., adjacency or distance-based).
-
-This summation form can be expressed in a compact matrix notation. Let \( M = I - \frac{1}{p} 1 1^T \) be the centering matrix, where \( I \) is the \( p \times p \) identity matrix and \( 1 \) is a column vector of ones of length \( p \). The vector \( Mx \) represents the centered version of \( x \), such that \( Mx = x - \bar{x}1 \).
-
-To derive the matrix form, we note the following general property: for any two column vectors \( a \) and \( c \) of length \( n \), and a matrix \( B \) of size \( n \times n \), the expression \( a^T B c \) can be written in summation form as:
-
+To simplify this expression, we transform it into matrix form by introducing the centering matrix \( M = I - \frac{1}{p} 1 1^T \). The centering matarix \( M \) ssatisfies two essential properties: \( M^2 = M \) (idempotencen) and \( M^T = M \) (symmetry). The idempotence of \( M \) can be shown as follows. By definition, we have:
 \[
-  a^T B c = \sum_{i=1}^n \sum_{j=1}^n a_i B_{ij} c_j.
+  M^2 = M M = \left( I - \frac{1 1^T}{p} \right) \left( I - \frac{1 1^T}{p} \right).
 \]
-
-This property can be understood by examining the operations step-by-step. First, the matrix-vector product \( Bc \) produces a column vector of size \( n \), where the \( i \)-th entry is given by \( \sum_{j=1}^n B_{ij} c_j \). Multiplying this result by the vector \( a^T \) computes the weighted sum of these entries, leading to:
-
+Expanding this expression yields:
 \[
-  a^T B c = \sum_{i=1}^n a_i \left( \sum_{j=1}^n B_{ij} c_j \right) = \sum_{i=1}^n \sum_{j=1}^n a_i B_{ij} c_j.
+  M^2 = I - \frac{1 1^T}{p} - \frac{1 1^T}{p} + \frac{1 1^T 1 1^T}{p^2}.
 \]
-
-Using this property, the numerator of Moran's Coefficient, \( \sum_{i=1}^p \sum_{j=1}^p C_{ij} (x_i - \bar{x})(x_j - \bar{x}) \), can be expressed as:
-
+Since \( 1^T 1 = p \), the last term simplifies to \( \frac{1 1^T}{p} \), and we get:
 \[
-  (Mx)^T C (Mx) = \sum_{i=1}^p \sum_{j=1}^p (x_i - \bar{x}) C_{ij} (x_j - \bar{x}),
+  M^2 = I - \frac{2}{p} 1 1^T + \frac{1}{p} 1 1^T = I - \frac{1 1^T}{p} = M.
 \]
+Symmetry is evident because both \( I \) and \( \frac{1}{p} 1 1^T \) are symmetric matrices, so \( M \) is also symmetric.
 
-where \( Mx \) is the centered vector. The centering matrix \( M \) satisfies \( M^2 = M \) (idempotent) and \( M = M^T \) (symmetric), as \( M = I - 1 1^T/p \), where both \( I \) and \( 1 1^T/p \) are symmetric and \( 1^T 1 = p \). With this, the denominator \( \sum_{i=1}^p (x_i - \bar{x})^2 \) becomes \( (Mx)^T (Mx) \), and the normalization factor \( \sum_{i=1}^p \sum_{j=1}^p C_{ij} \) becomes \( 1^T C 1 \), the total weight of the spatial adjacency matrix. Combining these terms, the matrix form of Moran's Coefficient is:
+The general property of matrix-vector multiplication also aids in rewriting the summation form of Moran's Coefficient. For any two column vectors \( a \) and \( c \) of length \( p \), and a matrix \( B \) of size \( p \times p \), the expression \( a^T B c \) can be written in summation form as:
+\[
+  a^T B c = \sum_{i=1}^p \sum_{j=1}^p a_i B_{ij} c_j.
+\]
+This property can be verified by examining the operations step-by-step. First, the matrix-vector product \( Bc \) produces a column vector, where the \( i \)-th entry is:
+\[
+  (Bc)_i = \sum_{j=1}^p B_{ij} c_j.
+\]
+Multiplying this result by the vector \( a^T \) computes the weighted sum of these entries:
+\[
+  a^T B c = \sum_{i=1}^p a_i (Bc)_i = \sum_{i=1}^p a_i \left( \sum_{j=1}^p B_{ij} c_j \right).
+\]
+Rearranging the terms gives:
+\[
+  a^T B c = \sum_{i=1}^p \sum_{j=1}^p a_i B_{ij} c_j,
+\]
+proving the equivalence.
 
+Using this approach, the numerator of Moran's Coefficient, originally written as 
+\[
+  \sum_{i=1}^p \sum_{j=1}^p C_{ij} (x_i - \bar{x})(x_j - \bar{x}),
+\]
+becomes \( (Mx)^T C (Mx) \), representing the covariance of \( x \) along the spatial structure defined by \( C \). Similarly, the denominator, \( \sum_{i=1}^p (x_i - \bar{x})^2 \), simplifies to \( (Mx)^T (Mx) \), which captures the covariance of \( x \) along an independent structure. The normalization factor, \( \sum_{i=1}^p \sum_{j=1}^p C_{ij} \), is rewritten as \( 1^T C 1 \), the total weight of the spatial adjacency matrix. Combining these terms, Moran’s Coefficient in matrix form is expressed as: 
 \[
   MC(x) = \frac{p}{1^T C 1} \cdot \frac{(Mx)^T C (Mx)}{(Mx)^T (Mx)}.
 \]
 
-In this formulation:
-\begin{itemize}
-    \item \( (Mx)^T C (Mx) \) represents the covariance of \( x \) along the spatial structure defined by \( C \), capturing how pixel intensities vary together based on their spatial relationships.
-    \item \( (Mx)^T (Mx) \) calculates the covariance of \( x \) under an independence structure, as it measures the variance of the centered vector \( x \) without considering spatial dependencies.
-    \item \( 1^T C 1 \) represents the total connectivity within the spatial structure, summing all adjacency weights in \( C \).
-\end{itemize}
+Finally, substituting the properties of \( M \) into the matrix form, Moran’s Coefficient can be further compacted to:
+\[
+  MC(x) = \frac{p}{1^T C 1} \cdot \frac{x^T M C M x}{x^T M x}.
+\]
+
+
 
 [Regarding the expectation of \( M C \): I'm unclear on the distinction between ``the expected value when there is no correlation in the assumed model'' and ``the value when there is no correlation in the input.'' What does ``correlation'' refer to in each context? According to Wikipedia, the expectation of \( M C \) under the null hypothesis of no spatial autocorrelation is \( -1 / (n - 1) \), and I found a proof \href{https://stats.stackexchange.com/questions/567411/expectation-and-variance-of-morans-i-under-the-null}{here} which I don’t fully understand. In my understanding, no spatial autocorrelation means all elements of \( C \) equal zero (which seems to conflict with the \( -1 / (n - 1) \) expectation).]
 
-\paragraph{Eigendecompose MCM and its key properties}
 
-\citet{de1984extreme} demonstrated that, when \( C \) is symmetric, the maximum and minimum possible values of the Moran coefficient correspond to the largest and smallest eigenvalues of the matrix \( MCM \). Since the Moran coefficient for an eigenvector is a function of its corresponding eigenvalue (which we will prove later), the eigenvector associated with the largest eigenvalue of \( MCM \) yields the highest Moran coefficient. This indicates that this vector captures the strongest spatial autocorrelation among all vectors, given the spatial structure defined by \( C \).
+\paragraph{Eigenvector Spatial Filtering (ESF)}
 
-{\bf Claim:} The centering matrix \( M \) is idempotent, meaning \( M^2 = M \).
+Eigenvector Spatial Filtering is a method for identifying orthogonal spatial patterns by using the eigendecomposition of \( MCM \), where \( M \) centers the data, and \( C \) encodes spatial relationships. The eigendecomposition of \( MCM \) is expressed as:
 
-\begin{proof}
-  \begin{align*}
-    M^2 = M M & = \left( I - \frac{1 1^T}{n} \right) \left( I - \frac{1 1^T}{n} \right) \\
-              & = I - \frac{1 1^T}{n} - \frac{1 1^T}{n} + \frac{1 1^T 1 1^T}{n^2} \\
-              & = I - \frac{2}{n} 1 1^T + \frac{n 1 1^T}{n^2} \\
-              & = I - \frac{1 1^T}{n} = M
-  \end{align*}
-\end{proof}
-
-We can now consider the eigendecomposition of \( M C M \), which can be written as:
 \[
-  M C M = E \Lambda E^{T}
+  MCM = E \Lambda E^T,
 \]
-where \( \Lambda \) is a diagonal matrix of eigenvalues, and \( E \) contains the corresponding eigenvectors as columns. We define \( \lambda_i \) and \( v_i \) to be the \( i \)-th eigenvalue and eigenvector, respectively.
+where \( \Lambda \) is a diagonal matrix containing eigenvalues \( \lambda_1, \lambda_2, \ldots, \lambda_p \), and \( E \) is a matrix whose columns are the corresponding eigenvectors. Each eigenvector \( v_i \) represents a distinct spatial pattern, and its associated eigenvalue \( \lambda_i \) quantifies the strength of spatial autocorrelation for that pattern.
 
-Since \( M C M \) is symmetric, the eigenvectors are orthogonal (i.e., \( E E^T = I \)). Additionally, the eigenvectors corresponding to non-zero eigenvalues are orthogonal to the vector of ones, \( e_i^T 1 = 0 \), where \( e_i \) is a such a eigenvector. Because \( M C M 1 = 0 \).
+The eigendecomposition of \( M C M \) exhibits several important properties. First, since \( MCM \) is symmetric, the eigenvectors are orthogonal (\( E^T E = I \)). Second, eigenvectors corresponding to nonzero eigenvalues are orthogonal to the vector of ones because \( MCM 1 = 0 \), ensuring that the patterns are mean-centered.
 
-Now, we prove that for any eigenvector \( v_i \), \( M v_i = v_i \).
-\begin{proof}
-  \begin{align*}
-    M C M v_i & = \lambda_i v_i \\
-    M^2 C M v_i & = \lambda_i M v_i \\
-    M C M v_i & = \lambda_i M v_i \\
-    \lambda_i v_i & = \lambda_i M v_i \\
-  \end{align*}
 
-  For \( \lambda_i \neq 0 \), this implies \( M v_i = v_i \).
-\end{proof}
+\paragraph{Connecting Moran's Coefficient and Eigenvector Spatial Filtering}
 
-With this property established, we can show that the Moran coefficient for each eigenvector is proportional to its corresponding eigenvalue. The Moran coefficient for an eigenvector \( v_i \) is given by:
+\citet{de1984extreme} demonstrated that when \( C \) is symmetric, the eigenvalues of \( MCM \) correspond to the Moran coefficients of their respective eigenvectors. This result implies that, for any spatial structure defined by \( C \), the eigenvector associated with the largest eigenvalue of \( MCM \) achieves the highest possible Moran coefficient among all vectors. This eigenvector represents the dominant direction of spatial autocorrelation, capturing the strongest spatial pattern inherent to the structure of \( C \).
+
+To establish the connection, consider the definition of the Moran coefficient for an eigenvector \( v_i \):
 \[
-  M C (v_i)=\frac{n}{1^T C 1} \frac{v_i^T M C M v_i}{v_i^T M v_i}.
+  MC(v_i) = \frac{p}{1^T C 1} \cdot \frac{v_i^T MCM v_i}{v_i^T M v_i}.
 \]
 
-Using \( M C M v_i = \lambda_i v_i \) and \( M v_i = v_i \), this expression simplifies to:
+We first prove that for any eigenvector \( v_i \), \( M v_i = v_i \). Given that \( MCM v_i = \lambda_i v_i \), where \( \lambda_i \) is the eigenvalue corresponding to \( v_i \), we apply \( M \) on both sides:
 \[
-  M C (v_i)=\frac{n}{1^T C 1} \lambda_i.
+  MCM v_i = \lambda_i v_i \implies M(MCM v_i) = M(\lambda_i v_i).
+\]
+Since \( M^2 = M \) (idempotence), this becomes:
+\[
+  MCM v_i = \lambda_i M v_i.
+\]
+By comparing with the original equation \( MCM v_i = \lambda_i v_i \), we deduce:
+\[
+  \lambda_i v_i = \lambda_i M v_i.
+\]
+For \( \lambda_i \neq 0 \), this implies \( M v_i = v_i \), as required.
+
+With this property established, we simplify the numerator of \( MC(v_i) \). Using \( MCM v_i = \lambda_i v_i \), we find:
+\[
+  v_i^T MCM v_i = v_i^T (\lambda_i v_i) = \lambda_i (v_i^T v_i).
 \]
 
-Thus, the Moran coefficient is directly proportional to the eigenvalue \( \lambda_i \), as required.
+The denominator, \( v_i^T M v_i \), simplifies as:
+\[
+  v_i^T M v_i = v_i^T v_i,
+\]
+since \( M v_i = v_i \).
+
+Substituting these results into the definition of \( MC(v_i) \), we have:
+\[
+  MC(v_i) = \frac{p}{1^T C 1} \cdot \frac{\lambda_i v_i^T v_i}{v_i^T v_i}.
+\]
+The terms \( v_i^T v_i \) cancel, leaving:
+\[
+  MC(v_i) = \frac{p}{1^T C 1} \lambda_i.
+\]
+
+This derivation shows that the Moran coefficient of an eigenvector \( v_i \) is directly proportional to its eigenvalue \( \lambda_i \). The eigenvector associated with the largest eigenvalue achieves the highest Moran coefficient, capturing the strongest spatial autocorrelation, while eigenvectors with smaller or negative eigenvalues represent weaker or dispersed spatial patterns.
+
 
 \subsubsection{Whitening Transformations}
 
@@ -285,14 +318,14 @@ In Simulation 1, we evaluated the distribution of the success probability \( \ma
 
 Similarly, in Simulation 2, we assessed the distribution of \( \mathbf{p} \) at various non-zero values for \( \mathbf{b} \) (0.1, 0.15, 0.2, 0.25, and 0.3). As shown in Figure \ref{fig:sim2_p_dist}, the value of 0.2 resulted in the most uniform distribution of \( \mathbf{p} \), making it the best option for this simulation.
 
-\begin{figure}[h!]
+\begin{figure}[H]
 	\centering
 	\includegraphics[width=0.8\textwidth]{sim1_p_dist.png}
   \caption{Distribution of success probability \( \mathbf{p} \) at different non-zero values in Simulation 1.}
 	\label{fig:sim1_p_dist}
 \end{figure}
 
-\begin{figure}[h!]
+\begin{figure}[H]
 	\centering
 	\includegraphics[width=0.8\textwidth]{sim2_p_dist.png}
   \caption{Distribution of success probability \( \mathbf{p} \) at different non-zero values in Simulation 2.}
@@ -307,7 +340,7 @@ In this subsection, we examine the group mean differences in covariate values be
 
 Figure \ref{fig:group_diff1} presents the group mean differences for Simulation 1, with the heatmap on the left showing that regions corresponding to non-zero coefficients in \( \beta \) exhibit larger mean differences between \( y = 1 \) and \( y = 0 \), as larger covariate values in these locations have higher probabilities of being assigned to \( y = 1 \). The scatterplot on the right displays the group mean differences in the frequency domain, where each point represents a frequency component; frequencies associated with larger eigenvalues tend to have larger mean differences. Figure \ref{fig:coefs_sim1} shows the actual coefficients used in Simulation 1, where non-zero coefficients in \( \beta \) are localized to specific pixels, corresponding to the areas with larger mean differences in the group comparison.
 
-\begin{figure}[h!]
+\begin{figure}[H]
 	\centering
   \includegraphics[width=0.8\textwidth, height=0.35\textwidth]{group_mean_diff_sim1.png}
 	\caption{Group mean difference in covariate values between instances where \( y = 1 \) and \( y = 0 \) in Simulation
@@ -315,7 +348,7 @@ Figure \ref{fig:group_diff1} presents the group mean differences for Simulation 
 	\label{fig:group_diff1}
 \end{figure}
 
-\begin{figure}[h!]
+\begin{figure}[H]
 	\centering
 	\includegraphics[width=0.8\textwidth, height=0.35\textwidth]{actual_coefs_sim1.png}
 	\caption{Actual coefficients in Simulation 1 for the pixel space (left) and frequency space (right).}
@@ -324,14 +357,14 @@ Figure \ref{fig:group_diff1} presents the group mean differences for Simulation 
 
 Figure \ref{fig:group_diff2} shows the group mean differences for Simulation 2, while Figure \ref{fig:coefs_sim2} displays the actual coefficients. The non-zero coefficients in \( \mathbf{b} \) are uniformly set to 0.2. However, the scatterplot in the frequency space does not clearly highlight the non-zero components, with increasing variance observed for larger eigenvalues. This variance pattern is consistent with the diagonal covariance matrix used in the simulation. The difficulty in identifying the non-zero components suggests that the effect size may be too small relative to the variance, making detection challenging. [Further adjustments to either the effect size or the covariance matrix could improve the detectability of these non-zero coefficients in future analyses.]
 
-\begin{figure}[h!]
+\begin{figure}[H]
 	\centering
 	\includegraphics[width=0.8\textwidth, height=0.35\textwidth]{group_mean_diff_sim2.png}
 	\caption{Group mean difference in covariate values between instances where \( y = 1 \) and \( y = 0 \) in Simulation 2.}
 	\label{fig:group_diff2}
 \end{figure}
 
-\begin{figure}[h!]
+\begin{figure}[H]
 	\centering
 	\includegraphics[width=0.8\textwidth, height=0.35\textwidth]{actual_coefs_sim2.png}
 	\caption{Actual coefficients in Simulation 2 for the pixel space (left) and frequency space (right).}
@@ -344,7 +377,7 @@ Figure \ref{fig:group_diff2} shows the group mean differences for Simulation 2, 
 
 Table~\ref*{tab:auc_acc_table} summarizes the average AUCs and accuracies over 500 iterations. In both Simulation 1 (pixel space sparsity) and Simulation 2 (frequency space sparsity), models fitted in the frequency space consistently outperformed those fitted in the pixel space. For example, in Simulation 1, using \texttt{lambda.min} as the regularization parameter, models trained with pixel space covariates achieved an AUC of 0.803 (SE = 0.031) and an accuracy of 72.6\% (SE = 0.032). In contrast, models trained with frequency space covariates produced a slightly higher AUC of 0.826 (SE = 0.028) and a higher accuracy of 74.5\% (SE = 0.030). A similar trend was observed in Simulation 2, with frequency space models showing superior performance regardless of the regularization parameter used.
 
-\begin{table}[h!]
+\begin{table}[H]
 	\centering
 	\caption{Comparison of AUC and accuracy between models fitted in the pixel space and frequency space across 500 iterations for Simulation 1 and Simulation 2.}
 	\label{tab:auc_acc_table}
@@ -373,7 +406,7 @@ The mean estimated coefficients across iterations were calculated, and Figure \r
 
 Figure \ref{fig:b_estimates} shows the mean estimated \( \mathbf{b} \) values plotted against the order of eigenvalues. The eigenvalue ordering is consistent with earlier calculations. In Simulation 1, \texttt{lambda.1se} applies a stronger regularization penalty, shrinking the estimated coefficients more than \texttt{lambda.min}. For Simulation 2, although the trend is less clear, there seems to be an upward trend in the estimated values as the eigenvalues increase. This trend may be related to the structure of the covariance matrix, specifically its decreasing diagonal values [consider math proof?].
 
-\begin{figure}[h!]
+\begin{figure}[H]
 	\centering
 	\includegraphics[width=0.8\textwidth]{beta_estimates.png}
 	\caption{Mean estimated \( \beta \) values across simulations, with models fitted using \texttt{lambda.min} (left) and
@@ -381,7 +414,7 @@ Figure \ref{fig:b_estimates} shows the mean estimated \( \mathbf{b} \) values pl
 	\label{fig:beta_estimates}
 \end{figure}
 
-\begin{figure}[h!]
+\begin{figure}[H]
 	\centering
 	\includegraphics[width=0.8\textwidth]{b_estimates.png}
 	\caption{Mean estimated \( b \) values across simulations, plotted against ordered eigenvalues. Models fitted using
@@ -397,7 +430,7 @@ It is interesting to observe that, although the heatmap for significance of \( \
 
 Another observation is that, although the non-zero effect size for \( \mathbf{b} \) is constant in Simulation 2, the percentage of significant p-values increases as the eigenvalues grow (Figure \ref{fig:perc_sign_b} right). [I am considering creating a plot to visualize the actual \( \beta \) values in Simulation 2 and the actual \( b \) values in Simulation 1, where the non-zero values vary, and compare them with the corresponding percentage of significant p-values. The goal is to examine whether the size of the actual non-zero values correlates with the percentage of significance. I suspect that a larger absolute effect size should result in a higher percentage of significance, but this doesn’t seem to be the case for \( b \) in Simulation 2, so I want to investigate other factors as well.]
 
-\begin{figure}[h!]
+\begin{figure}[H]
 	\centering
 	\includegraphics[width=0.9\textwidth]{perc_sign_pvals_hdi_beta.png}
 	\caption{Percentage of significant p-values for elements of \( \beta \) when fitting models in the pixel space in
@@ -405,7 +438,7 @@ Another observation is that, although the non-zero effect size for \( \mathbf{b}
 	\label{fig:perc_sign_beta}
 \end{figure}
 
-\begin{figure}[h!]
+\begin{figure}[H]
 	\centering
 	\includegraphics[width=0.9\textwidth]{perc_sign_pvals_hdi_b.png}
 	\caption{Percentage of significant p-values for elements of \( b \) across ordered eigenvalues in both simulations.}
