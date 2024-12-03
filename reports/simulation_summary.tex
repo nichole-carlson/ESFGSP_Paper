@@ -72,7 +72,7 @@ This study focuses on modifying the covariance structure by leveraging the eigen
 
 
 
-\subsection{Frequency Space}
+\subsection{Whitening Tranformation to the Frequency Space}
 
 Reducing spatial dependencies in imaging data requires a transformation that leverages the inherent spatial structure. Moran's Coefficient, a widely used measure of spatial autocorrelation, quantifies the degree to which neighboring pixels exhibit similar values. Importantly, the eigendecomposition of \( MCM \)—a matrix constructed from the spatial adjacency matrix \( C \) and the centering matrix \( M \)—establishes a connection with Moran's Coefficient. The eigenvalues of \( MCM \) represent the strength of spatial autocorrelation along each eigenvector, while the eigenvectors capture distinct spatial patterns defined by the structure of \( C \). By projecting imaging data onto these eigenvectors, the data are transformed into a frequency space where spatial dependencies are reduced while preserving meaningful spatial relationships.
 
@@ -199,80 +199,100 @@ The terms \( v_i^T v_i \) cancel, leaving:
 
 This derivation shows that the Moran coefficient of an eigenvector \( v_i \) is directly proportional to its eigenvalue \( \lambda_i \). The eigenvector associated with the largest eigenvalue achieves the highest Moran coefficient, capturing the strongest spatial autocorrelation, while eigenvectors with smaller or negative eigenvalues represent weaker or dispersed spatial patterns.
 
+The introduction of Moran’s Coefficient (MC) and Eigenvector Spatial Filtering (ESF) provides a foundation for understanding and reducing spatial dependencies in imaging data. MC quantifies spatial autocorrelation, while ESF leverages the eigendecomposition of \( MCM \) to decompose spatial patterns into orthogonal components. By establishing the proportional relationship between MC and the eigenvalues of \( MCM \), we highlight how eigenvectors capture distinct spatial autocorrelation patterns inherent to the structure of \( C \). This connection allows us to project data into a frequency space, where each component represents a specific spatial pattern, enabling the reduction of spatial dependencies while preserving interpretable relationships.
+
+
 
 \subsubsection{Whitening Transformations}
 
-We now explain how the properties we established about the Moran coefficient and the eigenvectors of \( M C M \) can be used to reduce data complexity when fitting image data into models.
+We now explain how the properties of the Moran coefficient and the eigenvectors of \( MCM \) can be utilized to reduce data complexity when fitting image data into models. Specifically, we demonstrate how these properties can guide whitening transformations, which are often employed to reduce covariance complexity in high-dimensional data.
 
-A common approach to reducing covariance complexity is the whitening transformation, which transforms a vector of random variables (e.g., an image) to yield a diagonal covariance matrix, meaning no correlation between pixels . Multiple whitening (decorrelation) transformations are possible, but orthogonal transformations are popular due to their preservation of vector length.
+A whitening transformation reduces correlations between variables by transforming a vector of random variables (e.g., an image) such that its covariance matrix becomes diagonal. Among various whitening methods, orthogonal transformations are particularly popular because they preserve the length of the transformed vector.
 
-If we flatten a 2D image into a 1D column vector \( x \), an orthogonal transformation can be viewed as a rotation or reflection of this vector without changing its length.
-\begin{proof}
-  The length of \( x \) can be expressed as \( x^T x \). Applying an orthogonal matrix \( E \), which satisfies \( E E^T = I \), to \( x \), the length of the transformed vector \( E^T x \) is \( (E^T x)^T (E^T x) = x^T x \).
-\end{proof}
+Orthogonal matrices are typically derived from the eigendecomposition of a symmetric matrix. In our context, we perform eigendecomposition on the centered adjacency matrix \( MCM \), as described earlier. This approach is particularly useful for data with spatial autocorrelation, as it provides interpretable transformations. The eigenvector associated with the \( i \)-th largest eigenvalue represents the \( i \)-th strongest direction of spatial autocorrelation, as defined by the adjacency matrix \( C \). Thus, this transformation aligns the data along spatial patterns encoded by the eigenvectors, effectively reducing dependencies in the data.
 
-A common way to find an orthogonal matrix is through eigendecomposition of a symmetric matrix, which provides a diagonal matrix of eigenvalues and an orthogonal matrix of eigenvectors. Here, we perform eigendecomposition on the centered adjacency matrix \( M C M \) as described earlier. This approach is particularly useful for transforming data with spatial autocorrelation due to its interpretability. In this case, the eigenvector associated with the \( n \)-th largest eigenvalue captures the \( n \)-th strongest spatial autocorrelation direction, as defined by \( C \). This orthogonal transformation can thus be viewed as rotating or reflecting the original data to align with these spatial directions [I'm trying to picture how an image would appear along the direction of strongest spatial autocorrelation]. Since this decomposition is not based on the actual covariance of the dataset, it may not fully eliminate pixel correlation. However, if the adjacency matrix \( C \) is reasonable, we expect the transformed data to have sufficiently reduced pixel correlations, improving computational efficiency.
+It is important to note that this transformation is not directly based on the empirical covariance of the dataset but instead on the spatial structure defined by \( C \). Consequently, while this transformation may not fully eliminate pixel correlations, a reasonable adjacency matrix \( C \) can substantially reduce these dependencies, enhancing computational efficiency and model performance.
 
-The next question is how to select an appropriate adjacency matrix \( C \) for an image. For an image with \( s \) pixels, \( C \) will be an \( s \times s \) matrix, where each element \( C_{ij} \) represents the adjacency between pixels \( i \) and \( j \). There are several ways to define adjacency between pixels. 
+The choice of adjacency matrix \( C \) is crucial for effectively reducing spatial dependencies. For an image with \( p \) pixels, \( C \) is a \( p \times p \) matrix, where each element \( C_{ij} \) encodes the adjacency relationship between pixels \( i \) and \( j \). There are various strategies for defining adjacency. One approach is data-independent and unweighted, where adjacency is binary, with values of 1 assigned to adjacent pixels and 0 otherwise. For instance, a ``2-neighbor adjacency matrix'' considers two pixels adjacent if they are direct neighbors or share a direct neighbor. All other entries, including the diagonal, are set to 0. 
 
-One approach is data-independent and unweighted, where only 0 or 1 values are assigned in \( C \): 1 for adjacent pixels and 0 otherwise. A common example is the “2-neighbor adjacency matrix,” where two pixels are considered adjacent if they are direct neighbors or share a direct neighbor. All other values, including the diagonal, are set to 0.
+Another approach is data-independent but weighted, where adjacency values are based on the distance between pixels. Let \( d_{ij} \) denote the Euclidean distance between pixels \( i \) and \( j \). The adjacency value is then defined as \( C_{ij} = -\exp(d_{ij}) \). Both methods rely on pixel positions rather than their actual intensity values, providing a flexible framework for encoding spatial relationships in \( C \).
 
-Another approach is data-independent but weighted, assigning adjacency values based on the distance between two pixels. Suppose the distance between pixels \( i \) and \( j \) is \( d_{ij} \), calculated using their Euclidean distance in the image; then the adjacency \( C_{ij} = - \exp(d_{ij}) \). Both methods define adjacency based on relative pixel positions rather than their actual values.
+Once an adjacency matrix \( C \) is chosen, the eigendecomposition of \( MCM \) yields the orthogonal matrix \( E \), whose columns are the eigenvectors of \( MCM \). Each eigenvector \( v_i \), corresponding to the \( i \)-th largest eigenvalue, captures the \( i \)-th strongest spatial autocorrelation pattern inherent in the spatial structure of \( C \).
 
-After choosing an adjacency matrix \( C \), we can apply the eigendecomposition of \( M C M \) as we discussed above, and get the \( E \) contains the eigenvectors as columns. The eigenvector \( v_i \), corresponding to the \( i \)-th largest eigenvalue, represents the \( i \)-th strongest spatial autocorrelation that could be captured by a vector among all possible vectors. Suppose \( X \) represents a \( n \times p \) matrix, representing \( n \) images, with each row corresponding to one image follow the spatial adjacency we just specified. Transforming images \( X \) to the frequency space is achieved by projecting it onto the matrix of eigenvectors:
+For a dataset \( X \) containing \( n \) images, represented as an \( n \times p \) matrix (where each row corresponds to a flattened image), projecting the data into the frequency space is achieved by:
 \[
-  X_{\text{freq}} = X \cdot E
+  X_{\text{freq}} = X \cdot E.
 \]
+This transformation aligns the data along orthogonal spatial patterns encoded by the eigenvectors, facilitating more efficient modeling and analysis while preserving meaningful spatial relationships.
+
+
 
 \subsection{Models}
 
-When we use images as predictors to predict binary outcomes each image belongs to, we can use the Logistic regression. Logistic regression models the probability of an event occurring (e.g. \( y = 1 \)) as a function of the predictors (\( X \)). Suppose \( x_i \) is a vector of predictor variables for the \( i \)-th observation, and \( y_i \in \{0, 1\} \) is the binary outcome, and \( \beta \) is the vector of coefficients to be estimated. The model predicts the probability as \( p(y_i = 1) = 1 / (1 + \exp(-x_i^T \beta)) \). The goal is to estimate \( \beta \) by minimzing the negative log-likelihood of the observed data.
+This study focuses on evaluating the impact of spatial autocorrelation on the performance of LASSO models for binary classification problems with imaging data. Specifically, we investigate whether whitening transformations, derived from Moran’s Coefficient and Eigenvector Spatial Filtering, can improve model performance by reducing spatial dependencies. To do this, we design simulations to compare the performance of LASSO models on raw imaging data and whitened data in both the pixel and frequency spaces.
+
+Logistic regression is used as the core modeling framework, as it is well-suited for binary classification. The model estimates the probability of an event occurring (e.g., \( y_i = 1 \)) as a function of predictors (\( X \)). Let \( x_i \) be the vector of predictor variables for the \( i \)-th observation, \( y_i \in \{0, 1\} \) be the binary outcome, and \( \beta \) be the vector of coefficients to be estimated. The probability of \( y_i = 1 \) is modeled as:
 \[
-  \begin{gathered}
-    y_i \sim \operatorname{Bernoulli} (p_i) \\
-    \operatorname{logit} (p_i) = x_i^T \cdot \beta
-  \end{gathered}
+  p(y_i = 1) = \frac{1}{1 + \exp(-x_i^T \beta)},
 \]
-The goal is find the optimal \( \beta \) such that when \( y_i = 1 \), the corresponding \( p_i \) could be as large as possible, while when \( y_i = 0 \), \( (1 - p_i) \) could be as large as possible. We can thus the define the likelihood function as:
+where the goal is to estimate \( \beta \) by minimizing the negative log-likelihood of the observed data. The likelihood function is given by:
 \[
-  L = \prod_i p_i^{y_i} (1 - p_i)^{1 - y_i}
+  L = \prod_i p_i^{y_i} (1 - p_i)^{1 - y_i},
 \]
-The goal is to maximize this function. To simplify the derivatives and improve numerical stability, we usually not directly maximize this function, but instead, minizmize the negative log-likelihood:
+and the negative log-likelihood is:
 \[
-  \begin{aligned}
-    - \ell = - \ln(L) & =  - \sum_i^N (y_i \ln(p_i) + (1 - y_i) \ln(1 - p_i) ) \\
-                      & = \sum_i^N \left[ \ln \left(1 + \exp(x_i^T \beta) \right) + y_i (x_i^T \beta) \right]
-  \end{aligned}
+  - \ell = - \ln(L) = - \sum_i \left[ y_i \ln(p_i) + (1 - y_i) \ln(1 - p_i) \right].
+\]
+Adding an \( L_1 \) penalty to the negative log-likelihood, the LASSO logistic regression objective becomes:
+\[
+  \min_{\beta} - \ell + \lambda \sum_j |\beta_j|,
+\]
+where \( \lambda > 0 \) controls the strength of regularization, shrinking coefficients \( \beta_j \) with small absolute values to zero. This regularization enforces sparsity, making the model particularly suited for high-dimensional data with sparse true features.
+
+In the context of imaging data, each pixel is treated as a predictor. Spatial autocorrelation between pixels can degrade the performance of the LASSO model by violating the independence assumption among predictors. To address this, whitening transformations can be employed to reduce spatial dependencies by projecting the data into a frequency space where features are decorrelated. As introduced earlier, this transformation is achieved through the eigendecomposition of the spatially adjusted matrix \( MCM \), where \( C \) is the adjacency matrix encoding pixel relationships. Let \( E \) represent the matrix of eigenvectors of \( MCM \); the transformed data in the frequency space is then:
+\[
+  X_{\text{freq}} = X \cdot E.
 \]
 
-When there are a lot of coefficient values equal to zero, in another word, a lot of sparsity in coefficient vector, we add L1 penalty to the negative log-likehood function:
+When applying logistic regression, the relationship between predictors and the outcome is defined by the coefficient vector \( \beta \), which assigns weights to predictors. In the pixel space, \( \beta \) indicates the importance of each pixel in determining the classification. When data is transformed into the frequency space, the coefficients must also be transformed to align with the new basis defined by \( E \). The relationship between the data and coefficients can be expressed as:
 \[
-  \min_{\beta} - \ell + \sum_j^p \lambda | \beta_j |
+  X \cdot \beta = X_{\text{freq}} \cdot b = (X \cdot E) \cdot b.
+\]
+For this equality to hold for all \( X \), it follows that:
+\[
+  \beta = E \cdot b.
+\]
+Taking the transpose of both sides and leveraging the orthogonality of \( E \) (\( E^T E = I \)), the coefficient vector in the frequency space is:
+\[
+  b = E^T \beta.
 \]
 
-Here \( p \) represents the number of features, and \( \lambda \) is a positive hyperparameter represents the penalty strength we apply for having too many non-zero coefficients. To minimize this function, \( \beta_j \)s with small absolute values, representing not important features, will be shrink to zero. The larger \( \lambda \) is, the more coefficients will be shrink to zero. This model is well suited for the scenario that we know there are sparsity in the features.
+The transformed coefficient vector \( b \) encodes the contribution of each frequency component to the classification, analogous to how \( \beta \) encodes the contribution of each pixel in the original space.
 
-The goal of this study is to evaluate when we need to do high-dimensional feature selection on imaging data for binary classification problem, whether the spatial correlation between pixels could impede the performance of the LASSO model, and whether fitting LASSO model on the data after whitening transformation we proposed could provide a better performance. This could be achieved by simulating some image data \( X \), and design a coefficient vector \( \beta \), with some of the values as non-zero values and others as zeros. The pixels corresponding to non-zero coefficients are the ones that will affect the classification of the image. We can calculate the probability of \( y = 1 \) for each image using \( p_i = 1 / (1 + \exp(-x_{i \cdot} \beta)) \), then fit the outcome vector \( y \) on \( X \) to get the estimated coefficient vector \( \hat{\beta} \), see how many of the pixels corresponding to non-zero coefficients are correctly selected.
+To evaluate the effectiveness of whitening transformations, we compare the performance of LASSO models in the pixel space and the frequency space. In the pixel space, the data matrix \( X \), representing flattened images, is used directly, with the coefficient vector \( \beta \) indicating the importance of each pixel for classification. In the frequency space, the data is transformed using the eigenvectors \( E \) of the spatially adjusted matrix \( MCM \), resulting in \( X_{\text{freq}} = X \cdot E \). Simultaneously, the coefficient vector \( \beta \) is transformed into the frequency space as \( b = E^T \beta \). The transformed coefficients \( b \) indicate the contribution of each frequency component to the classification outcome. LASSO models are fit in both spaces, producing estimated coefficients \( \hat{\beta} \) and \( \hat{b} \), respectively, which are compared with the true coefficients (\( \beta \) and \( b \)) to evaluate feature selection performance.
 
-To compare its performance with whitening transformed data. We choose a spatial adjacency matrix \( C_{\text{adj}} \) (since we simulated data with the known covariance matrix \( C_{\text{cov}} \), we can let they equal, just replace the 1 in the diagonal of latter to 0 for the former), perform the transformation and get \( X_{\text{freq}} \). The coefficient vector of the pixel space can be transformed as well with the following equation:
-\[
-  X \cdot \beta = X_{\text{freq}} \cdot b = (X \cdot E) \cdot b = X \cdot (E \cdot b)
-\]
-so \( \beta = E \cdot b \). We than fit \( y \) on \( X_{\text{freq}} \), get the estimated coefficients \( \hat{b} \), and compare it with the true coefficients \( b \). Comparing the performance of models on pixel space and frequency space can we get an idea of whether whitening transformation improve the model performance in such scenario.
+To ensure a comprehensive evaluation, we consider two distinct scenarios that reflect different ways imaging data might exhibit important features for binary classification tasks: sparsity in the pixel space and sparsity in the frequency space. Sparsity is a natural assumption in many imaging applications, where only a small subset of pixels or frequency components contributes meaningfully to the outcome, making the data well-suited for LASSO regression.
 
-We can also simulate data and coefficients directly on the frequency space, and generate the outcomes. Then the simulated data and coefficients can be transformed back to the pixel space using the inversion of the transformation we provided above. Then the LASSO model will be fit on both \( X \) and \( X_{\text{freq}} \), and a similar comparison between true coefficients and estimated coefficients could be achieved. This scenario we are aiming to simulate when the sparsity is in the freqeuency space, meaning the image pattern is dominated by a few frequencies.
+In the first scenario, sparsity exists in the pixel space. Here, the true coefficient vector \( \beta \) is sparse in the pixel space, meaning that only a subset of pixels contributes to the classification outcome. This scenario mimics applications where localized image regions determine the outcome. The data matrix \( X \) is transformed into the frequency space using \( X_{\text{freq}} = X \cdot E \), and the coefficients are transformed as \( b = E^T \beta \). LASSO is fit in both the pixel space and the frequency space, and the estimated coefficients (\( \hat{\beta} \) and \( \hat{b} \)) are compared to the true coefficients to assess feature selection and classification performance.
+
+In the second scenario, sparsity exists in the frequency space. This assumes that the image pattern is dominated by a few frequency components, representing scenarios where broader spatial patterns, rather than individual pixels, determine the outcome. The data is simulated directly in the frequency space as \( X_{\text{freq}} \), with sparse coefficients \( b \) indicating the important frequencies. The outcomes are generated using \( X_{\text{freq}} \cdot b \). The data and coefficients are then transformed back into the pixel space as \( X = X_{\text{freq}} \cdot E^T \) and \( \beta = E \cdot b \). Similar to the first scenario, LASSO models are fit in both spaces, and the estimated coefficients are compared to evaluate the effectiveness of whitening transformations.
+
+The performance of the LASSO models is evaluated based on two criteria. The first is the ability to recover the true nonzero coefficients, indicating the model's capacity for accurate feature selection. The second is the classification accuracy on the outcomes \( y \), reflecting the overall predictive performance. By comparing these results across the pixel and frequency spaces, we aim to determine whether whitening transformations mitigate the effects of spatial autocorrelation and enhance the robustness of LASSO regression in scenarios with different sparsity structures.
+
 
 
 \subsection{Simulations}
 
-The first two simulations, one simulate data on the pixel space, and another simulate data on the frequency space, will assume the estimated spatial adjaceny matrix reflects the true covariance in the data. The first simulation we simulate \( X \) as a \( 1000 \times 256 \) matrix, representing 1000 images, each with \( 16 \times 16 \) pixels. They were simulated from a multivariate normal distribution with mean zero and a \( 256 \times 256 \) covariance matrix \( C_{\text{cov}} - \exp (\text{dist} (x_i, x_j )) \), where \( \text{dist}(x_i, x_j) \) represents the Euclidean distance between any two pixels \( i \) and \( j \) in a 2D image. We simulate 1000 such images, flatten each image into a 1D sequence of length 256, and thus create \( X \) as a \( 1000 \times 256 \) matrix, representing 1000 images, and each pixel will be used as a predictor. \( \beta \) as the coefficient vector, with each value indicating whether the corresponding pixel is important in deciding the classification. We use 0 for the pixels outside of the central \( 8 \times 8 \) area, and use a constant non-zero value \( \beta \) for the central area. The value of \( \beta \) will be decided aiming to make the distribution of \( p = 1 / (1 + \exp (- X \beta)) \) evenly distributed around 0 and 1. Since a too large \( \beta \) will make the probabilities either near 0 or near 1, make the task too simple, and a too small \( \beta \) makes all probabilities around 0.5, make the classification too hard.
-And \( y \) is the outcome vector with values of 0 and 1. The outcome vector will be simulated from binomial distributions for each position independently. The probability of \( y_i = 1 \) will be decided by \( p_i \).
+Building on the scenarios outlined previously, we design comprehensive simulations to assess the performance of LASSO models in both the pixel space and the frequency space. These simulations allow us to evaluate whether whitening transformations effectively address spatial autocorrelation and enhance the model's ability to identify relevant features. Each scenario is constructed under different sparsity assumptions, with parameters selected to reflect practical considerations in imaging data analysis.
 
-After generating the data, we will simulate the step of assuming a spatial adjacency matrix \( C_{\text{adj}} \) for the images, performing eigendecomposition on \( M C M \), and use the eigenvectors to transform the original images to the frequency space, which will be called \( X_{\text{freq}} \). Simultaneously, we will transform the coefficient vector \( \beta \) into the frequency space as well, labeled as \( b \). This way, we are able to fit Logistic models with L1 penalty on the original images \( X \), and on the transformed data \( X_{\text{freq}} \) can compare if the coefficient estimation is improved after whitening transformation. In this first scenario, we assume the estimated spatial adjacency matrix \( C_{\text{adj}} \) correctly reflects the true underlying covariance matrix \( C_{text{cosv}} \), the only difference will be that the diagonal elements in the spatial adjacency matrix are 0s while they are 1s in the covariance matrix.
+To ensure robust and reliable results, each simulation is repeated 500 times. This repetition mitigates the influence of random variability inherent in data generation and model fitting, allowing us to obtain stable and generalizable performance metrics by averaging outcomes across repetitions.
 
-The above simulation covers the scenario that there is sparsity in the coefficients in the original space. We also want to test how the two models perform when there is sparsity in the coefficients in the frequency space. It represents when the pattern of the image is dominated by a few spatial patterns. We will start from simulating \( X_{\text{freq}} \) this time. We expect our whitening transformation could perform similarly to the whitening transformation using eigencomposition of the true covariance matrix. Thus, to simplify the simulation, we randomly draw \( X_{\text{freq}} \) with 1000 observations from a multivariate normal distribution with mean zero, and a diagonal \( 256 \times 256 \) covariance matrix, with the diagonal values decreasing with a constant step size. To simulate the sparsity in the coefficient in the frequency space, we create \( b \) as a vector of length 256, with 10\% items randomly assigned a non-zero constant value \( b \), while all other values equal 0. Similar to the previous simulation, the value of \( b \) will be decided aiming to make the probability of \( y=1 \) evenly along the range from 0 to 1. Since the transformation between \( X \) and \( X_{\text{freq}} \) solely depends on our assumption of the spatial adjacency matrix \( C_{\text{adj}} \), not the actual covariance \( C_{\text{cov}} \), here we still use the same matrix of eigenvectors to transform \( X_{\text{freq}} \) to its original space: \( X = X_{\text{freq}} \cdot E^T \), and transform \( b \) back to the coefficients in the original space \( \beta \).
+In the first scenario, sparsity exists in the pixel space. Here, data \( X \) is simulated as a \( 1000 \times 256 \) matrix, representing 1000 images, each with \( 16 \times 16 \) pixels flattened into 1D vectors of length 256. The rows of \( X \) are sampled from a multivariate normal distribution with mean zero and a covariance matrix \( C_{\text{cov}} \), where \( C_{\text{cov}} = \exp(-\text{dist}(x_i, x_j)) \), and \( \text{dist}(x_i, x_j) \) is the Euclidean distance between pixels \( i \) and \( j \). The coefficient vector \( \beta \) is constructed to ensure sparsity, with coefficients set to 0 for pixels outside the central \( 8 \times 8 \) region and assigned a constant nonzero value for pixels within this region. The nonzero value of \( \beta \) is carefully chosen to ensure that the probabilities \( p = 1 / (1 + \exp(-X \beta)) \) are evenly distributed across the range \( [0, 1] \). A balanced distribution of \( p \) ensures that the classification problem is neither too easy (e.g., probabilities close to 0 or 1) nor too difficult (e.g., probabilities clustered near 0.5), providing a meaningful test of the model's performance.
 
-Each simulation will be repeated for 500 times.
+In the second scenario, sparsity exists in the frequency space. Data \( X_{\text{freq}} \) is simulated as a \( 1000 \times 256 \) matrix, where rows are sampled from a multivariate normal distribution with mean zero and a diagonal covariance matrix. The diagonal values decrease linearly, reflecting stronger spatial autocorrelation in lower-frequency components. The coefficient vector \( b \) is created with 10\% of its entries randomly assigned nonzero values, while the rest are set to 0, ensuring sparsity in the frequency domain. Similar to the first scenario, the nonzero values of \( b \) are chosen to produce probabilities \( p = 1 / (1 + \exp(-X_{\text{freq}} \cdot b)) \) that are evenly distributed. The data and coefficients are then transformed back to the pixel space using \( X = X_{\text{freq}} \cdot E^T \) and \( \beta = E \cdot b \), enabling model fitting and comparison in both spaces.
+
+In both scenarios, we fit LASSO models in the pixel and frequency spaces to evaluate their performance in terms of coefficient recovery, classification accuracy, and the percentage of coefficients with p-values below 0.05. This analysis allows us to assess not only the models' ability to identify relevant features and accurately classify data but also the statistical significance of the identified coefficients. Detailed results and further analysis of these performance metrics are presented in the following section.
+
 
 \subsection{Analyses}
 
