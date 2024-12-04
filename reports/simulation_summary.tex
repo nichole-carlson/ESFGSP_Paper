@@ -138,10 +138,6 @@ Finally, substituting the properties of \( M \) into the matrix form, Moran’s 
 \]
 
 
-
-[Regarding the expectation of \( M C \): I'm unclear on the distinction between ``the expected value when there is no correlation in the assumed model'' and ``the value when there is no correlation in the input.'' What does ``correlation'' refer to in each context? According to Wikipedia, the expectation of \( M C \) under the null hypothesis of no spatial autocorrelation is \( -1 / (n - 1) \), and I found a proof \href{https://stats.stackexchange.com/questions/567411/expectation-and-variance-of-morans-i-under-the-null}{here} which I don’t fully understand. In my understanding, no spatial autocorrelation means all elements of \( C \) equal zero (which seems to conflict with the \( -1 / (n - 1) \) expectation).]
-
-
 \paragraph{Eigenvector Spatial Filtering (ESF)}
 
 Eigenvector Spatial Filtering is a method for identifying orthogonal spatial patterns by using the eigendecomposition of \( MCM \), where \( M \) centers the data, and \( C \) encodes spatial relationships. The eigendecomposition of \( MCM \) is expressed as:
@@ -296,15 +292,23 @@ In both scenarios, we fit LASSO models in the pixel and frequency spaces to eval
 
 \subsection{Analyses}
 
+In this section, we explore how well the simulated data aligns with the intended scenarios and evaluate the performance of LASSO models in both the pixel and frequency spaces. We start by visualizing the group mean differences to verify the quality of the simulated data and its adherence to the designed sparsity patterns. We then assess model performance using cross-validation and multiple metrics, such as classification accuracy, AUC, and coefficient recovery, providing a comprehensive evaluation of the effectiveness of whitening transformations.
+
+
 We will introduce what analyses we performed on the simulated data, which include visualization to check the simulatation quality, and then the model metrics of the LASSO models.
 
 \subsubsection{Group mean Difference}
 
-To visualize the performance of the data we simulated, in other words, whether the \( \beta \) value we chose for the pixel space, or the \( b \) value we chose for the frequency space could properly reflect the criteria we imaged for classification, we calculate the group mean differences for each simulation. Since we performed 500 iterations of simulation, only the data from the first iteration will be used for visualization. For data in the pixel space, we calculated the average value at each pixel for all images belong to \( y=1 \), and similarly for all images belong to \( y=0 \). Then the difference between two groups will be subtracted and visualized by a heatmap. If the simulation works well, since we set \( \beta \) to have positive non-zero values only for the pixels corresponding to the central \( 8 \times 8 \) area, images with larger values in that area will have a larger probability of getting the corresponding \( y \) equals 1. Thus the group mean difference heatmap should also have positive values around that area, while the difference in the other areas should be around 0.
+In both simulations, group mean differences were computed for the pixel space and the frequency space to evaluate whether the simulated coefficients (\( \beta \) or \( b \)) align with the intended classification patterns. The results were visualized using heatmaps for the pixel space and scatterplots for the frequency space, highlighting the differences in patterns across these domains. For visualization purposes, only the data from the first iteration of each simulation was used.
 
-Similarly, we calculated the group mean difference between two classes in the frequency space. Instead of showing them as 2D images (as it makes no sense to frequencies), we show the group mean difference as scatterplot with x-axis as the frequencies and y-axis as the corresponding group mean difference. When the covariance between pixels depends on their spatial relationship, and the estimated spatial adjacency matrix correctly reflect such structure, then the eigenvectors of \( M C M \) corresponding to the largest eigenvalue should reflect the direction that with the largest spatial variance. Thus the frequencies transposed by those eigenvectors should have larger variance, and the group mean difference at those frequencies should be more obvious than the others, either negative or positive (depends on the value in \( b \), which is transposed from \( \beta \). 
+In the pixel space, the group mean difference for each pixel was calculated by subtracting the average value of that pixel for images with \( y = 0 \) from the average value for images with \( y = 1 \). These differences were displayed as a heatmap, providing a visual representation of how well the simulated coefficients influence the classification outcomes. For simulations where \( \beta \) is nonzero only in the central \( 8 \times 8 \) region, we expect the heatmap to show positive group mean differences in this region, while the differences outside this area should remain close to zero.
 
-The same visualization was generated for the second simulation as well. Since this time we simulated data in the frequency space with a decreasing diagonal values on the covariance matrix, we expect to see frequencies with a larger diagonal value will have more obvious group mean difference than the frequencies with a smaller diagonal value. And we don't expect recoganizable patterns in the heatmap showing in the pixel space. The group mean difference in the pixel space should be dominated by the values in the transposed \( \beta \).
+In the frequency space, group mean differences were computed for each frequency by calculating the difference in the average values of that frequency between \( y = 1 \) and \( y = 0 \). These differences were visualized as a scatterplot, with frequencies on the x-axis and the corresponding group mean differences on the y-axis. When the spatial adjacency matrix \( C_{\text{adj}} \) accurately reflects the covariance structure of the data, frequencies corresponding to higher eigenvalues of \( MCM \) are expected to show larger group mean differences because these eigenvalues represent directions of greater spatial variance, leading to larger differences between the groups.
+
+For the second simulation, where data was generated directly in the frequency space, we expect the group mean differences to align with the diagonal covariance structure of the simulated data. Frequencies with larger diagonal covariance values should display more pronounced group mean differences, while frequencies with smaller diagonal values should show weaker differences. In the pixel space, however, the heatmap is expected to lack clear patterns, as the pixel-level differences are primarily driven by the transposed coefficients (\( \beta \)) rather than localized spatial effects.
+
+By visualizing the group mean differences in both the pixel and frequency spaces, this analysis provides insights into the alignment between the simulated coefficients and the classification outcomes, as well as the effects of spatial transformations.
+
 
 \subsubsection{LASSO cross-validation}
 
