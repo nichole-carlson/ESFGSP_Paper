@@ -7,20 +7,20 @@
 # covariance matrix, Sigma, follows an exponential correlation structure:
 # suppose i and j are two pixels in x, sigma_ij = exp(-dist(i, j)), where
 # dist(i, j) is calculated based on their 2-D location in the 16*16 matrix.
-# 
+#
 # Let V be the matrix of eigenvectors of Sigma, calculated using the method
 # brought in the Spatial filtering paper, with each column representing an
 # eigenvector. x_freq = t(V) %*% x, representing x in the freq space. It's
 # covariance matrix is t(V) %*% Sigma %*% V, which should be a diagonal matrix.
-# 
+#
 # Matrix notation
 # Suppose X reperesents a n*256 matrix, with each row as t(x) in the above
-# context, then we can calculate X_freq = X %*% V, which is also a n*256 matrix. 
-# 
+# context, then we can calculate X_freq = X %*% V, which is also a n*256 matrix.
+#
 # We further assume beta and b as 256*1, representing the coefficient vector
 # in the pixel space and freq space, respectively. Since X_freq %*% b = X %*%
 # beta, we can get V %*% b = beta.
-# 
+#
 # Simulations
 # We do two simulations. The first one assume sparsity in beta. When converting
 # beta into a 16*16 matrix, it should only have non-zero values in the central
@@ -84,7 +84,7 @@ gen_exp_corr <- function(n_pixels) {
   outer(1:n_pixels, 1:n_pixels, Vectorize(function(i, j) exp(-calc_dist(i, j))))
 }
 
-# Generates a diagonal matrix with values decay faster at the beginning and 
+# Generates a diagonal matrix with values decay faster at the beginning and
 # slow down towards the end.
 # d_i = start_value * exp(-k * log(1 + b * i))
 # k is the decay rate
@@ -93,7 +93,7 @@ gen_exp_corr <- function(n_pixels) {
 #   k <- log(start_value / end_value) / log(1 + b * (n - 1))
 #   diag_vals <- start_value * exp(-k * log(1 + b * seq(0, n - 1)))
 #   diag_mat <- diag(diag_vals)
-# 
+#
 #   return(diag_mat)
 # }
 
@@ -203,7 +203,7 @@ run_sim2 <- function(n_iter, n_samples, img_size, b_effect_size, sparsity, seed 
   if (!is.null(seed)) {
     set.seed(seed)
   }
- 
+
   # generate correlation structure in the freq space
   n_pixels <- img_size^2
   x_freq_cov <- diag(seq(6, 0.5, length.out = n_pixels))
@@ -244,11 +244,11 @@ png(
 
 beta_effects <- c(1, 0.2, 0.1, 0.05, 0.01)
 par(mfrow = c(ceiling(length(beta_effects) / 2), 2))
-for (effect in beta_effects){
+for (effect in beta_effects) {
   sim1_1iter <- run_sim1(
     n_iter = 1, n_samples = 1000, img_size = 16,
     beta_effect_size = effect, seed = 42
-  ) 
+  )
   x <- sim1_1iter$data$x
   beta <- sim1_1iter$meta_data$beta
   p <- 1 / (1 + exp(-(x %*% beta)))
@@ -269,7 +269,7 @@ png(
 
 b_effects <- seq(0.3, 0.1, by = -0.05)
 par(mfrow = c(ceiling(length(b_effects) / 2), 2))
-for (effect in b_effects){
+for (effect in b_effects) {
   sim2_1iter <- run_sim2(
     n_iter = 1, n_samples = 1000, img_size = 16,
     b_effect_size = effect, sparsity = 0.1, seed = 42
