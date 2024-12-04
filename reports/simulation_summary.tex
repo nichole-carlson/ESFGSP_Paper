@@ -33,17 +33,16 @@ Everything surrounded by [] are my thoughts/questions/to-dos.
 
 \section{Introduction}
 
-High-dimensional imaging data present unique challenges for predictive modeling and feature selection, largely due to the spatial correlations between neighboring pixels. These correlations can lead to multicollinearity, affecting the stability and efficiency of models. When LASSO is applied to imaging datasets, such spatial dependencies can obscure important features and reduce predictive accuracy if not properly addressed.
+High-dimensional imaging data present unique challenges for predictive modeling and feature selection due to the strong spatial correlations between neighboring pixels. These dependencies introduce multicollinearity, which can obscure important features and reduce predictive accuracy when standard models like LASSO are applied.
 
-This study explores the use of eigendecomposition on the matrix \( MCM \), where \( M \) is a centering matrix and \( C \) is a spatial adjacency matrix encoding pixel adjacency. The eigenvectors derived from \( MCM \) are used to transform imaging data into a "frequency space." While this transformation does not fully decorrelate the data spatially, it reduces spatial dependencies significantly and introduces a structure that enhances interpretability, making \( MCM \) a uniquely advantageous choice for such analyses.
+To address this, we leverage the eigendecomposition of the spatially adjusted matrix \( MCM \), where \( M \) centers the data and \( C \) encodes pixel adjacency. This transformation projects imaging data into a frequency space, reducing spatial dependencies while preserving interpretable spatial structures. While \( MCM \)-based transformations do not fully decorrelate the data, they strike a balance between computational efficiency and interpretability, making them well-suited for high-dimensional imaging analyses.
 
-To assess the utility of this approach, we simulate imaging datasets with specific sparsity patterns and apply LASSO in both the pixel space and the transformed frequency space. By comparing the performance of these models, we aim to demonstrate the benefits of leveraging \( MCM \)-based transformations in improving feature selection and predictive performance in high-dimensional imaging data.
-
+This study evaluates the utility of these transformations by simulating imaging datasets under varying sparsity scenarios. By applying LASSO in both the pixel and frequency spaces, we assess whether the whitening transformation improves predictive performance, focusing on classification accuracy, coefficient recovery, and feature selection.
 
 
 \section{Methods}
 
-This section outlines the methodology used to analyze high-dimensional imaging data, focusing on the transformation of data into a frequency space using spatial adjacency matrices and applying LASSO for feature selection. The narrative progresses from the challenges of spatial correlations in imaging to the construction of the frequency space and evaluation through simulated datasets.
+This section presents the methodology for analyzing high-dimensional imaging data, addressing the challenges posed by spatial correlations. We describe how data is transformed into a frequency space using spatial adjacency matrices, enabling the reduction of spatial dependencies while preserving meaningful patterns. The approach is then applied to simulated datasets, where LASSO is used for feature selection and model evaluation, providing insights into the effectiveness of this transformation in improving predictive performance.
 
 
 \subsection{Spatial Correlations in Imaging Data}
@@ -53,7 +52,7 @@ Imaging data are often characterized by spatial autocorrelation, where neighbori
 When image data are used as predictors, each pixel serves as a feature to predict a scalar outcome \( y \). Let \( X \) represent a dataset of images, where each image \( x_i \) is a row vector of \( p \) pixels. The predictive model can be expressed as:
 
 \[
-  y_i = x_{i \cdot} \beta + \epsilon_i,
+  y_i = x_i \beta + \epsilon_i,
 \]
 
 where \( \beta \) is a vector of regression coefficients, and \( \epsilon_i \sim N (0, \sigma^2) \) is the error term. In this scenario, the inherent correlations among pixels can lead to multicollinearity, which reduces the stability of coefficient estimation and complicates feature selection.
@@ -68,21 +67,13 @@ where \( \beta \) is a \( p \times s \) matrix of coefficients and \( \epsilon_i
 
 In both scenarios, the spatial correlations between pixels necessitate strategies to reduce dependencies and improve model performance. Two common approaches are dimension reduction, such as principal component analysis (PCA), and modifying the covariance structure. While PCA effectively reduces dimensionality, it often sacrifices interpretability, as the components are linear combinations of the original features.
 
-This study focuses on modifying the covariance structure by leveraging the eigendecomposition of \( MCM \), where \( M \) is a centering matrix and \( C \) is a spatial adjacency matrix encoding pixel relationships. The eigenvectors of \( MCM \) transform the data into a frequency space, aligning features along orthogonal spatial patterns and reducing spatial dependencies. These eigenvectors are interpretable because they represent spatial patterns inherent to the adjacency structure defined by \( C \). Each eigenvector corresponds to a distinct spatial variation, ordered by its associated eigenvalue, which quantifies the strength of spatial autocorrelation along that pattern. Although the transformation does not fully decorrelate the data, it balances reduced spatial autocorrelation with the preservation of meaningful spatial relationships. This interpretability, combined with computational efficiency, makes \( MCM \)-based transformations particularly suitable for high-dimensional imaging analyses with LASSO.
 
 
+\subsection{Whitening Transformations to the Frequency Space}
 
-\subsection{Whitening Tranformation to the Frequency Space}
+Reducing spatial dependencies in imaging data is crucial for effective modeling and feature selection. This study leverages the eigendecomposition of \( MCM \), where \( M \) centers the data and \( C \) encodes spatial relationships, to transform data into a frequency space. This transformation aligns features with orthogonal spatial patterns, reducing dependencies while preserving interpretable spatial structures. The eigenvalues of \( MCM \), connected to Moran’s Coefficient, quantify the strength of spatial autocorrelation along each eigenvector, ensuring the transformed features capture meaningful spatial variations.
 
-Reducing spatial dependencies in imaging data requires a transformation that leverages the inherent spatial structure. Moran's Coefficient, a widely used measure of spatial autocorrelation, quantifies the degree to which neighboring pixels exhibit similar values. Importantly, the eigendecomposition of \( MCM \)—a matrix constructed from the spatial adjacency matrix \( C \) and the centering matrix \( M \)—establishes a connection with Moran's Coefficient. The eigenvalues of \( MCM \) represent the strength of spatial autocorrelation along each eigenvector, while the eigenvectors capture distinct spatial patterns defined by the structure of \( C \). By projecting imaging data onto these eigenvectors, the data are transformed into a frequency space where spatial dependencies are reduced while preserving meaningful spatial relationships.
-
-
-\subsubsection{Moran's Coefficient and Eigenvector Spatial Filtering}
-
-This subsection introduces Moran’s Coefficient as a measure of spatial autocorrelation, describes the concept of Eigenvector Spatial Filtering, and establishes the connection between them through the eigendecomposition of \( MCM \).
-
-
-\paragraph{Moran’s Coefficient}
+\subsubsection{Moran’s Coefficient}
 
 Moran’s Coefficient (MC) is a widely used statistic for quantifying spatial autocorrelation, which measures the degree to which similar values cluster in space. For an image represented as a vector \( x = (x_1, x_2, \dots, x_p)^T \) of length \( p \), where \( x_i \) denotes the intensity of the \( i \)-th pixel, and a spatial adjacency matrix \( C \) of size \( p \times p \), Moran’s Coefficient is defined in summation form as follows \citet{griffith2014spatial}:
 
@@ -138,9 +129,9 @@ Finally, substituting the properties of \( M \) into the matrix form, Moran’s 
 \]
 
 
-\paragraph{Eigenvector Spatial Filtering (ESF)}
+\subsubsection{Eigenvector Spatial Filtering (ESF)}
 
-Eigenvector Spatial Filtering is a method for identifying orthogonal spatial patterns by using the eigendecomposition of \( MCM \), where \( M \) centers the data, and \( C \) encodes spatial relationships. The eigendecomposition of \( MCM \) is expressed as:
+Eigenvector Spatial Filtering is a method for identifying orthogonal spatial patterns by using the eigendecomposition of \( MCM \). The eigendecomposition of \( MCM \) is expressed as:
 
 \[
   MCM = E \Lambda E^T,
@@ -225,27 +216,22 @@ This transformation aligns the data along orthogonal spatial patterns encoded by
 
 \subsection{Models}
 
-This study focuses on evaluating the impact of spatial autocorrelation on the performance of LASSO models for binary classification problems with imaging data. Specifically, we investigate whether whitening transformations, derived from Moran’s Coefficient and Eigenvector Spatial Filtering, can improve model performance by reducing spatial dependencies. To do this, we design simulations to compare the performance of LASSO models on raw imaging data and whitened data in both the pixel and frequency spaces.
+To evaluate the performance of the proposed whitening transformation, we focus on binary classification problems where the outcome \( y_i \in \{0, 1\} \) is predicted using imaging data as predictors. To model binary outcomes, we use logistic regression, which predicts the probability of an event occurring (e.g., \( y_i = 1 \) ) as a function of predictors \( X \). Let \( x_i \) represent the vector of predictor variables for the \( i \)-th observation, \( y_i \in \{ 0, 1 \} \) denote the binary outcome, and \( \beta \) represent the vector of coefficients. The probability of \( y_i = 1 \) is modeled as:
+\[
+  p(y_i = 1) = \frac{1}{1 + \exp(-x_i^T \beta)}.
+\]
+The model estimates \( \beta \) by maximizing the log-likelihood of the observed data, which is expressed as:
+\[
+  \ell = \ln(L) = \sum_i \left[ y_i \ln(p_i) + (1 - y_i) \ln(1 - p_i) \right].
+\]
 
-Logistic regression is used as the core modeling framework, as it is well-suited for binary classification. The model estimates the probability of an event occurring (e.g., \( y_i = 1 \)) as a function of predictors (\( X \)). Let \( x_i \) be the vector of predictor variables for the \( i \)-th observation, \( y_i \in \{0, 1\} \) be the binary outcome, and \( \beta \) be the vector of coefficients to be estimated. The probability of \( y_i = 1 \) is modeled as:
-\[
-  p(y_i = 1) = \frac{1}{1 + \exp(-x_i^T \beta)},
-\]
-where the goal is to estimate \( \beta \) by minimizing the negative log-likelihood of the observed data. The likelihood function is given by:
-\[
-  L = \prod_i p_i^{y_i} (1 - p_i)^{1 - y_i},
-\]
-and the negative log-likelihood is:
-\[
-  - \ell = - \ln(L) = - \sum_i \left[ y_i \ln(p_i) + (1 - y_i) \ln(1 - p_i) \right].
-\]
-Adding an \( L_1 \) penalty to the negative log-likelihood, the LASSO logistic regression objective becomes:
+In LASSO logistic regression and \( L_1 \) penalty is added to the negative log-likehood to enforce sparsity in the coefficients:
 \[
   \min_{\beta} - \ell + \lambda \sum_j |\beta_j|,
 \]
 where \( \lambda > 0 \) controls the strength of regularization, shrinking coefficients \( \beta_j \) with small absolute values to zero. This regularization enforces sparsity, making the model particularly suited for high-dimensional data with sparse true features.
 
-In the context of imaging data, each pixel is treated as a predictor. Spatial autocorrelation between pixels can degrade the performance of the LASSO model by violating the independence assumption among predictors. To address this, whitening transformations can be employed to reduce spatial dependencies by projecting the data into a frequency space where features are decorrelated. As introduced earlier, this transformation is achieved through the eigendecomposition of the spatially adjusted matrix \( MCM \), where \( C \) is the adjacency matrix encoding pixel relationships. Let \( E \) represent the matrix of eigenvectors of \( MCM \); the transformed data in the frequency space is then:
+In the context of imaging data, each pixel is treated as a predictor. Spatial autocorrelation between pixels can degrade the performance of the LASSO model by violating the independence assumption among predictors. To address this, whitening transformations can be employed to reduce spatial dependencies by projecting the data into a frequency space where features are decorrelated. As introduced earlier, this transformation is achieved through the eigendecomposition of the spatially adjusted matrix \( MCM \). Let \( E \) represent the matrix of eigenvectors of \( MCM \), the transformed data in the frequency space is then:
 \[
   X_{\text{freq}} = X \cdot E.
 \]
@@ -279,8 +265,6 @@ The performance of the LASSO models is evaluated based on two criteria. The firs
 
 \subsection{Simulations}
 
-Building on the scenarios outlined previously, we design comprehensive simulations to assess the performance of LASSO models in both the pixel space and the frequency space. These simulations allow us to evaluate whether whitening transformations effectively address spatial autocorrelation and enhance the model's ability to identify relevant features. Each scenario is constructed under different sparsity assumptions, with parameters selected to reflect practical considerations in imaging data analysis.
-
 To ensure robust and reliable results, each simulation is repeated 500 times. This repetition mitigates the influence of random variability inherent in data generation and model fitting, allowing us to obtain stable and generalizable performance metrics by averaging outcomes across repetitions.
 
 In the first scenario, sparsity exists in the pixel space. Here, data \( X \) is simulated as a \( 1000 \times 256 \) matrix, representing 1000 images, each with \( 16 \times 16 \) pixels flattened into 1D vectors of length 256. The rows of \( X \) are sampled from a multivariate normal distribution with mean zero and a covariance matrix \( C_{\text{cov}} \), where \( C_{\text{cov}} = \exp(-\text{dist}(x_i, x_j)) \), and \( \text{dist}(x_i, x_j) \) is the Euclidean distance between pixels \( i \) and \( j \). The coefficient vector \( \beta \) is constructed to ensure sparsity, with coefficients set to 0 for pixels outside the central \( 8 \times 8 \) region and assigned a constant nonzero value for pixels within this region. The nonzero value of \( \beta \) is carefully chosen to ensure that the probabilities \( p = 1 / (1 + \exp(-X \beta)) \) are evenly distributed across the range \( [0, 1] \). A balanced distribution of \( p \) ensures that the classification problem is neither too easy (e.g., probabilities close to 0 or 1) nor too difficult (e.g., probabilities clustered near 0.5), providing a meaningful test of the model's performance.
@@ -297,7 +281,7 @@ In this section, we explore how well the simulated data aligns with the intended
 
 We will introduce what analyses we performed on the simulated data, which include visualization to check the simulatation quality, and then the model metrics of the LASSO models.
 
-\subsubsection{Group mean Difference}
+\subsubsection{Group Mean Difference}
 
 In both simulations, group mean differences were computed for the pixel space and the frequency space to evaluate whether the simulated coefficients (\( \beta \) or \( b \)) align with the intended classification patterns. The results were visualized using heatmaps for the pixel space and scatterplots for the frequency space, highlighting the differences in patterns across these domains. For visualization purposes, only the data from the first iteration of each simulation was used.
 
@@ -310,27 +294,30 @@ For the second simulation, where data was generated directly in the frequency sp
 By visualizing the group mean differences in both the pixel and frequency spaces, this analysis provides insights into the alignment between the simulated coefficients and the classification outcomes, as well as the effects of spatial transformations.
 
 
-\subsubsection{LASSO cross-validation}
+\subsubsection{Cross-Validation}
 
-To compare the performance of LASSO in both the pixel space and frequency space, we fit two models: one using covariates in the pixel space and another using covariates in the frequency space. The optimal regularization parameter \( \lambda \) is selected via cross-validation, using the binomial deviance as the performance metric. The dataset is split into training (80\%) and test (20\%) sets, and the cross-validation is performed using 10 folds.
+To compare the performance of LASSO models in the pixel and frequency spaces, separate models were fit using data from each space. Logistic regression with \( L_1 \) penalty was applied to select relevant features, with the optimal regularization parameter \( \lambda \) determined via 10-fold cross-validation. The dataset was divided into 80\% training data and 20\% test data. Cross-validation was performed on the training set to identify the best \( \lambda \), which balances the trade-off between achieving higher classification accuracy and enforcing sparsity by penalizing nonzero coefficients. Two values of \( \lambda \) were considered: \texttt{lambda.min}, which minimizes the cross-validated error, and \texttt{lambda.1se}, which represents the largest \( \lambda \) within one standard error of the minimum.
 
-Two values of \( \lambda \) are considered: 
-\begin{itemize}
-  \item \texttt{lambda.min}, which minimizes the cross-validated error.
-  \item \texttt{lambda.1se}, the largest \( \lambda \) within one standard error of the minimum.
-\end{itemize}
+In 10-fold cross-validation, the training set is randomly divided into 10 subsets of approximately equal size. The model is trained on nine subsets and evaluated on the remaining subset, with this process repeated 10 times so that each subset serves as the test fold once. This process is performed for a range of \( \lambda \) values, and the value of \( \lambda \) that yields the best average performance is selected. The final model is then trained on the entire training set using the selected \( \lambda \) and evaluated on the held-out test set.
 
-To balance between achieving a log-likelihood as large as possible, and have as few non-zero coefficients as possible, we need to choose an optimal \( \lambda \). This step is usually produced by doing cross-validation. Using 5-fold cross-validation as an example, the dataset will be randomly split into 5 batches, with almost identity number of samples in each. The model we specified will be fit on 4-folds, and then predict on the other fold. Some performance metric will be used to evaluate the model performance on that fold. This process will be repeated for 4 more times, using each of the other 4 folds as the evaluation set. The model performance will be averaged across the 5 iterations. We do this process under several options of \( \lambda \) values, and the \( \lambda \) provides the best model performance will be used. WE split the dataset into 80\% training set (used for cross-validation and select optimal parameter), and the chosen parameter will be used to fit model and evaluate on the 20\% test set.
-
-\subsubsection{LASSO metrics}
-
-There are several metrics that could used to evaluate the model performance on the test set. After we get the predicted probabilities of \( y=1 \), the simplest way to decide classes is to assign observations with \( p_i > 0.5 \) as \( y_i = 1 \), and others as \( y_i = 0 \). Then we can compare the predicted classes with the actual classes to calculate the accuracy. Another commonly used measurement is called Area Under Curve (AUC). It measures the area under the receiver operating characteristic (ROC curve), which marks the false positive rate in the x-axis along with the true positive rate on the y-axis as the threshold changes. A larger AUC value means the classifier could achieve a relative high true positive rate while maintain a relative low false positive rate. The last metric we consider to use is the p-values for covaraites. Though Logistic regression with L1 penalty does not provide the calculation of p-values naturally, we can use the \texttt{hdi} package to calculate it [Need to provide more details].
-
-We will calculated the estimated coefficients for all models and repeated it for 500 times. When simulating data in the pixel space, we will transform the data and coefficients simulated into the frequency space, and fit model using the data on both spaces. The true coefficients in both space, as well as the mean estimated coefficients across iterations, will be visualized. For coefficients in the pixel space, we will use the \( 16 \times 16 \) heatmap, while for coefficients in the frequency space, we will order them by the corresponding of eigenvalues, from smallest to the largested, using a scatterplot. Both the true coefficient and estimated coefficients will be transformed into another space and visualize in the same way. For example, for Simulation 1, we simulate data in the pixel space, then we will show the true coefficient used and estimated coefficients by fitting directly on data in the pixel space, estimated coefficients by fitting data in the frequency space and transposed the estimated coefficients back from the frequency space. We will also show the transposed true coefficients in the frequency space, the transposed estimated coefficients by fitting model in the pixel space, the estimated coefficients by fitting model in the frequency space. Since we tried two options of \( \lambda \), this will be 10 images in total. And the same number of images will be show for simulation 2.
-
-We will also report the p-values computed using the \texttt{hdi} package [need to provide further details on how the package computes p-values]. For each simulation, we will report the percantage of \( p<0.05 \) for each predictor when fitting model on the pixel space as well as fitting model on the frequency space. For the percentages for model in the pixel space, they will be shown in a similar way as we talked above, as a heatmap; for percentages in the frequency space, we will also use a similarly scatterplot.
+By applying this process to models in both the pixel and frequency spaces, we evaluate whether the whitening transformation enhances model performance. The comparison focuses on the models’ ability to enforce sparsity, select relevant features, and accurately predict outcomes.
 
 
+\subsubsection{Metrics and Visualization}
+
+To evaluate the performance of LASSO models, several metrics were used. After predicting the probabilities \( p_i \) for \( y = 1 \), classifications were made by assigning \( y_i = 1 \) if \( p_i > 0.5 \), and \( y_i = 0 \) otherwise. The classification accuracy was then calculated as the proportion of correctly predicted outcomes. Another key metric was the Area Under the Curve (AUC) of the Receiver Operating Characteristic (ROC) curve, which provides a measure of the model’s ability to balance true positive and false positive rates across various thresholds. Higher AUC values indicate better classifier performance, particularly in distinguishing between classes. Additionally, p-values for the predictors were computed using the \texttt{hdi} package. While logistic regression with \( L_1 \) penalty does not inherently produce p-values, this package facilitates their calculation, and further details on its methodology will be provided.
+
+The analysis also included a detailed comparison of the coefficients estimated by LASSO models in the pixel and frequency spaces. For each simulation, we visualized the true coefficients, the mean estimated coefficients across 500 iterations, and their transformations between the two spaces. In the pixel space, coefficients were visualized as \( 16 \times 16 \) heatmaps, reflecting their spatial arrangement. In the frequency space, coefficients were displayed as scatterplots, ordered by the corresponding eigenvalues of \( MCM \) from smallest to largest. 
+
+For Simulation 1, where data was generated in the pixel space, the visualizations included: the true coefficients \( \beta \) and their transformation into the frequency space as \( b \), the coefficients estimated from models fit in the pixel space and their transformed estimates in the frequency space, and the coefficients estimated in the frequency space with their transformed counterparts in the pixel space. Similarly, for Simulation 2, where data was generated in the frequency space, we visualized \( b \), the transformed coefficients \( \beta \), and the corresponding estimates and transformations for both spaces. 
+
+Since two regularization parameters (\texttt{lambda.min} and \texttt{lambda.1se}) were used, each scenario produced 10 visualizations in total. These visualizations provided insights into the effects of whitening transformations on coefficient estimation and feature selection accuracy in both the pixel and frequency spaces.
+
+Additionally, the p-values from the \texttt{hdi} package were analyzed. For each simulation, the percentage of predictors with \( p < 0.05 \) was calculated and visualized. In the pixel space, these percentages were displayed as heatmaps, while in the frequency space, they were shown as scatterplots ordered by eigenvalues. This analysis offered a deeper understanding of the statistical significance of predictors under different modeling approaches and sparsity scenarios.
+
+The p-values from the \texttt{hdi} package were analyzed to assess the statistical significance of predictors in both the pixel and frequency spaces. For each simulation, the percentage of iterations (out of 500) in which each predictor had a p-value less than 0.05 was calculated. This provided a measure of the consistency with which predictors were identified as significant across simulations. 
+
+In the pixel space, these percentages were visualized as heatmaps, reflecting the spatial distribution of statistically significant predictors. In the frequency space, the percentages were displayed as scatterplots, with frequencies ordered by the corresponding eigenvalues of \( MCM \). By comparing these visualizations, we could assess how the whitening transformation influenced the identification of significant predictors under different modeling approaches and sparsity scenarios.
 
 
 
