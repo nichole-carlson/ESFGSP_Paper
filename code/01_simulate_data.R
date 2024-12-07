@@ -91,6 +91,9 @@ generate_exp_corr_matrix <- function(n_row, n_col) {
 # Returns:
 #  Vector.
 generate_1d_sparse_vector <- function(vec_len, sparse_level, effect_size, seed = NULL) {
+  if (!is.null(seed)) {
+    set.seed(seed)
+  }
   vec <- rep(0, vec_len)
   nz_index <- sample(
     seq_len(vec_len),
@@ -98,6 +101,7 @@ generate_1d_sparse_vector <- function(vec_len, sparse_level, effect_size, seed =
     replace = FALSE
   )
   vec[nz_index] <- effect_size
+
   return(vec)
 }
 
