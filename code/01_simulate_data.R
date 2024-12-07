@@ -80,7 +80,7 @@ generate_exp_corr_matrix <- function(n_row, n_col) {
   return(exp_corr_mat)
 }
 
-# Generate a vector with a degree of sparsity.
+# Simulate a vector with a degree of sparsity.
 #
 # Args:
 #  vec_len: int, the length of the vector.
@@ -90,7 +90,7 @@ generate_exp_corr_matrix <- function(n_row, n_col) {
 #
 # Returns:
 #  Vector.
-generate_1d_sparse_vector <- function(vec_len, sparse_level, effect_size, seed = NULL) {
+simulate_1d_sparse_vector <- function(vec_len, sparse_level, effect_size, seed = NULL) {
   if (!is.null(seed)) {
     set.seed(seed)
   }
