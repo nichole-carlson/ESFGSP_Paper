@@ -19,6 +19,7 @@ results_data_dir <- file.path(simulation_dir, "results", "data")
 # Given the spatial adjacency matrix C, eigendecompose MCM, where M is a
 # centering matrix. Returns the ordered eigenvalues and corresponding
 # eigenvectors.
+#
 # Args:
 #   mat: The spatial adjacency matrix C.
 # Returns:
@@ -35,82 +36,95 @@ eigen_decomp <- function(mat) {
   return(list(vectors = eig_vecs, values = eig_vals))
 }
 
-# Generate an exponential correlation matrix: suppose the pixels can
-# construct a squared image. Calculate the correlation between all pairs
-# of pixels based on their location in the image.
+# Generate a 2-neighbor adjacency matrix.
+# For any two pixels in a matrix, they are considered adjacent if they are
+# connected directly through edges, or indirectly through a shared neighboring
+# pixel.
+#
 # Args:
-#   n_pixels: Integer. The number of pixels (or elements) in the matrix.
-# Returns:
-#   A matrix where each element represents the correlation between two points,
-#   based on the exponential decay of the Euclidean distance between them.
-gen_exp_corr <- function(n_pixels) {
-  n_cols <- sqrt(n_pixels)
+#  n_row: int, number of rows in a matrix of pixels (an image).
+#  n_col: int, number of columns in an image.
+#  d_max: float. Maximum distance between pixels to be considered as adjacent.
+#         For 2-neighbor adj matrix, d_max = 2.
+# Return:
+#  A p * p matrix encodes pixel adjacent: 1 for connected, 0 for not.
+# p = n_row * n_col.
+generate_n_neighbor_matrix <- function(n_row, n_col, d_max) {
+  # Generate all coordinates
+  coords <- expand.grid(row = 1:n_row, col = 1:n_col)
+  # Compute Euclidean distance between every pair of coordinates
+  distances <- as.matrix(dist(coords))
+  # Decided adjacency by threshold (d_max)
+  adj_mat <- (distances <= d_max) * 1
+  # Change diagonal values to be 0
+  diag(adj_mat) <- 0
 
-  # Calculate Euclidean distance between two points in a 2D grid
-  # Args:
-  #   i: Integer. Index of the first point in 1D.
-  #   j: Integer. Index of the second point in 1D.
-  # Returns:
-  #   Numeric. The Euclidean distance between the two points.
-  calc_dist <- function(i, j) {
-    row_i <- (i - 1) %/% n_cols
-    col_i <- (i - 1) %% n_cols
-    row_j <- (j - 1) %/% n_cols
-    col_j <- (j - 1) %% n_cols
-    sqrt((row_i - row_j)^2 + (col_i - col_j)^2)
-  }
-
-  # Generate the correlation matrix using the vectorized distance function
-  outer(1:n_pixels, 1:n_pixels, Vectorize(function(i, j) exp(-calc_dist(i, j))))
+  return(adj_mat)
 }
 
-# Generates a diagonal matrix with values decay faster at the beginning and
-# slow down towards the end.
-# d_i = start_value * exp(-k * log(1 + b * i))
-# k is the decay rate
-# b is a constant that controls the rate of initial decay
-# gen_diag_corr <- function(n, start_value = 6, end_value = 0.5, b = 0.1 ) {
-#   k <- log(start_value / end_value) / log(1 + b * (n - 1))
-#   diag_vals <- start_value * exp(-k * log(1 + b * seq(0, n - 1)))
-#   diag_mat <- diag(diag_vals)
+# Generate a correlation matrix with exponential decay. For any two pixels
+# i and j, those their 2D Euclidean distnace is d, then their correlation
+# is exp(-d).
 #
-#   return(diag_mat)
-# }
-
-
-# Generate a sparse coefficient vector in the freq space
 # Args:
-#   len: Integer. Length of the coefficient vector.
-#   sparsity: Numeric. Proportion of non-zero elements.
-#   effect_size: Numeric. Effect size of non-zero elements.
-#   seed: Integer. Random seed for reproducibility.
+#  n_row: int, number of rows in a matrix of pixels (consider an image).
+#  n_col, int, number of columns in a matrix of pixels.
+generate_exp_corr_matrix <- function(n_row, n_col) {
+  # Generate all coorediates
+  coords <- expand.grid(row = 1:n_row, col = 1:n_col)
+  # Compute Euclidean distance between every pair of coordinates
+  distances <- as.matrix(dist(coords))
+  # Calculate each pair's correlation
+  exp_corr_mat <- exp(-distances)
+
+  return(exp_corr_mat)
+}
+
+# Generate a vector with a degree of sparsity.
+#
+# Args:
+#  vec_len: int, the length of the vector.
+#  sparse_level: [0, 1], the percentage of non-zero elements.
+#  effect_size: float, the non-zero value.
+#  seed.
+#
 # Returns:
-#   A numeric vector with specified sparsity and effect size.
-gen_b <- function(len, sparsity, effect_size) {
-  vec <- rep(0, len)
-  nz_idx <- sample(seq_len(len), size = floor(len * sparsity), replace = FALSE)
-  vec[nz_idx] <- effect_size
+#  Vector.
+generate_1d_sparse_vector <- function(vec_len, sparse_level, effect_size, seed = NULL) {
+  vec <- rep(0, vec_len)
+  nz_index <- sample(
+    seq_len(vec_len),
+    size = floor(vec_len * sparse_level), # the number of items to choose
+    replace = FALSE
+  )
+  vec[nz_index] <- effect_size
   return(vec)
 }
 
-# Generate a sparse coefficient vector in the pixel space
+# Generate a vector with a degree of sparsity in the 2D space.
+# Image this vector is the coefficent vector for the pixels of a 2D image. The
+# coefficients for a specific sub-area of the image has non-zero values.
+#
 # Args:
-#   img_size: Integer. Dimension of the square image (rows/columns).
-#   effect_size: Numeric. Effect size assigned to the center region.
-# Returns:
-#   A numeric vector with the center region set to the effect size.
-gen_beta <- function(img_size, effect_size) {
-  len <- img_size^2
-  beta <- rep(0, len)
-  ctr_start <- (img_size - 8) / 2 + 1
-  ctr_end <- (img_size + 8) / 2
-  ctr_idx <- as.vector(matrix(1:len, nrow = img_size)[
-    ctr_start:ctr_end,
-    ctr_start:ctr_end
-  ])
-  beta[ctr_idx] <- effect_size
-  return(beta)
+#  n_row: int, the dimension of the 2D image.
+#  n_col: int, the dimension of the 2D image.
+#  effect_size: float, the non-zero value.
+#  active_area: vector, the indices for row_start, row_end, col_start, col_end.
+generate_2d_sparse_vector <- function(n_row, n_col, effect_size, active_area) {
+  # Initilize vector with zeros
+  vec <- rep(0, n_row * n_col)
+  # Calculae indices of the active_area
+  indices <- as.vector(
+    matrix(seq_along(vec), nrow = n_row)[
+      active_area[1]:active_area[2], # row start and end
+      active_area[3]:active_area[4] # column start and end
+    ]
+  )
+  vec[indices] <- effect_size
+
+  return(vec)
 }
+
 
 # Transform between b and beta
 b_to_beta <- function(b, V) {
