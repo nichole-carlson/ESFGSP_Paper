@@ -1,32 +1,5 @@
 # ----- Simulation Plan -----
 
-# Two simulations: sparsity in pixel and frequency spaces.
-
-# Setup
-# Suppose x is a column vector representing 256 pixels in the pixel space. It's
-# covariance matrix, Sigma, follows an exponential correlation structure:
-# suppose i and j are two pixels in x, sigma_ij = exp(-dist(i, j)), where
-# dist(i, j) is calculated based on their 2-D location in the 16*16 matrix.
-#
-# Let V be the matrix of eigenvectors of Sigma, calculated using the method
-# brought in the Spatial filtering paper, with each column representing an
-# eigenvector. x_freq = t(V) %*% x, representing x in the freq space. It's
-# covariance matrix is t(V) %*% Sigma %*% V, which should be a diagonal matrix.
-#
-# Matrix notation
-# Suppose X reperesents a n*256 matrix, with each row as t(x) in the above
-# context, then we can calculate X_freq = X %*% V, which is also a n*256 matrix.
-#
-# We further assume beta and b as 256*1, representing the coefficient vector
-# in the pixel space and freq space, respectively. Since X_freq %*% b = X %*%
-# beta, we can get V %*% b = beta.
-#
-# Simulations
-# We do two simulations. The first one assume sparsity in beta. When converting
-# beta into a 16*16 matrix, it should only have non-zero values in the central
-# 8*8 region. We will simulate the covariates and outcome in the pixel space. The second
-# one assumes sparsity in b. We will simulate the covariates and outcome in the
-# freq space this time.
 
 
 # Load required libraries
@@ -43,6 +16,13 @@ results_data_dir <- file.path(simulation_dir, "results", "data")
 
 # ----- Functions to simulate data -----
 
+# Given the spatial adjacency matrix C, eigendecompose MCM, where M is a
+# centering matrix. Returns the ordered eigenvalues and corresponding
+# eigenvectors.
+# Args:
+#   mat: The spatial adjacency matrix C.
+# Returns:
+#   a list contains vectors and values.
 eigen_decomp <- function(mat) {
   n_cols <- ncol(mat)
   cent_mat <- diag(n_cols) - matrix(1, n_cols, n_cols) / n_cols
