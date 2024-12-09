@@ -1,100 +1,66 @@
+library(tictoc)
+
 proj_dir <- "/Users/siyangren/Documents/ra-cida/ESFGSP_Paper"
+p_data_dir <- "/Volumns/alzheimersdisease/ESFGSPproject/DataLibrary"
 
 # Source the functions for simulating data
 source(file.path(proj_dir, "R", "simulate_data.R"))
 
-
-# ---------- Choose the optimal effect size ----------
-beta_effect_sizes <- c(1, 0.2, 0.1, 0.05, 0.01)
-b_effect_sizes <- seq(0.1, 0.3, by = 0.05)
-
-
-
-
-# Choose beta effect size for sim1
-png(
-  file = file.path(fig_dir, "sim1_p_dist.png"),
-  width = 1200, height = 800, res = 150
-)
-
-beta_effects <- c(1, 0.2, 0.1, 0.05, 0.01)
-par(mfrow = c(ceiling(length(beta_effects) / 2), 2))
-for (effect in beta_effects) {
-  sim1_1iter <- run_sim1(
-    n_iter = 1, n_samples = 1000, img_size = 16,
-    beta_effect_size = effect, seed = 42
-  )
-  x <- sim1_1iter$data$x
-  beta <- sim1_1iter$meta_data$beta
-  p <- 1 / (1 + exp(-(x %*% beta)))
-  hist(
-    p,
-    breaks = 30, main = paste("Effect =", effect), xlim = c(0, 1),
-    xlab = "Probability p", col = "lightblue", border = "black"
-  )
-}
-
-dev.off()
-
-# Choose b effect for sim2
-png(
-  file = file.path(fig_dir, "sim2_p_dist.png"),
-  width = 1200, height = 800, res = 150
-)
-
-b_effects <- seq(0.3, 0.1, by = -0.05)
-par(mfrow = c(ceiling(length(b_effects) / 2), 2))
-for (effect in b_effects) {
-  sim2_1iter <- run_sim2(
-    n_iter = 1, n_samples = 1000, img_size = 16,
-    b_effect_size = effect, sparsity = 0.1, seed = 42
-  )
-  x_freq <- sim2_1iter$data$x_freq
-  b <- sim2_1iter$meta_data$b
-  p <- 1 / (1 + exp(-(x_freq %*% b)))
-  hist(
-    p,
-    breaks = 30, main = paste("Effect =", effect), xlim = c(0, 1),
-    xlab = "Probability p", col = "lightblue", border = "black"
-  )
-}
-
-dev.off()
-
-
-# ----- Run Simulations -----
-
-n_sim <- 500
+# Global parameters for simulations
+n_iter <- 500
 n_samples <- 1000
-img_size <- 16
+n_row <- 16
+n_col <- 16
+seed <- 42
+sparse_level <- 0.1
 beta_effect <- 0.1
 b_effect <- 0.2
-b_sparsity <- 0.1
-seed <- 42
 
-cat("Simulating Data for", n_sim, "iterations of Simulation 1 ... \n")
+
+# ---------- Run Simulation 1 ----------
+# Use exponential decay adjacency matrix for eigendecomposition
+c_adj_1 <- generate_exp_corr_matrix(n_row, n_col)
+
+cat("Sumulating Data for Simulation 1 in Pixel Space ...\n")
 tic()
-sim1_data <- run_sim1(n_sim, n_samples, img_size, beta_effect, seed)
+sim1a_data <- run_pixel_to_freq_simulation(
+  n_iter = n_iter,
+  n_samples = n_samples,
+  n_row = n_row,
+  n_col = n_col,
+  effect_size = beta_effect,
+  c_adj = c_adj_1,
+  seed = seed
+)
 toc()
 
-cat("Simulating Data for", n_sim, "iterations of Simulation 2 ... \n")
+cat("Simulating Data for Simulation 1 in Frequency Space ...\n")
 tic()
-sim2_data <- run_sim2(n_sim, n_samples, img_size, b_effect, b_sparsity, seed)
+sim1b_data <- run_simulation_1b(
+  n_iter = n_iter,
+  n_samples = n_samples,
+  n_row = n_row,
+  n_col = n_col,
+  sparse_level = sparse_level,
+  effect_size = b_effect,
+  seed = seed
+)
 toc()
 
-sim1_1iter <- run_sim1(1, n_samples, img_size, beta_effect, seed)
-sim2_1iter <- run_sim2(1, n_samples, img_size, b_effect, b_sparsity, seed)
 
-filename <- paste0("simulated_data_", format(Sys.Date(), "%y%m%d"), ".RData")
-save(
-  n_sim, n_samples, img_size, beta_effect, b_effect, b_sparsity, seed,
-  sim1_data, sim2_data, sim1_1iter, sim2_1iter,
-  file = file.path(results_data_dir, filename)
-)
+# ---------- Run Simulation 2 ----------
+# Use 2-neighbor adjacency matrix for eigendecomposition
+c_adj_2 <- generate_n_neighbor_matrix(n_row, n_col, d_max = 2)
 
-filename2 <- paste0("simulated_data_1iter_", format(Sys.Date(), "%y%m%d"), ".RData")
-save(
-  n_sim, n_samples, img_size, beta_effect, b_effect, b_sparsity, seed,
-  sim1_1iter, sim2_1iter,
-  file = file.path(results_data_dir, filename2)
+cat("Simulating Data for Simulation 2 in Pixel Space ...\n")
+tic()
+sim2a_data <- run_pixel_to_freq_simulation(
+  n_iter = n_iter,
+  n_samples = n_samples,
+  n_row = n_row,
+  n_col = n_col,
+  effect_size = beta_effect,
+  c_adj = c_adj_2,
+  seed = seed
 )
+toc()

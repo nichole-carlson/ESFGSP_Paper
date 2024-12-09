@@ -1,7 +1,4 @@
 library(MASS)
-library(tictoc)
-library(ggplot2)
-library(reshape2)
 
 
 # ----- Functions for simulating data -----
@@ -331,10 +328,14 @@ run_pixel_to_freq_simulation <- function(n_iter, n_samples, n_row, n_col, effect
     runs[[i]] <- list(x = x, x_freq = x_freq, y = y)
   }
 
+  # all arguments
+  hparams <- as.list(match.call())[-1]
+
   simulations <- list(
     beta = beta,
     b = b,
-    runs = runs
+    runs = runs,
+    hparams = hparams
   )
 
   return(simulations)
@@ -376,7 +377,7 @@ run_simulation_1b <- function(n_iter, n_samples, n_row, n_col, sparse_level, eff
   }
 
   # generate the diagonal covariance matrix for x
-  c_cov <- generate_diag_corr_matrix(n_row, n_col)
+  c_cov <- diag(seq(6, 0.5, length.out = n_row * n_col))
 
   # generate coefficient vector b
   b <- simulate_1d_sparse_vector(
@@ -408,10 +409,14 @@ run_simulation_1b <- function(n_iter, n_samples, n_row, n_col, sparse_level, eff
     runs[[i]] <- list(x = x, x_freq = x_freq, y = y)
   }
 
+  # save all arguments
+  hparams <- as.list(match.call())[-1]
+
   simulations <- list(
     beta = beta,
     b = b,
-    runs = runs
+    runs = runs,
+    hparams = hparams
   )
 
   return(simulations)
