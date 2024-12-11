@@ -72,3 +72,44 @@ cv_lasso <- function(x, y, lambda = c("lambda.min", "lambda.1se"), family = "bin
 
   return(model)
 }
+
+
+# Evaluates a Lasso model's performance and extracts estimated coefficients.
+#
+# Args:
+#   model: A fitted glmnet model object.
+#   x: Predictor matrix (rows: observations, columns: features).
+#   y: Response vector, same length as rows in 'x'.
+#   threshold: Threshold for classification. Default is 0.5.
+#
+# Returns:
+#   A list with:
+#     - auc: Area under the ROC curve.
+#     - acc: Classification accuracy.
+#     - coefs: Estimated coefficients, excluding the intercept.
+
+evaluate_lasso <- function(model, x, y, threshold = 0.5) {
+  # Check whether x and y have the same # of obs
+  if (nrow(x) != length(y)) {
+    stop("The number of rows in 'x' does not match the length of 'y'.")
+  }
+
+  # Calculate predicted probabilities and predicted labels
+  pred_probas <- predict(model, newx = x, type = "response")[, 1]
+  pred_labels <- ifelse(pred_probas > threshold, 1, 0)
+
+  # Evaluate by accuracy and AUC
+  acc <- mean(pred_labels == y)
+  auc <- pROC::auc(pROC::roc(y, pred_probas))
+
+  # Extract estimated coefficients
+  coefs <- as.vector(coef(model))[-1]
+
+  results <- list(
+    auc = auc,
+    acc = acc,
+    coefs = coefs
+  )
+
+  return(results)
+}
