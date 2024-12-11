@@ -43,3 +43,32 @@ train_test_split <- function(x, y, p_train, seed = NULL) {
 
   return(results)
 }
+
+
+# Fits a Lasso model using cross-validation and refits with the chosen lambda.
+#
+# Args:
+#   x: Predictor matrix (rows: observations, columns: features).
+#   y: Response vector, same length as rows in 'x'.
+#   lambda: Lambda selection, either "lambda.min" or "lambda.1se".
+#   family: Model type ("binomial", "gaussian", "poisson"). Default: "binomial".
+#
+# Returns:
+#   A refitted glmnet model object.
+
+cv_lasso <- function(x, y, lambda = c("lambda.min", "lambda.1se"), family = "binomial") {
+  # Match the 'lambda' argement to ensure it's one of the allowed options
+  lambda <- match.arg(lambda)
+
+  # Perform cross-validation to find the optimal lambda value
+  cv_model <- glmnet::cv.glmnet(x, y, alpha = 1, family = family)
+  lambda_to_use <- cv_model[[lambda]]
+
+  # Refit the model with the lambda chosen
+  model <- glmnet::glmnet(
+    x, y,
+    alpha = 1, lambda = lambda_to_use, family = family
+  )
+
+  return(model)
+}
