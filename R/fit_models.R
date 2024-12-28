@@ -56,7 +56,8 @@ train_test_split <- function(x, y, p_train, seed = NULL) {
 # Returns:
 #   A refitted glmnet model object.
 
-cv_lasso <- function(x, y, lambda = c("lambda.min", "lambda.1se"), family = "binomial") {
+cv_lasso <- function(
+    x, y, lambda = c("lambda.min", "lambda.1se"), family = "binomial") {
   # Match the 'lambda' argement to ensure it's one of the allowed options
   lambda <- match.arg(lambda)
 
@@ -112,4 +113,52 @@ evaluate_lasso <- function(model, x, y, threshold = 0.5) {
   )
 
   return(results)
+}
+
+
+# Executes a complete lasso analysis pipeline.
+#
+# Splits data into training and testing sets, performs cross-validation to
+# select lambda, refits the model, and evaluates performance on the test set.
+#
+# Args:
+#   x: Predictor matrix.
+#   y: Response vector.
+#   p: Proportion of data for training (0-1).
+#   lambda: Lambda selection ("lambda.min" or "lambda.1se")
+#   family: Default "binomial".
+#   threshold: Classification threshold for binary outcome. Default 0.5.
+#   seed: Seed for reproducibility.
+#
+# Returns:
+#   A list with:
+#     - auc: Area under the ROC curve.
+#     - acc: Classification accuracy.
+#     - coefs: Model coefficients.
+
+run_lasso_pipeline <- function(
+    x, y, p, lambda = c("lambda.min", "lambda.1se"), family = "binomial",
+    threshold = 0.5, seed = NULL) {
+  lambda <- match.arg(lambda)
+
+  split <- train_test_split(x, y, p, seed)
+  x_train <- split$train$x
+  y_train <- split$train$y
+  x_test <- split$test$x
+  y_test <- split$test$y
+
+  # Fit model with cross-validation
+  model <- cv_lasso(x_train, y_train, lambda, family)
+
+  # Evaluate model on the test split
+  evaluation <- evaluate_lasso(model, x_test, y_test, threshold)
+
+  # Combine coefs with p-values calculated using hdi
+  coefs_with_pvals <- data.frame(
+    coefs = evaluation$coefs,
+    p_vals = as.vector(hdi::lasso.proj(x, y)$pval)
+  )
+  evaluation$coefs <- coefs_with_pvals
+
+  return(evaluation)
 }

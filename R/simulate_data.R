@@ -108,7 +108,8 @@ generate_exp_corr_matrix <- function(n_row, n_col) {
 # Notes:
 #   The decay factor k is calculated to ensure the diagonal values smoothly
 #   transition from start_value to end_value across n elements.
-generate_diag_corr_matrix <- function(n_row, n_col, start_value = 6, end_value = 0.5, b = 0.1) {
+generate_diag_corr_matrix <- function(
+    n_row, n_col, start_value = 6, end_value = 0.5, b = 0.1) {
   p <- n_row * n_col
   # Compute the decay rate k
   k <- log(start_value / end_value) / log(1 + b * (p - 1))
@@ -160,7 +161,7 @@ calculate_center_indices <- function(n_row, n_col) {
 #
 # Args:
 #   vec_len: Integer. Length of the vector to be simulated.
-#   sparse_level: Numeric (0 to 1). Proportion of non-zero elements in the vector.
+#   sparse_level: Numeric (0 to 1). Proportion of non-zero elements.
 #   effect_size: Numeric. Value assigned to non-zero elements in the vector.
 #   seed: Optional. Integer seed for reproducibility.
 #
@@ -170,7 +171,8 @@ calculate_center_indices <- function(n_row, n_col) {
 # Notes:
 #   Non-zero elements are randomly assigned within the vector based on
 #   sparse_level.
-simulate_1d_sparse_vector <- function(vec_len, sparse_level, effect_size, seed = NULL) {
+simulate_1d_sparse_vector <- function(
+    vec_len, sparse_level, effect_size, seed = NULL) {
   if (!is.null(seed)) {
     set.seed(seed)
   }
@@ -263,16 +265,12 @@ simulate_binary_response <- function(x, beta, seed = NULL) {
 }
 
 
-# Simulate datasets with pixel and frequency-based features, using a specified
-# spatial adjacency matrix.
-#
 # This function generates datasets where predictors are simulated in the pixel
 # space and transformed into the frequency space using eigendecomposition of a
 # user-provided spatial adjacency matrix. Binary outcomes are generated based
 # on sparse coefficients in the pixel space.
 #
 # Args:
-#   n_iter: Integer. Number of iterations (simulations) to run.
 #   n_samples: Integer. Number of samples (observations) per simulation.
 #   n_row: Integer. Number of rows in the spatial grid (image dimensions).
 #   n_col: Integer. Number of columns in the spatial grid.
@@ -287,14 +285,15 @@ simulate_binary_response <- function(x, beta, seed = NULL) {
 #     - beta: Numeric vector. Sparse coefficient vector in the pixel space.
 #     - b: Numeric vector. Coefficient vector transformed to the frequency
 #          space.
-#     - runs: List of length n_iter, where each element is a list containing:
+#     - data: List containing:
 #         - x: Numeric matrix (n_samples x (n_row * n_col)). Predictors in the
 #              pixel space.
 #         - x_freq: Numeric matrix (n_samples x (n_row * n_col)). Predictors
 #                   transformed to the frequency space.
 #         - y: Numeric vector. Binary outcomes (0 or 1) generated from x and
 #              beta.
-run_pixel_to_freq_simulation <- function(n_iter, n_samples, n_row, n_col, effect_size, c_adj, seed = NULL) {
+run_pixel_to_freq_simulation <- function(
+    n_samples, n_row, n_col, effect_size, c_adj, seed = NULL) {
   if (!is.null(seed)) {
     set.seed(seed)
   }
@@ -313,20 +312,16 @@ run_pixel_to_freq_simulation <- function(n_iter, n_samples, n_row, n_col, effect
   # calculate the coefficient vector in the frequency space
   b <- t(eigen_vectors) %*% beta
 
-  # for each run, simulate x and y
-  runs <- vector("list", n_iter)
-  for (i in seq_len(n_iter)) {
-    # generate predictors in the pixel space
-    x <- simulate_mvn_samples(n_samples, c_cov)
+  # simulate x and y
+  x <- simulate_mvn_samples(n_samples, c_cov)
 
-    # calculate corresponding predictors in the frequency space
-    x_freq <- x %*% eigen_vectors
+  # calculate corresponding predictors in the frequency space
+  x_freq <- x %*% eigen_vectors
 
-    # simulate outcome y
-    y <- simulate_binary_response(x, beta)
+  # simulate outcome y
+  y <- simulate_binary_response(x, beta)
 
-    runs[[i]] <- list(x = x, x_freq = x_freq, y = y)
-  }
+  data <- list(x = x, x_freq = x_freq, y = y)
 
   # all arguments
   hparams <- as.list(match.call())[-1]
@@ -334,7 +329,7 @@ run_pixel_to_freq_simulation <- function(n_iter, n_samples, n_row, n_col, effect
   simulations <- list(
     beta = beta,
     b = b,
-    runs = runs,
+    data = data,
     hparams = hparams
   )
 
@@ -342,15 +337,12 @@ run_pixel_to_freq_simulation <- function(n_iter, n_samples, n_row, n_col, effect
 }
 
 
-# Run Simulation 1b to generate datasets with frequency and pixel-based features.
-#
 # This function simulates a dataset where the predictors are generated in the
-# frequency space and transformed back to the pixel space using eigendecomposition
+# freq space and transformed back to the pixel space using eigendecomposition
 # of a spatial adjacency matrix. Binary outcomes are generated based on sparse
 # coefficients in the frequency space.
 #
 # Args:
-#   n_iter: Integer. Number of iterations (simulations) to run.
 #   n_samples: Integer. Number of samples (observations) per simulation.
 #   n_row: Integer. Number of rows in the spatial grid (image dimensions).
 #   n_col: Integer. Number of columns in the spatial grid.
@@ -364,14 +356,15 @@ run_pixel_to_freq_simulation <- function(n_iter, n_samples, n_row, n_col, effect
 #     - beta: Numeric vector. Coefficient vector in the pixel space, derived
 #             from the frequency space coefficients.
 #     - b: Numeric vector. Sparse coefficient vector in the frequency space.
-#     - runs: List of length n_iter, where each element is a list containing:
+#     - data: List contains:
 #         - x: Numeric matrix (n_samples x (n_row * n_col)). Predictors in the
 #              pixel space.
 #         - x_freq: Numeric matrix (n_samples x (n_row * n_col)). Predictors
 #                   in the frequency space.
 #         - y: Numeric vector. Binary outcomes (0 or 1) generated from x_freq
 #              and b.
-run_simulation_1b <- function(n_iter, n_samples, n_row, n_col, sparse_level, effect_size, seed = NULL) {
+run_simulation_1b <- function(
+    n_samples, n_row, n_col, sparse_level, effect_size, seed = NULL) {
   if (!is.null(seed)) {
     set.seed(seed)
   }
@@ -394,20 +387,16 @@ run_simulation_1b <- function(n_iter, n_samples, n_row, n_col, sparse_level, eff
   # calculate the coefficient vector in the pixel space
   beta <- eigen_vectors %*% b
 
-  # for each run, simulate x and y
-  runs <- vector("list", n_iter)
-  for (i in seq_len(n_iter)) {
-    # generate predictors in the frequency space
-    x_freq <- simulate_mvn_samples(n_samples, c_cov)
+  # generate predictors in the frequency space
+  x_freq <- simulate_mvn_samples(n_samples, c_cov)
 
-    # transform it back to the pixel space
-    x <- x_freq %*% t(eigen_vectors)
+  # transform it back to the pixel space
+  x <- x_freq %*% t(eigen_vectors)
 
-    # simulate outcome y
-    y <- simulate_binary_response(x_freq, b)
+  # simulate outcome y
+  y <- simulate_binary_response(x_freq, b)
 
-    runs[[i]] <- list(x = x, x_freq = x_freq, y = y)
-  }
+  data <- list(x = x, x_freq = x_freq, y = y)
 
   # save all arguments
   hparams <- as.list(match.call())[-1]
@@ -415,7 +404,7 @@ run_simulation_1b <- function(n_iter, n_samples, n_row, n_col, sparse_level, eff
   simulations <- list(
     beta = beta,
     b = b,
-    runs = runs,
+    data = data,
     hparams = hparams
   )
 
