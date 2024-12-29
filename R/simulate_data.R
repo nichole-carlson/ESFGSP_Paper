@@ -10,8 +10,8 @@ library(MASS)
 #
 # Returns:
 #   A list containing:
-#     - vectors: Matrix of eigenvectors ordered by descending eigenvalues.
-#     - values: Vector of eigenvalues in descending order.
+#     - vectors: Matrix of eigenvectors ordered by increasing eigenvalues.
+#     - values: Vector of eigenvalues in increasing order.
 #
 # Notes:
 #   The centering matrix (M) is computed as (I - 1/n * 1 * 1^T), where n is
@@ -23,7 +23,7 @@ eigen_decomp <- function(mat) {
   cent_mat <- diag(n_cols) - matrix(1, n_cols, n_cols) / n_cols
   eig_res <- eigen(cent_mat %*% mat %*% cent_mat, symmetric = TRUE)
 
-  ord_idx <- order(eig_res$values, decreasing = TRUE)
+  ord_idx <- order(eig_res$values, decreasing = FALSE)
   eig_vecs <- eig_res$vectors[, ord_idx]
   eig_vals <- eig_res$values[ord_idx]
 
@@ -323,6 +323,8 @@ run_pixel_to_freq_simulation <- function(
 
   # all arguments
   hparams <- as.list(match.call())[-1]
+  hparams$eigen_vectors <- eigen_vectors
+  hparams$eigen_values <- eigen_decomposition$values
 
   simulations <- list(
     beta = beta,
@@ -398,6 +400,8 @@ run_simulation_1b <- function(
 
   # save all arguments
   hparams <- as.list(match.call())[-1]
+  hparams$eigen_vectors <- eigen_vectors
+  hparams$eigen_values <- eigen_decomposition$values
 
   simulations <- list(
     beta = beta,
