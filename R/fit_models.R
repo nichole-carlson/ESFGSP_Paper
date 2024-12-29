@@ -153,12 +153,8 @@ run_lasso_pipeline <- function(
   # Evaluate model on the test split
   evaluation <- evaluate_lasso(model, x_test, y_test, threshold)
 
-  # Combine coefs with p-values calculated using hdi
-  coefs_with_pvals <- data.frame(
-    coefs = evaluation$coefs,
-    p_vals = as.vector(hdi::lasso.proj(x, y)$pval)
-  )
-  evaluation$coefs <- coefs_with_pvals
+  # Add p-values calculated by hdi
+  evaluation$pvals <- as.vector(hdi::lasso.proj(x, y)$pval)
 
   return(evaluation)
 }
