@@ -321,15 +321,15 @@ run_pixel_to_freq_simulation <- function(
   # simulate outcome y
   y <- simulate_binary_response(x, beta)
 
-  data <- list(x = x, x_freq = x_freq, y = y)
-
   # all arguments
   hparams <- as.list(match.call())[-1]
 
   simulations <- list(
     beta = beta,
     b = b,
-    data = data,
+    x = x,
+    x_freq = x_freq,
+    y = y,
     hparams = hparams
   )
 
@@ -396,15 +396,15 @@ run_simulation_1b <- function(
   # simulate outcome y
   y <- simulate_binary_response(x_freq, b)
 
-  data <- list(x = x, x_freq = x_freq, y = y)
-
   # save all arguments
   hparams <- as.list(match.call())[-1]
 
   simulations <- list(
     beta = beta,
     b = b,
-    data = data,
+    x = x,
+    x_freq = x_freq,
+    y = y,
     hparams = hparams
   )
 
