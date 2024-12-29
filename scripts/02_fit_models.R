@@ -10,12 +10,12 @@ p_train <- 0.8
 seed <- 42
 
 # Load simulation 1a list of data and fit LASSO models
-load(file.path(proj_dir, "results", "sim1a_pixel_data_241229.RData"))
+load(file = file.path(proj_dir, "results", "sim1a_pixel_data_241229.RData"))
 
-sim1a_fitted_results <- list()
+sim1a_lasso_results <- list()
 for (dat in sim1a_exp_pixel_data) {
-  # Get AUC, ACC, estimated coefs
-  model_metrics <- run_lasso_pipeline(
+  # Fit model on data in the pixel space, get AUC, ACC and estimated coefs
+  pixel_model_metrics <- run_lasso_pipeline(
     x = dat$x,
     y = dat$y,
     p = p_train,
@@ -24,16 +24,30 @@ for (dat in sim1a_exp_pixel_data) {
   )
 
   # Transform estimated coefs to the freq space
-  eigen_vectors <- eigen_decomp(dat$hparams$c_adj)$vectors
-  model_metrics$coefs_transformed <- t(eigen_vectors) %*% model_metrics$coefs
+  eigen_vectors <- dat$hparams$eigen_vectors
+  pixel_model_metrics$coefs_freq <- t(eigen_vectors) %*% pixel_model_metrics$coefs
 
-  sim1a_fitted_results[[i]] <- model_metrics
+  sim1a_lasso_results[["pixel"]][[i]] <- pixel_model_metrics
+
+  # Fit model on data in the freq space, get AUC, ACC and estimated coefs
+  freq_model_metrics <- run_lasso_pipeline(
+    x = dat$x_freq,
+    y = dat$y,
+    p = p_train,
+    lambda = "lambda.min",
+    seed = seed
+  )
+
+  # Transform estimated coefs to the pixel space
+  freq_model_metrics$coefs_pixel <- eigen_vectors %*% freq_model_metrics$coefs
+
+  sim1a_fitted_results[["freq"]][[i]] <- freq_model_metrics
 }
 
 save(
-  sim1a_fitted_results,
+  sim1a_lasso_results,
   file = file.path(
     proj_dir, "results",
-    paste0("sim1a_fitted_results_", format(Sys.Date(), "%y%m%d"), ".RData")
+    paste0("sim1a_lasso_results_", format(Sys.Date(), "%y%m%d"), ".RData")
   )
 )
