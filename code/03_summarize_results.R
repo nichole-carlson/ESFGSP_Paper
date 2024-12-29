@@ -1,74 +1,3 @@
-library(ggplot2)
-library(gridExtra)
-library(table1)
-
-simulation_dir <- "/Users/siyangren/Documents/ra-cida/ESFGSP_Paper/Simulations"
-code_dir <- file.path(simulation_dir, "code")
-fig_dir <- file.path(simulation_dir, "results", "figures")
-results_data_dir <- file.path(simulation_dir, "results", "data")
-
-
-# ----- Load model fitting results and simulated data -----
-load(file = file.path(results_data_dir, "simulated_data_1iter_240826.RData"))
-load(file = file.path(results_data_dir, "model_metrics_240904.RData"))
-
-sim_data_list <- list(sim1_1iter, sim2_1iter)
-sim_coefs_list <- list(sim1_coefs, sim2_coefs)
-sim_pvals_list <- list(sim1_pvals, sim2_pvals)
-lambda_options <- c("lambda_min", "lambda_1se")
-eig_vals_ordered <- {
-  eig_vals <- sim1_1iter$meta_data$eig_vals
-  order(eig_vals) / length(eig_vals)
-}
-
-
-
-
-
-# ----- Visualize actual coefs and group means -----
-p_group_mean_diff <- list()
-for (i in seq_len(length(sim_data_list))) {
-  dat <- sim_data_list[[i]]$data
-  x <- dat$x
-  x_freq <- dat$x_freq
-  y <- dat$y
-
-  mean_diff_x <- colMeans(x[y == 1, ]) - colMeans(x[y == 0, ])
-  mean_diff_x_freq <- colMeans(x_freq[y == 1, ]) - colMeans(x_freq[y == 0, ])
-
-  p_group_mean_diff[[paste0("sim", i)]][["beta"]] <- plot_heatmap(mean_diff_x)
-  p_group_mean_diff[[paste0("sim", i)]][["b"]] <- plot_scatterplot(
-    eig_vals_ordered, mean_diff_x_freq,
-    "Order of eigenvalues", "Group mean diff"
-  )
-}
-
-p_actual_coefs <- list()
-for (i in seq_len(length(sim_data_list))) {
-  meta_data <- sim_data_list[[i]]$meta_data
-  beta <- meta_data$beta
-  b <- meta_data$b
-
-  p_actual_coefs[[paste0("sim", i)]][["beta"]] <- plot_heatmap(beta)
-  p_actual_coefs[[paste0("sim", i)]][["b"]] <- plot_scatterplot(
-    eig_vals_ordered, b,
-    "Order of eigenvalues", "Coefficient values"
-  )
-}
-
-for (i in seq_len(length(sim_data_list))) {
-  filename1 <- paste0("actual_coefs_sim", i, ".png")
-  png(file = file.path(fig_dir, filename1), width = 1200, height = 500)
-  grid.arrange(grobs = p_actual_coefs[[paste0("sim", i)]], ncol = 2)
-  dev.off()
-
-  filename2 <- paste0("group_mean_diff_sim", i, ".png")
-  png(file = file.path(fig_dir, filename2), width = 1200, height = 500)
-  grid.arrange(grobs = p_group_mean_diff[[paste0("sim", i)]], ncol = 2)
-  dev.off()
-}
-
-
 # ----- Create table for AUC and accuracy -----
 my.render.continuous <- function(x) {
   with(stats.default(x), sprintf("%.3f (%0.3f)", MEAN, SD))
@@ -94,33 +23,6 @@ table1(
   data = as.data.frame(sim2_auc_acc$freq),
   render.continuous = my.render.cont
 )
-
-
-# ----- Visualize estimated coefficients -----
-# For beta (coef in the pixel space), use heatmaps
-p_est_coefs <- list()
-for (i in seq_len(length(sim_coefs_list))) {
-  dat <- sim_coefs_list[[i]]
-  for (j in lambda_options) {
-    p_est_coefs[[paste0("sim", i)]]$beta[[j]] <- plot_heatmap(colMeans(dat$pixel[[j]]))
-    p_est_coefs[[paste0("sim", i)]]$b[[j]] <- plot_scatterplot(eig_vals_ordered, colMeans(dat$freq[[j]]))
-  }
-}
-
-png(
-  file = file.path(fig_dir, "beta_estimates.png"),
-  width = 1200, height = 800, res = 150
-)
-grid.arrange(grobs = c(p_est_coefs$sim1$beta, p_est_coefs$sim2$beta), ncol = 2)
-dev.off()
-
-# For b, use scatterplot
-png(
-  file = file.path(fig_dir, "b_estimates.png"),
-  width = 1200, height = 800, res = 150
-)
-grid.arrange(grobs = c(p_est_coefs$sim1$b, p_est_coefs$sim2$b), ncol = 2)
-dev.off()
 
 
 # ----- Visualize significant p-values -----
