@@ -22,55 +22,6 @@ eig_vals_ordered <- {
 }
 
 
-# ----- Functions for visualization -----
-plot_heatmap <- function(vec, value_limits = NULL) {
-  # Convert 1D vector to 2D matrix
-  len <- length(vec)
-  img_size <- as.integer(sqrt(len))
-  mat <- matrix(vec, img_size, img_size, byrow = TRUE)
-
-  # Convert the 2D matrix to a long data frame: x, y, value
-  data_long <- reshape2::melt(mat)
-
-  # Ensure value_limits is of length 2 if provided
-  if (!is.null(value_limits) && length(value_limits) != 2) {
-    stop("value_limits must be a vector of length 2, like c(low, high)")
-  }
-
-  # Create the plot using ggplot2
-  plot <- ggplot(data_long, aes(x = Var2, y = Var1, fill = value)) +
-    geom_tile() +
-    scale_fill_gradient2(
-      low = "blue",
-      mid = "white",
-      high = "red",
-      midpoint = 0,
-      limits = value_limits,
-      oob = scales::squish
-    ) +
-    theme_minimal() +
-    theme(
-      plot.background = element_rect(fill = "white", colour = "white"),
-      panel.background = element_rect(fill = "white", colour = "white")
-    ) +
-    labs(x = "", y = "")
-
-  return(plot)
-}
-
-# specifically defined for plotting eigenvalues vs other values
-plot_scatterplot <- function(x, y, xlab = NULL, ylab = NULL) {
-  ymin <- floor(min(y, na.rm = TRUE))
-  ymax <- ceiling(max(y, na.rm = TRUE))
-
-  dat <- data.frame(x = x, y = y)
-  ggplot(dat, aes(x = x, y = y)) +
-    geom_point(color = "blue") +
-    labs(x = xlab, y = ylab) +
-    scale_y_continuous(limits = c(ymin, ymax)) +
-    theme_minimal() +
-    theme(strip.text = element_blank())
-}
 
 
 
