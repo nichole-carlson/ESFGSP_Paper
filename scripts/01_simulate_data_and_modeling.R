@@ -17,22 +17,37 @@ beta_effect <- 0.1
 b_effect <- 0.2
 p_train <- 0.8
 
-sim1a_generated_data <- run_pixel_to_freq_simulation(
-  n_samples = n_samples,
-  n_row = n_row,
-  n_col = n_col,
-  effect_size = beta_effect,
-  c_adj = generate_exp_corr_matrix(n_row, n_col), # exp decay adj matrix
-  seed = seed
-)
 
-sim1a_fitted_model <- run_lasso_pipeline(
-  x = sim1a_generated_data$data$x,
-  y = sim1a_generated_data$data$y,
-  p = p_train,
-  lambda = "lambda.min",
-  seed = seed
-)
+sim1a_full_results <- list()
+
+for (i in seq_len(n_iter)) {
+  sim1a_generated_data <- run_pixel_to_freq_simulation(
+    n_samples = n_samples,
+    n_row = n_row,
+    n_col = n_col,
+    effect_size = beta_effect,
+    c_adj = generate_exp_corr_matrix(n_row, n_col), # exp decay adj matrix
+    seed = seed
+  )
+
+  sim1a_fitted_model_metrics <- run_lasso_pipeline(
+    x = sim1a_generated_data$data$x,
+    y = sim1a_generated_data$data$y,
+    p = p_train,
+    lambda = "lambda.min",
+    seed = seed
+  )
+
+  # Transform estimated coefs to the freq space
+  eigen_vectors <- eigen_decomp(sim1a_generated_data$hparams$c_adj)$vectors
+  coefs_transformed <- t(eigen_vectors) %*% sim1a_fitted_model_metrics$coefs
+
+  sim1a_full_results[[i]] <- c(
+    sim1a_generated_data,
+    sim1a_fitted_model_metrics,
+    list(coefs_transformed = coefs_transformed)
+  )
+}
 
 sim1b_data <- run_simulation_1b(
   n_samples = n_samples,
