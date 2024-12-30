@@ -14,9 +14,7 @@ with(
 )
 
 # Order of eigenvalues
-x_index <- with(
-  sim1a_exp_pixel_data[[1]], seq_along(x) / length(x)
-)
+x_index <- with(sim1a_exp_pixel_data[[1]], seq_along(x) / length(x))
 
 # Group mean difference in the freq space
 with(

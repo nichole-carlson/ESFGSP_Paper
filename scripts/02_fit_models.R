@@ -10,8 +10,13 @@ p_train <- 0.8
 seed <- 42
 
 # Load simulation 1a list of data and fit LASSO models
+cat("Loading Simulation 1a .RData file ...\n")
+tic()
 load(file = file.path(proj_dir, "results", "sim1a_pixel_data_241229.RData"))
+toc()
 
+cat("Fitting models on Simulation 1a data ... \n")
+tic()
 sim1a_lasso_results <- list()
 for (dat in sim1a_exp_pixel_data) {
   # Fit model on data in the pixel space, get AUC, ACC and estimated coefs
@@ -43,7 +48,10 @@ for (dat in sim1a_exp_pixel_data) {
 
   sim1a_fitted_results[["freq"]][[i]] <- freq_model_metrics
 }
+toc()
 
+cat("Saving fitted model as a .RData file ...\n")
+tic()
 save(
   sim1a_lasso_results,
   file = file.path(
@@ -51,3 +59,4 @@ save(
     paste0("sim1a_lasso_results_", format(Sys.Date(), "%y%m%d"), ".RData")
   )
 )
+toc()
