@@ -1,6 +1,14 @@
 library(tictoc)
 
-proj_dir <- "/Users/siyangren/Documents/ra-cida/ESFGSP_Paper"
+
+sys_info <- Sys.info()
+if (!is.null(sys_info) && sys_info["sysname"] == "Linux") {
+  proj_dir <- "/projects/sren@xsede.org/ESFGSP_Paper"
+  data_dir <- "/scratch/alpine/sren@xsede.org/esfgsp"
+} else {
+  proj_dir <- "/Users/siyangren/Documents/ra-cida/ESFGSP_Paper"
+  data_dir <- file.path(proj_dir, "results")
+}
 
 # Source functions for simulating data
 source(file.path(proj_dir, "R", "simulate_data.R"))
@@ -39,7 +47,7 @@ tic()
 save(
   sim1a_exp_pixel_data,
   file = file.path(
-    proj_dir, "results",
+    data_dir,
     paste0("sim1a_pixel_data_", format(Sys.Date(), "%y%m%d"), ".RData")
   )
 )
