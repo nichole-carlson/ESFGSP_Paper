@@ -19,6 +19,10 @@ parallel_wrapper <- function(task_fn, args_list, cores = NULL, pkgs = NULL) {
   cl <- parallel::makeCluster(cores)
   doParallel::registerDoParallel(cl)
 
+  # Automatically export all global objects
+  globals <- ls(globalenv())
+  parallel::clusterExport(cl, globals, envir = .GlobalEnv)
+
   # Run tasks in paralle using foreach
   results <- foreach::foreach(
     args = iterators::iter(args_list),
