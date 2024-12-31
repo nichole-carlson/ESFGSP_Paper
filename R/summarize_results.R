@@ -1,6 +1,12 @@
-library(ggplot2)
-library(gridExtra)
-library(reshape2)
+# List of required packages
+packages <- c("ggplot2", "reshape2")
+
+# Install missing packages
+new_packages <- packages[!(packages %in% installed.packages()[, "Package"])]
+if (length(new_packages) > 0) install.packages(new_packages)
+
+# Load packages
+sapply(packages, require, character.only = TRUE)
 
 
 # Convert a vector to a heatmap

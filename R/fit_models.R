@@ -1,7 +1,12 @@
-library(glmnet)
-library(pROC)
-library(tictoc)
-library(hdi)
+# List of required packages
+packages <- c("glmnet", "pROC", "tictoc", "hdi")
+
+# Install missing packages
+new_packages <- packages[!(packages %in% installed.packages()[, "Package"])]
+if (length(new_packages) > 0) install.packages(new_packages)
+
+# Load packages
+sapply(packages, require, character.only = TRUE)
 
 
 # Splits the dataset into training and testing sets.
