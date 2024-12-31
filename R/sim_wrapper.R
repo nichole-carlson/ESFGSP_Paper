@@ -9,36 +9,26 @@ if (length(new_packages) > 0) install.packages(new_packages)
 sapply(packages, require, character.only = TRUE)
 
 
-simWrapper <- function(n_sim, f_sim, list_export = NULL,
-                       list_package = c(), f_clusterCall = function() {}) {
-  # Generate random seeds for each simulation to ensure reproducibility
-  v_seed <- sample(2^31 - 1, n_sim)
+parallel_wrapper <- function(task_fn, args_list, cores = NULL, pkgs = NULL) {
+  # Set the number of cores
+  if (is.null(cores)) {
+    cores <- parallel::detectCores() - 1
+  }
 
-  n_cores <- detectCores() - 1
+  # Set up parallel backend
+  cl <- parallel::makeCluster(cores)
+  doParallel::registerDoParallel(cl)
 
-  # Start a cluster with the specified number of cores
-  cl <- makeCluster(n_cores)
-  # Register the parallel backend to be used with the cluster
-  registerDoParallel(cl)
+  # Run tasks in paralle using foreach
+  results <- foreach::foreach(
+    args = iterators::iter(args_list),
+    .packages = pkgs
+  ) %dopar% {
+    do.call(task_fn, args)
+  }
 
-  try({
-    # Export specified variables to all workers in the cluster
-    clusterExport(cl, list_export)
-    # Load the required packages on each worker node
-    clusterCall(cl, function() sapply(list_package, library, character.only = TRUE))
-    # Run any user-defined initializations on each worker
-    clusterCall(cl, f_clusterCall)
+  # Stop the cluster
+  parallel::stopCluster(cl)
 
-    # Perform the simulations in parallel
-    output_full <- foreach(i = 1:n_sim, .combine = rbind) %dopar% {
-      set.seed(v_seed[i]) # Set the seed for reproducibility
-      return(f_sim(i)) # Run the simulation function
-    }
-  })
-  # Stop the cluster once done to free up system resources
-  stopCluster(cl)
-
-
-  # Return the combined results of all simulations
-  return(output_full)
+  return(results)
 }
