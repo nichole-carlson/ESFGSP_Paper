@@ -1,5 +1,3 @@
-library(tictoc)
-
 sys_info <- Sys.info()
 if (!is.null(sys_info) && sys_info["sysname"] == "Linux") {
   proj_dir <- "/projects/sren@xsede.org/ESFGSP_Paper"

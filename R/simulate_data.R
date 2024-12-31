@@ -1,4 +1,12 @@
-library(MASS)
+# List of required packages
+packages <- c("MASS", "tictoc")
+
+# Install missing packages
+new_packages <- packages[!(packages %in% installed.packages()[, "Package"])]
+if (length(new_packages) > 0) install.packages(new_packages)
+
+# Load packages
+sapply(packages, require, character.only = TRUE)
 
 
 # ----- Functions for simulating data -----
