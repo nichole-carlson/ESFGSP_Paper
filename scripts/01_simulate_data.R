@@ -1,3 +1,4 @@
+# Determine project and data dirs based on the operating system
 sys_info <- Sys.info()
 if (!is.null(sys_info) && sys_info["sysname"] == "Linux") {
   proj_dir <- "/projects/sren@xsede.org/ESFGSP_Paper"
@@ -21,34 +22,34 @@ beta_effect <- 0.1
 b_effect <- 0.2
 
 
-# Simulation 1a. Exp decay adjacency matrix, in pixel space.
-sim1a_exp_pixel_data <- list()
-
-cat("Running simulation 1 in pixel space ...\n")
-tic()
-for (i in seq_len(n_iter)) {
-  sim1a_exp_pixel_data[[i]] <- run_pixel_to_freq_simulation(
-    n_samples = n_samples,
-    n_row = n_row,
-    n_col = n_col,
-    effect_size = beta_effect,
-    c_adj = generate_exp_corr_matrix(n_row, n_col),
-    seed = seed
-  )
-}
-cat("Simulation completed. \n")
-toc()
-
-cat("Saving simulated data as a .RData file ...\n")
-tic()
-save(
-  sim1a_exp_pixel_data,
-  file = file.path(
-    data_dir,
-    paste0("sim1a_pixel_data_", format(Sys.Date(), "%y%m%d"), ".RData")
-  )
-)
-toc()
+# # Simulation 1a. Exp decay adjacency matrix, in pixel space.
+# sim1a_exp_pixel_data <- list()
+# 
+# cat("Running simulation 1 in pixel space ...\n")
+# tic()
+# for (i in seq_len(n_iter)) {
+#   sim1a_exp_pixel_data[[i]] <- run_pixel_to_freq_simulation(
+#     n_samples = n_samples,
+#     n_row = n_row,
+#     n_col = n_col,
+#     effect_size = beta_effect,
+#     c_adj = generate_exp_corr_matrix(n_row, n_col),
+#     seed = seed
+#   )
+# }
+# cat("Simulation completed. \n")
+# toc()
+# 
+# cat("Saving simulated data as a .RData file ...\n")
+# tic()
+# save(
+#   sim1a_exp_pixel_data,
+#   file = file.path(
+#     data_dir,
+#     paste0("sim1a_pixel_data_", format(Sys.Date(), "%y%m%d"), ".RData")
+#   )
+# )
+# toc()
 
 
 # # Simulation 1b. Exp decay adjacency matrix, on freq space.
@@ -73,17 +74,31 @@ toc()
 #   )
 # )
 #
-#
-# # Simulation 2a. 2-neighbor adjacency matrix, on pixel space.
-# sim2a_2n_pixel_data <- list()
-#
-# for (i in seq_len(n_iter)) {
-#   sim2a_2n_pixel_data[[i]] <- run_pixel_to_freq_simulation(
-#     n_samples = n_samples,
-#     n_row = n_row,
-#     n_col = n_col,
-#     effect_size = beta_effect,
-#     c_adj = generate_n_neighbor_matrix(n_row, n_col, d_max = 2),
-#     seed = seed
-#   )
-# }
+
+# Simulation 2a. 2-neighbor adjacency matrix, on pixel space.
+sim2a_2n_pixel_data <- list()
+
+cat("Running simulation 2 in pixel space ...\n")
+tic()
+for (i in seq_len(n_iter)) {
+  sim2a_2n_pixel_data[[i]] <- run_pixel_to_freq_simulation(
+    n_samples = n_samples,
+    n_row = n_row,
+    n_col = n_col,
+    effect_size = beta_effect,
+    c_adj = generate_n_neighbor_matrix(n_row, n_col, d_max = 2),
+    seed = seed
+  )
+}
+toc()
+
+cat("Saving simulated data as a .RData file ...\n")
+tic()
+save(
+  sim2a_2n_pixel_data,
+  file = file.path(
+    data_dir,
+    paste0("sim2a_pixel_data_", format(Sys.Date(), "%y%m%d"), ".RData")
+  )
+)
+toc()
