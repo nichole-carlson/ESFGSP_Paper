@@ -55,24 +55,58 @@ fit_lasso_task <- function(dat, p_train, lambda, seed) {
 }
 
 
-# ---------- Simulation 1 ----------
-# Load simulation 1a list of data and fit LASSO models
-cat("Loading Simulation 1a .RData file ...\n")
+# # ---------- Simulation 1 ----------
+# # Load simulation 1a list of data and fit LASSO models
+# cat("Loading Simulation 1a .RData file ...\n")
+# tic()
+# load(file = file.path(data_dir, "sim1a_pixel_data_241229.RData"))
+# toc()
+# 
+# cat("Fitting models on Simulation 1a data ... \n")
+# tic()
+# # Create a list of arguments for parallel execution
+# arg_list <- lapply(sim1a_exp_pixel_data, function(dat) {
+#   list(dat = dat, p_train = p_train, lambda = "lambda.min", seed = seed)
+# })
+# # Use parallel_wrapper to fit models in parallel
+# sim1a_lasso_results <- parallel_wrapper(
+#   task_fn = fit_lasso_task,
+#   args_list = arg_list,
+#   cores = 12,
+#   pkgs = packages
+# )
+# toc()
+# 
+# cat("Saving fitted model as a .RData file ...\n")
+# tic()
+# save(
+#   sim1a_lasso_results,
+#   file = file.path(
+#     data_dir,
+#     paste0("sim1a_lasso_results_", format(Sys.Date(), "%y%m%d"), ".RData")
+#   )
+# )
+# toc()
+
+
+# ---------- Simulation 2 ----------
+# Load simulation 2a list of data and fit LASSO models
+cat("Loading Simulation 2a .RData file ...\n")
 tic()
-load(file = file.path(data_dir, "sim1a_pixel_data_241229.RData"))
+load(file = file.path(data_dir, "sim2a_pixel_data_241231.RData"))
 toc()
 
-cat("Fitting models on Simulation 1a data ... \n")
+cat("Fitting models on Simulation 2a data ... \n")
 tic()
 # Create a list of arguments for parallel execution
-arg_list <- lapply(sim1a_exp_pixel_data, function(dat) {
+arg_list <- lapply(sim2a_exp_pixel_data, function(dat) {
   list(dat = dat, p_train = p_train, lambda = "lambda.min", seed = seed)
 })
 # Use parallel_wrapper to fit models in parallel
-sim1a_lasso_results <- parallel_wrapper(
+sim2a_lasso_results <- parallel_wrapper(
   task_fn = fit_lasso_task,
   args_list = arg_list,
-  cores = 12,
+  cores = 64,
   pkgs = packages
 )
 toc()
@@ -80,10 +114,10 @@ toc()
 cat("Saving fitted model as a .RData file ...\n")
 tic()
 save(
-  sim1a_lasso_results,
+  sim2a_lasso_results,
   file = file.path(
     data_dir,
-    paste0("sim1a_lasso_results_", format(Sys.Date(), "%y%m%d"), ".RData")
+    paste0("sim2a_lasso_results_", format(Sys.Date(), "%y%m%d"), ".RData")
   )
 )
 toc()
