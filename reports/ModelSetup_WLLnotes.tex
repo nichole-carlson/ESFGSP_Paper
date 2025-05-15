@@ -1,0 +1,90 @@
+\documentclass[12pt]{article}
+\usepackage[margin=0.75in]{geometry}
+\usepackage{amsmath,amsfonts}
+\usepackage{enumerate}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{multirow}
+\usepackage{booktabs}
+\usepackage{placeins}
+
+\renewcommand{\baselinestretch}{1}
+\topmargin 0in \headheight 0.0in \textheight 9in \textwidth 6.5in
+\oddsidemargin 0.1in \evensidemargin 0.1in
+
+%\graphicspath{{/Users/siyangren/Documents/ra-cida/ESFGSP_Paper/Simulations/results/figures}}
+\graphicspath{{../results/figures}} % for tex documents, you can write paths relative to the directory in which the tex file is contained. so long as both the tex file and the figures are in a repo, this means relative paths will work on all computers with a local copy of the repo! this does not work as nicely in R, so don't do it there.
+
+
+% \ed will allow me to add comments in blue underline
+\usepackage{xcolor}
+\usepackage{ulem}
+\newcommand{\ed}[1]{{\color{blue}{\uline {#1}}}}
+\newcommand{\E}[2]{\text{E}_{#1}\left[#2\right]}
+
+
+
+\begin{document}
+
+Task: Write a function for simulating data. Make $E$ one of the arguments and output data in pixel space whether or not they're generated there. Write another function for fitting models in either the frequency space or the pixel space where analysis data are always input in pixel space. Make $E$ one of the arguments to facilitate fitting in frequency space.
+
+What does it mean to use different values of $E$ to generate the data and analyze the data? Why would we want that?
+
+
+
+\subsection*{Spaces}
+
+Let $X$ be an $n\times p$ matrix of $n$ images with $p$ pixels. Each row is comprised of a vectorized image. We refer to these images as being in pixel space. 
+
+Let $E$ be a $p\times p$ orthogonal matrix. We refer to $E$ as a transformation matrix as we will use it to transform data between pixel space and a frequency space. Typically, $E$ is obtained through eigendecomposition of a symmetric matrix, in which case columns of $E$ are eigenvectors, also referred to as frequencies. 
+
+Given transformation $E$ and data $X$ comprised of images in pixel space, we transform images to frequency space ($X_{freq}$) and back to pixel space as follows:
+$$X_{freq} = XE;\hspace{1cm}
+X=E^TEX=E^TX_{freq}\ .$$
+
+\subsection*{Model}
+
+Suppose images $X$ come in two groups, group 0 and 1. We might model the groups as a function of the images using a logistic model. Let $y_i$ indicate the group to which image $i$ belongs, let $E$ denote a transformation, and let $x_i$ and $x_{freq,i}$ be the $i$th image in pixel space and in frequency space (the $i$th rows of $X$ and $X_{freq}=XE$). Let $\beta_0$ be a constant, $\beta$ be a $p$-vector, and $\beta_{freq}=E^T\beta$. Then we model
+$$y_i=\text{Bernoulli}(p_i);\hspace{1cm}
+p_i=\frac{1}{1+\exp(-\beta_0-X\beta)}=\frac{1}{1+\exp(-\beta_0-X_{freq}\beta_{freq})}\ .$$ 
+[I know we don't actually use an intercept $\beta_0$ right now, but we would specify a non-zero intercept in a future simulation if we wanted imbalanced groups.]
+
+If we fit the model to data $(X,y)$, we say we fit the model in pixel space. If we fit the model to data $(X_{freq},y)$, we say we fit the model in frequency space. 
+
+We fit models using LASSO type penalties in either pixel space or frequency space. When the model is fit in pixel space, the LASSO penalty is applied to coefficients $\beta$ and the model is sparse in pixels. When the model is fit in frequency space, the LASSO penalty is applied to coefficients $\beta_{freq}$ and the model is sparse in frequencies.
+
+\subsection*{Simulated Data}
+
+Image data $X$ are simulated with $n=1000$ independent rows and $p=256$ pixels, each row having multivariate normal distribution $\mathcal N(0,\Sigma)$ for a specified $\Sigma$. Group data $y$ are then simulated from the model by specifying the intercept $\beta_0=0$ and specifying coefficients in either pixel space ($\beta$) or frequency space ($\beta^{data}_{freq},E_{data}$). Here, we understand the 256 pixels to be arranged in a 16$\times$16 grid. For each simulation context, we simulate 500 datasets.
+
+\subsubsection*{Simulation 1}
+
+We set $\Sigma$ to be an exponential correlation matrix with rate 1, meaning $\Sigma_{ij}=\exp\left(-d_{ij}\right)$ where $d_{ij}$ denotes the Euclidean distance between centers of the $i$th and $j$th pixels in the 16$\times$16 grid. We specify coefficients $\beta$ in pixel space as taking constant non-zero value over the central 8$\times$8 pixel region of the image and 0 elsewhere. We select the constant non-zero value such that the resulting distribution of probabilities $p_i$ is roughly uniform.
+
+\subsubsection*{Simulation 2}
+
+We set $\Sigma=E_{data}DE_{data}^T$ where $D$ is a diagonal matrix with $i$th entry $D_{ii}=p+1-i$ and transformation $E_{data}$ obtained from eigendecomposition of $M(\Sigma-I)M$, using $\Sigma-I$ as a weighted adjacency matrix representing the 16$\times$16 grid. This is achieved by simulating data $\tilde X$ with independent rows having distribution $\mathcal N(0,D)$ and setting $X=\tilde X E_{data}^T$. [In the case $E_{data}=E_{model}$, see below, we can say $\tilde X=X_{freq}$ unambiguously. If $E_{data}\neq E_{model}$, as will be the case for some future simulations, then we fit models to $X_{freq}=XE_{model}$, not $\tilde X=XE_{data}$.]
+
+We specify coefficients $\beta^{data}_{freq}$ in frequency space according to transformation $E_{data}$. Specifically, for a fixed random subset of 10\% of frequencies, we set $\beta^{data}_{freq}$ as taking constant non-zero value over the subset and 0 elsewhere. We select the constant non-zero value such that the resulting distribution of probabilities $p_i$ is roughly uniform. Note, the random subset of frequencies is fixed over all replicate datasets.
+
+[I think if we want to flatten out the bias, we might try the following: Suppose $\beta^{data}_{freq}$ is non-zero at the $j$th frequency: $\beta^{data}_{j,freq}\neq 0$. Let $\beta^{data}_{j,freq}=D_{jj}^{-1}$ instead of a constant value.]
+
+[We might consider taking $D$ to be the eigenvalues of an exponential correlation matrix with rate 1 so that the simulations have the same correlation structure.]
+
+\subsection*{Model fitting}
+
+LASSO models are fit in either pixel space or frequency space. For model fitting, frequency space is defined by transformation $E_{model}$ obtained from eigendecomposition of $MCM$ where $C+I$ is an exponential correlation matrix with rate 1 for the 16$\times$16 grid. [Note: This means $E_{data}=E_{model}$. In future simulations, we will not equate $E_{model}$ and $E_{data}$ as in practice we would not know the true frequency space for the image data. We could, for example, pick $C$ to be the unweighted 2-neighbor adjacency matrix.]
+
+When fitting models, a dataset $X$ is split into 80\% training data and 20\% test data. 10-fold cross-validation is used to select the LASSO regularization parameter $\lambda$ (from what candidate values?) either producing the minimal cross-validated error (\verb|lambda.min|) or the largest candidate parameter value producing cross-validated error within one standard error of the minimum cross-validated error (\verb|lambda.1se|).
+
+In total, we fit four models to each training dataset where a model fitting is characterized by the space in which it is fit (pixel or frequency) and the selection method for the tuning parameter (\verb|lambda.min| or \verb|lambda.1se|).
+
+Fit models are then applied to the test data. We compute classification accuracy and ROC AUC (area under the curve for the received operating characteristic curve). We also compute coefficient p-values using the \verb|hdi| package.
+
+
+
+
+
+\end{document}
+
+
