@@ -21,3 +21,9 @@ Loading required package: foreach
 Loading required package: doParallel
 Loading required package: iterators
 Loading required package: parallel
+Loading Simulation 2a .RData file ...
+14.128 sec elapsed
+Fitting models on Simulation 2a data ... 
+8945.978 sec elapsed
+Saving fitted model as a .RData file ...
+1.97 sec elapsed

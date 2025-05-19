@@ -99,14 +99,14 @@ toc()
 cat("Fitting models on Simulation 2a data ... \n")
 tic()
 # Create a list of arguments for parallel execution
-arg_list <- lapply(sim2a_exp_pixel_data, function(dat) {
+arg_list <- lapply(sim2a_2n_pixel_data, function(dat) {
   list(dat = dat, p_train = p_train, lambda = "lambda.min", seed = seed)
 })
 # Use parallel_wrapper to fit models in parallel
 sim2a_lasso_results <- parallel_wrapper(
   task_fn = fit_lasso_task,
   args_list = arg_list,
-  cores = 64,
+  cores = 16,
   pkgs = packages
 )
 toc()
