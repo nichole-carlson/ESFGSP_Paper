@@ -19,11 +19,11 @@ effect_sizes <- c(1, 0.2, 0.1, 0.05, 0.01)
 seed <- 42
 
 # Covariance matrix for X
-cov_matrix <- gen_exp_adj_mat(n_row = 16, n_col = 16)
+cov_matrix <- gen_exp_corr_mat(n_row = 16, n_col = 16)
 
 # Simulate X ~ MVN(0, cov_matrix)
 x <- simulate_mvn_samples(
-  n_samples = 1000, 
+  n_sample = 1000, 
   cov_matrix = cov_matrix, 
   seed = seed
 )
