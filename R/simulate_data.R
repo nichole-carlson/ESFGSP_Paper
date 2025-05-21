@@ -1,5 +1,5 @@
 # List of required packages
-packages <- c("MASS", "tictoc")
+packages <- c("MASS")
 
 # Install missing packages
 new_packages <- packages[!(packages %in% installed.packages()[, "Package"])]
@@ -15,25 +15,25 @@ sapply(packages, require, character.only = TRUE)
 # Generate a matrix of samples from a multivariate normal distribution.
 #
 # Args:
-#   n_samples: Integer. Number of samples (rows) to generate.
+#   n_sample: Integer. Number of samples (rows) to generate.
 #   cov_matrix: Matrix. Covariance matrix defining the multivariate normal
 #               distribution.
 #   seed: Optional. Integer seed for reproducibility.
 #
 # Returns:
-#   A numeric matrix of samples with n_samples rows and columns equal to the
+#   A numeric matrix of samples with n_sample rows and columns equal to the
 #   dimension of the covariance matrix (img_size^2 for a 2D pixel grid).
-simulate_mvn_samples <- function(n_samples, cov_matrix, seed = NULL) {
+simulate_mvn_samples <- function(n_sample, cov_matrix, seed = NULL) {
   if (!is.null(seed)) {
     set.seed(seed)
   }
   n_features <- nrow(cov_matrix)
   samples <- MASS::mvrnorm(
-    n_samples,
+    n_sample,
     mu = rep(0, n_features),
     Sigma = cov_matrix
   )
-  samples <- matrix(samples, nrow = n_samples) # make sure output is matrix
+  samples <- matrix(samples, nrow = n_sample) # make sure output is matrix
   return(samples)
 }
 
