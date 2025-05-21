@@ -57,7 +57,7 @@ gen_n_neighbor_adj_mat <- function(n_row, n_col, d_max) {
 #
 # Returns:
 #   A p x p correlation matrix (where p = n_row * n_col).
-gen_exp_adj_mat <- function(n_row, n_col) {
+gen_exp_corr_mat <- function(n_row, n_col) {
   # Generate all coorediates
   coords <- expand.grid(row = 1:n_row, col = 1:n_col)
   # Compute Euclidean distance between every pair of coordinates
