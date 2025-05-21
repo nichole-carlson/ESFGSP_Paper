@@ -9,124 +9,98 @@ if (length(new_packages) > 0) install.packages(new_packages)
 sapply(packages, require, character.only = TRUE)
 
 
+
 # ----- Functions for simulating data -----
 
-# Perform eigendecomposition of MCM, where M is a centering matrix.
+# Generate a matrix of samples from a multivariate normal distribution.
 #
 # Args:
-#   mat: Matrix. The spatial adjacency matrix (C) to be decomposed.
+#   n_samples: Integer. Number of samples (rows) to generate.
+#   cov_matrix: Matrix. Covariance matrix defining the multivariate normal
+#               distribution.
+#   seed: Optional. Integer seed for reproducibility.
 #
 # Returns:
-#   A list containing:
-#     - vectors: Matrix of eigenvectors ordered by increasing eigenvalues.
-#     - values: Vector of eigenvalues in increasing order.
-#
-# Notes:
-#   The centering matrix (M) is computed as (I - 1/n * 1 * 1^T), where n is
-#   the number of columns in the matrix. This function applies the
-#   transformation MCM and returns the eigenvalues and eigenvectors of the
-#   resulting matrix.
-eigen_decomp <- function(mat) {
-  n_cols <- ncol(mat)
-  cent_mat <- diag(n_cols) - matrix(1, n_cols, n_cols) / n_cols
-  eig_res <- eigen(cent_mat %*% mat %*% cent_mat, symmetric = TRUE)
-
-  ord_idx <- order(eig_res$values, decreasing = FALSE)
-  eig_vecs <- eig_res$vectors[, ord_idx]
-  eig_vals <- eig_res$values[ord_idx]
-
-  return(list(vectors = eig_vecs, values = eig_vals))
+#   A numeric matrix of samples with n_samples rows and columns equal to the
+#   dimension of the covariance matrix (img_size^2 for a 2D pixel grid).
+simulate_mvn_samples <- function(n_samples, cov_matrix, seed = NULL) {
+  if (!is.null(seed)) {
+    set.seed(seed)
+  }
+  n_features <- nrow(cov_matrix)
+  samples <- MASS::mvrnorm(
+    n_samples,
+    mu = rep(0, n_features),
+    Sigma = cov_matrix
+  )
+  samples <- matrix(samples, nrow = n_samples) # make sure output is matrix
+  return(samples)
 }
 
 
-# Generate a 2-neighbor adjacency matrix for a grid of pixels.
+# Simulates binary outcome labels based on a linear model using pixel-space
+# or frequency-space data.
 #
 # Args:
-#   n_row: Integer. Number of rows in the pixel grid (e.g., an image).
-#   n_col: Integer. Number of columns in the pixel grid.
-#   d_max: Numeric. Maximum distance for pixels to be considered adjacent.
-#          For a 2-neighbor adjacency matrix, set d_max = 2.
+#   x: n x p matrix.
+#      If from_pixel_space = TRUE, x is assumed to be in pixel space.
+#      If FALSE, x is assumed to be in frequency space and will be transformed
+#      to pixel space using e.
+#
+#   beta: p x 1 vector or length-p vector.
+#      Coefficients in pixel space if from_pixel_space = TRUE.
+#      Coefficients in frequency space if from_pixel_space = FALSE.
+#
+#   from_pixel_space: Logical.
+#      TRUE if input data and beta are already in pixel space.
+#      FALSE if data and beta are in frequency space.
+#
+#   e: p x p transformation matrix (required if from_pixel_space = FALSE).
+#      Maps pixel data to frequency space
+#
+#   seed: Optional integer seed for reproducibility.
 #
 # Returns:
-#   A p x p matrix (where p = n_row * n_col) encoding pixel adjacency:
-#     - 1 indicates that two pixels are connected.
-#     - 0 indicates that two pixels are not connected.
-#
-# Notes:
-#   Pixels are considered adjacent if they are directly connected via edges or
-#   indirectly connected through a shared neighbor within the given distance.
-generate_n_neighbor_matrix <- function(n_row, n_col, d_max) {
-  # Generate all coordinates
-  coords <- expand.grid(row = 1:n_row, col = 1:n_col)
-  # Compute Euclidean distance between every pair of coordinates
-  distances <- as.matrix(dist(coords))
-  # Decided adjacency by threshold (d_max)
-  adj_mat <- (distances <= d_max) * 1
-  # Change diagonal values to be 0
-  diag(adj_mat) <- 0
+#   A binary vector y of length n, sampled from Bernoulli distributions
+#   with probabilities defined by logistic(x %*% beta).
+simulate_pixel_outcome <- function(x,
+                                   beta,
+                                   from_pixel_space = TRUE,
+                                   e = NULL,
+                                   seed = NULL) {
+  # x: data matrix (either pixel or freq space)
+  # beta: coef vector (beta if pixel, b if freq)
+  # e: transform matrix: required if from_pixel_space = FALSE
 
-  return(adj_mat)
+  if (is.null(dim(beta))) {
+    beta <- matrix(beta, ncol = 1)
+  } else if (ncol(beta) != 1) {
+    stop("beta must be a column vector (ncol = 1).")
+  }
+
+  if (!from_pixel_space) {
+    if (is.null(e)) stop("e must be provided when not from pixel space.")
+    x <- x %*% t(e) # map freq to pixel
+    beta <- t(e) %*% beta # map freq to pixel
+  }
+
+  if (!is.null(seed)) {
+    set.seed(seed)
+  }
+
+  eta <- drop(x %*% beta)
+  prob <- plogis(eta)
+  y <- rbinom(length(prob), 1, prob)
+  return(y)
 }
 
 
-# Generate a correlation matrix with exponential decay.
-#
-# For any two pixels i and j, their correlation is exp(-d), where d is their
-# 2D Euclidean distance.
-#
-# Args:
-#   n_row: Integer. Number of rows in the pixel grid (e.g., an image).
-#   n_col: Integer. Number of columns in the pixel grid.
-#
-# Returns:
-#   A p x p correlation matrix (where p = n_row * n_col) with values determined
-#   by the exponential decay of the 2D Euclidean distance between pixels.
-generate_exp_corr_matrix <- function(n_row, n_col) {
-  # Generate all coorediates
-  coords <- expand.grid(row = 1:n_row, col = 1:n_col)
-  # Compute Euclidean distance between every pair of coordinates
-  distances <- as.matrix(dist(coords))
-  # Calculate each pair's correlation
-  exp_corr_mat <- exp(-distances)
-
-  return(exp_corr_mat)
-}
 
 
-# Generate a diagonal matrix with values that decay non-linearly.
-#
-# The diagonal values decay rapidly at the beginning and slow down towards the
-# end, following the formula:
-#   d_i = start_value * exp(-k * log(1 + b * i))
-# where:
-#   - k is the decay rate, computed based on start_value and end_value.
-#   - b is a constant controlling the rate of initial decay.
-#
-# Args:
-#   n_row: Integer. Number of rows in the pixel grid (e.g., an image).
-#   n_col: Integer. Number of columns in the pixel grid.
-#   start_value: Numeric. Initial value for the diagonal (default: 6).
-#   end_value: Numeric. Final value for the diagonal (default: 0.5).
-#   b: Numeric. Controls the rate of initial decay (default: 0.1).
-#
-# Returns:
-#   A numeric diagonal matrix of size p x p (where p = n_row * n_col), with
-#   the specified decay pattern.
-#
-# Notes:
-#   The decay factor k is calculated to ensure the diagonal values smoothly
-#   transition from start_value to end_value across n elements.
-generate_diag_corr_matrix <- function(
-    n_row, n_col, start_value = 6, end_value = 0.5, b = 0.1) {
-  p <- n_row * n_col
-  # Compute the decay rate k
-  k <- log(start_value / end_value) / log(1 + b * (p - 1))
-  # Generate the diagonal values with non-linear decay
-  diag_vals <- start_value * exp(-k * log(1 + b * seq(0, p - 1)))
-  # Create a diagonal matrix with the computed values
-  diag_mat <- diag(diag_vals)
-  return(diag_mat)
-}
+
+
+
+
 
 
 # Calculate the indices for the center area of a matrix.
@@ -227,30 +201,6 @@ generate_2d_sparse_vector <- function(n_row, n_col, effect_size, active_area) {
 }
 
 
-# Generate a matrix of samples from a multivariate normal distribution.
-#
-# Args:
-#   n_samples: Integer. Number of samples (rows) to generate.
-#   cov_matrix: Matrix. Covariance matrix defining the multivariate normal
-#               distribution.
-#   seed: Optional. Integer seed for reproducibility.
-#
-# Returns:
-#   A numeric matrix of samples with n_samples rows and columns equal to the
-#   dimension of the covariance matrix (img_size^2 for a 2D pixel grid).
-simulate_mvn_samples <- function(n_samples, cov_matrix, seed = NULL) {
-  if (!is.null(seed)) {
-    set.seed(seed)
-  }
-  n_features <- nrow(cov_matrix)
-  samples <- MASS::mvrnorm(
-    n_samples,
-    mu = rep(0, n_features),
-    Sigma = cov_matrix
-  )
-  samples <- matrix(samples, nrow = n_samples) # make sure output is matrix
-  return(samples)
-}
 
 
 # Simulate binary response variables based on a logistic model.

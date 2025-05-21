@@ -9,6 +9,51 @@ if (length(new_packages) > 0) install.packages(new_packages)
 sapply(packages, require, character.only = TRUE)
 
 
+# Fits a linear model to binary outcome data using either pixel-space or
+# frequency-space features.
+#
+# Args:
+#   x: n x p matrix.
+#      The design matrix in pixel space.
+#
+#   y: Binary outcome vector of length n.
+#
+#   in_pixel_space: Logical.
+#      If TRUE, model will be directly fitted on x.
+#      If FALSE, x will be transformed to frequency space and fitted on.
+#
+#   e: p x p transformation matrix (required if in_pixel_space = FALSE) 
+#      Maps pixel data to frequency space.
+#
+# Returns:
+#   A list with:
+#     - coefs: Named vector of estimated coefficients (including intercept)
+#     - pvals: Corresponding p-values
+#     - model: The fitted lm model object
+fit_model <- function(x, y, in_pixel_space = TRUE, e = NULL) {
+
+  if (!in_pixel_space) {
+    if (is.null(e)) {
+      stop(
+        "Transformation matrix e is required when not in pixel space."
+      )
+    }
+    x <- x %*% e # map pixel tp freq
+  }
+  fit <- lm(y ~ x)
+
+  coef_est <- coef(summary(fit))
+  coefs <- coef_est[, "Estimate"]
+  pvals <- coef_est[, "Pr(>|t|)"]
+
+  return(list(
+    coefs = coefs,
+    pvals = pvals,
+    model = fit
+  ))
+}
+
+
 # Splits the dataset into training and testing sets.
 #
 # Args:
