@@ -126,6 +126,6 @@ for (space in spaces) {
 filename <- paste0("sim_", sprintf("%03d", opt$sim_id), ".rds")
 
 saveRDS(
-  list(data = sim_data, fit = lasso_results)
+  list(data = sim_data, fit = lasso_results),
   file = file.path(opt$out_dir, filename)
 )
