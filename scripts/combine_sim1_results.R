@@ -14,9 +14,9 @@
 #           - pvals: p-values corresponding to coefficients
 #
 # This script extracts:
-#   (1) A summary data.frame: sim_id, space, lambda, acc, auc
-#   (2) A long-format data.frame: sim_id, space, lambda, variable, coef, pval
-#   (3) A list of raw simulated `data` indexed by sim_id
+#   (1) A list of raw simulated `data` indexed by sim_id
+#   (2) A summary data.frame: sim_id, space, lambda, acc, auc
+#   (3) A long-format data.frame: sim_id, space, lambda, variable, coef, pval
 #
 # Output:
 #   - combined_results.rds: list(metrics, coefs_pvals, data)
@@ -92,12 +92,34 @@ for (f in files) {
   }
 }
 
-# Combine into data.frames
+# hparams, beta and e are the same across iterations
+hparams <- data_list[[1]]$hparams[c("effect", "n_sample")]
+beta <- data_list[[1]]$beta
+e <- data_list[[1]]$e
+
+# Extract input matrix from each simulation
+x <- lapply(data_list, function(d) d$x)
+x <- setNames(x, names(data_list))
+
+# Extract outcome vector from each simulation
+y <- lapply(data_list, function(d) d$y)
+y <- setNames(y, names(data_list))
+
+
+# Combine model outputs into data.frames
 auc_acc_df <- do.call(rbind, auc_acc_list)
 coefs_pvals_df <- do.call(rbind, coefs_pvals_list)
 
 # Save results
 saveRDS(
-  list(data = data_list, auc_acc = auc_acc_df, coefs_pvals = coefs_pvals_df),
+  list(
+    x = x,
+    y = y,
+    beta = beta,
+    e = e,
+    hparams = hparams,
+    auc_acc = auc_acc_df,
+    coefs_pvals = coefs_pvals_df
+  ),
   file = file.path(opt$out_dir, "sim1_combined_results.rds")
 )

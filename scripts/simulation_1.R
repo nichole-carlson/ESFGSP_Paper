@@ -93,7 +93,6 @@ adj_matrix <- cov_matrix - diag(nrow(cov_matrix)) # adj matrix has diag = 0
 # Eigendecomposition on MCM, C = adj matrix
 eigen_mat_data <- eigen_decomp_mcm(adj_matrix)$vectors
 
-sim_data <- list(x = x, y = y, e = eigen_mat_data)
 
 
 # ---------- Fit LASSO Model in Pixel and Freq Spaces ----------
@@ -125,7 +124,16 @@ for (space in spaces) {
 # ---------- Save as a rds file ----------
 filename <- paste0("sim_", sprintf("%03d", opt$sim_id), ".rds")
 
+# Collect all simulation info
+sim_info <- list(
+  x = x,
+  y = y,
+  e = eigen_mat_data,
+  beta = beta_vec,
+  hparams = opt
+)
+
 saveRDS(
-  list(data = sim_data, fit = lasso_results),
+  list(data = sim_info, fit = lasso_results),
   file = file.path(opt$out_dir, filename)
 )
