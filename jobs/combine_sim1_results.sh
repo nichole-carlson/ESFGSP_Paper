@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --job-name=s1_com
-#SBATCH --output=logs/sim1_combine_%A_%a.log
+#SBATCH --output=logs/sim1_combine_%j.log
 #SBATCH --ntasks=1                       # Number of tasks (1 node)
 #SBATCH --cpus-per-task=1                # Number of CPU cores per task
 #SBATCH --mem=6G                         # Memory per node
