@@ -5,7 +5,7 @@
 #SBATCH --cpus-per-task=1                # Number of CPU cores per task
 #SBATCH --mem=1G                         # Memory per node
 #SBATCH --partition=amilan               # Partition for array tasks
-#SBATCH --time=00:10:00                  # Max runtime
+#SBATCH --time=00:20:00                  # Max runtime
 #SBATCH --array=1-500
 #SBATCH --mail-type=FAIL
 #SBATCH --mail-user=siyang.ren@cuanschutz.edu
