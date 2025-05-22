@@ -12,7 +12,7 @@
 
 module load R
 
-OUT_DIR=/scratch/alpine/sren@xsede.org/esfgsp/results/simulation_1
+OUT_DIR=/scratch/alpine/sren@xsede.org/esfgsp/sim1_iters
 
 SIM_ID=${SLURM_ARRAY_TASK_ID}
 SEED=$((10000 + SIM_ID))
