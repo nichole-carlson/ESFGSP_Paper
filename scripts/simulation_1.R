@@ -17,9 +17,12 @@
 #      estimated coefficients back to pixel space.
 # Each model will be fitted on either lambda.min or lambda.1se
 
-library(optparse)
+packages <- c("optparse", "rprojroot")
+new_packages <- packages[!(packages %in% installed.packages()[, "Package"])]
+if (length(new_packages) > 0) install.packages(new_packages)
+sapply(packages, require, character.only = TRUE)
 
-proj_dir <- "/Users/siyangren/Documents/projects/ESFGSP_Paper"
+proj_dir <- rprojroot::find_root(rprojroot::is_git_root)
 
 source(file.path(proj_dir, "R", "simulate_data.R"))
 source(file.path(proj_dir, "R", "utils.R"))
