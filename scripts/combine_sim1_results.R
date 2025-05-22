@@ -98,6 +98,6 @@ coefs_pvals_df <- do.call(rbind, coefs_pvals_list)
 
 # Save results
 saveRDS(
-  list(auc_acc = auc_acc_df, coefs_pvals = coefs_pvals_df),
+  list(data = data_list, auc_acc = auc_acc_df, coefs_pvals = coefs_pvals_df),
   file = file.path(opt$out_dir, "sim1_combined_results.rds")
 )
