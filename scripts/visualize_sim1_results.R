@@ -22,12 +22,12 @@ library(rprojroot)
 library(ggplot2)
 
 proj_dir <- rprojroot::find_root(rprojroot::is_git_root)
-p_drive <- "/Volumes/alzheimersdisease/ESFGSPproject/DataLibrary"
+data_dir <- "/scratch/alpine/sren@xsede.org/esfgsp"
 
 source(file.path(proj_dir, "R", "summarize_results.R"))
 
 # Read the .rds file saving all iterations
-res <- readRDS(file.path(p_drive, "sim1_combined_results.rds"))
+res <- readRDS(file.path(data_dir, "sim1_combined_results.rds"))
 
 # Matrix of eigenvectors (decreasingly ordered)
 e <- res$data[[1]]$e
