@@ -16,13 +16,7 @@
 #           - pvals: p-values corresponding to coefficients
 #
 # This script extracts:
-#   (1) A list of raw simulated `data` indexed by sim_id; hparams such as
-#       effect size and number of samples per iteration
-#   (2) A summary data.frame: sim_id, space, lambda, acc, auc
-#   (3) A long-format data.frame: sim_id, space, lambda, variable, coef, pval
-#
-# Output:
-#   - combined_results.rds: list(metrics, coefs_pvals, data)
+#   - x, y, beta, e, hparams, auc/acc, coefs, pvals.
 
 packages <- c("optparse")
 new_packages <- packages[!(packages %in% installed.packages()[, "Package"])]
@@ -55,19 +49,47 @@ files <- list.files(
   pattern = "^sim_\\d+\\.rds$",
   full.names = TRUE
 )
+sim_ids <- as.integer(gsub("\\D", "", basename(files))) # reorder
+files <- files[order(sim_ids)]
 
-# Initial empty vector / list to collect results
+# Get dimension info from the first file
+n_iter <- length(files)
+file_1 <- readRDS(files[1])
+n <- nrow(file_1$data$x)
+p <- ncol(file_1$data$x)
+spaces <- names(file_1$fit)
+lambdas <- names(file_1$fit[[1]])
+
+# Initial empty vector / matrix / arrays
 beta_vec <- c()
 hparams <- c()
 e <- c()
-x_list <- list()
-y_list <- list()
-auc_acc_list <- list()
-coefs_pvals_list <- list()
+
+x_arr <- array(NA_real_, dim = c(n, p, n_iter))
+y_arr <- matrix(NA_real_, nrow = n_iter, ncol = n)
+
+auc_acc_df <- data.frame(
+  sim = numeric(),
+  space = character(),
+  lambda = character(),
+  auc = numeric(),
+  acc = numeric()
+)
+
+coef_arr <- array(
+  NA_real_,
+  dim = c(p, length(lambdas), length(spaces), n_iter),
+  dimnames = list(
+    coef = seq_len(p),
+    lambda = lambdas,
+    space = spaces,
+    sim = seq_len(n_iter)
+  )
+)
+p_arr <- coef_arr
 
 for (i in seq_along(files)) {
   f <- files[i]
-  sim_id <- as.integer(gsub("\\D", "", basename(f)))
   res <- tryCatch(readRDS(f), error = function(e) NULL)
   if (is.null(res)) next
 
@@ -77,55 +99,40 @@ for (i in seq_along(files)) {
     e <- c(e, res$data$e)
   }
 
-  id <- as.character(sim_id)
-  x_list[[id]] <- res$data$x
-  y_list[[id]] <- res$data$y
+  x_arr[, , i] <- res$data$x
+  y_arr[, i] <- res$data$y
 
-  for (space in names(res$fit)) {
-    for (lam in names(res$fit[[space]])) {
+  for (s in seq_along(spaces)) {
+    space <- spaces[s]
+    for (l in seq_along(lambdas)) {
+      lam <- lambdas[l]
       res_sl <- res$fit[[space]][[lam]]
-
-      # Add to auc/acc list
-      auc_acc_list[[length(auc_acc_list) + 1]] <- data.frame(
-        sim_id = id,
+      auc_acc_df <- rbind(auc_acc_df, data.frame(
+        sim = i,
         space = space,
         lambda = lam,
         auc = as.numeric(res_sl$auc),
         acc = res_sl$acc
-      )
-
-      # Add to coefs/pvals list
-      coefs_pvals_list[[length(coefs_pvals_list) + 1]] <- data.frame(
-        sim_id = id,
-        space = space,
-        lambda = lam,
-        coef = res_sl$coefs,
-        pval = res_sl$pvals
-      )
+      ))
+      coef_arr[, l, s, i] <- res_sl$coefs
+      p_arr[, l, s, i] <- res_sl$pvals
     }
   }
 }
 
 
-# Combine model outputs into data.frames / matrix / array
-x_arr <- array(NA, dim = c(dim(x_list[[1]]), length(x_list)))
-for (i in seq_along(x_list)) {
-  x_arr[, , i] <- x_list[[i]]
-}
-y_mat <- do.call(rbind, y_list)
-auc_acc_df <- do.call(rbind, auc_acc_list)
-coefs_pvals_df <- do.call(rbind, coefs_pvals_list)
 
 # Save results
 saveRDS(
   list(
     x = x_arr,
-    y = y_mat,
+    y = y_arr,
     beta = beta_vec,
     e = e,
     hparams = hparams,
     auc_acc = auc_acc_df,
-    coefs_pvals = coefs_pvals_df
+    coefs = coef_arr,
+    pvals = p_arr
   ),
   file = file.path(opt$out_dir, "sim1_combined_results.rds")
 )
