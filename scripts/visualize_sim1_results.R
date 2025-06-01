@@ -23,6 +23,7 @@
 
 library(rprojroot)
 library(ggplot2)
+library(patchwork)
 
 proj_dir <- rprojroot::find_root(rprojroot::is_git_root)
 data_dir <- "" # temporary .rds location
@@ -58,13 +59,31 @@ p_group_mean_freq <- plot_scatter(
 )
 
 
-# ---------- Real Coefficients Visualization ----------
-# true coefs transformed to freq space: coef_freq = t(e) %*% coef_pixel
+# ---------- Ture Coefficients Visualization ----------
+# True coefs transformed to freq space: coef_freq = t(e) %*% coef_pixel
 b_vec <- as.vector(t(e) %*% matrix(beta_vec, ncol = 1))
 
-# heatmap for true beta
-p_beta_heat <- vector_to_heatmap(beta_vec)
+# Heatmap for true beta
+p_true_beta <- vector_to_heatmap(beta_vec)
 
 # Scatter plot of b_vec with x-axis as scaled index: i/256 for i = 1 to 256
 x_index <- seq_along(b_vec) / length(b_vec)
-p_b_scatter <- plot_scatter(x = x_index, y = b_vec)
+p_true_b <- plot_scatter(x = x_index, y = b_vec)
+
+
+# ---------- Average Estimated Coefs ----------
+# Average estimated beta, fit on pixel space
+p_est_beta_pixel <- {
+  all_means <- list()
+
+  for (l in unique(coefs_pvals_df$lambda)) {
+    .df <- subset(coefs_pvals_df, space == "pixel" & lambda == l)
+    .mat <- do.call(rbind, split(.df$coef, .df$sim_id))
+    all_means[[l]] <- colMeans(.mat)
+  }
+
+  lim <- range(unlist(all_means))
+
+  plot_list <- lapply(all_means, function(vec) vector_to_heatmap(vec, lim))
+  patchwork::wrap_plots(plot_list, ncol = 2)
+}
