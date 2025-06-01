@@ -100,7 +100,7 @@ for (i in seq_along(files)) {
   }
 
   x_arr[, , i] <- res$data$x
-  y_arr[, i] <- res$data$y
+  y_arr[i, ] <- res$data$y
 
   for (s in seq_along(spaces)) {
     space <- spaces[s]
