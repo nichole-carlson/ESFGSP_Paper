@@ -33,7 +33,7 @@ source(file.path(proj_dir, "R", "summarize_results.R"))
 res <- readRDS(file.path(data_dir, "sim1_combined_results.rds"))
 
 x_list <- res$x
-y <- res$y
+y_list <- res$y
 beta_vec <- res$beta
 e <- res$e
 hparams <- res$hparams
@@ -42,6 +42,21 @@ coefs_pvals_df <- res$coefs_pvals
 
 
 # ---------- Group Mean Difference ----------
+# For 1 iteration
+x_1 <- x_list[[1]]
+y_1 <- y_list[[1]]
+# In the pixel space
+p_group_mean_pixel <- vector_to_heatmap(
+  colMeans(x_1[y_1 == 1, ]) - colMeans(x_1[y_1 == 0, ])
+)
+# In the freq space
+x_index <- seq_along(y_1) / length(y_1)
+x_freq_1 <- x_1 %*% e
+p_group_mean_freq <- plot_scatter(
+  x = x_index,
+  y = colMeans(x_freq_1[y_1 == 1, ]) - colMeans(x_freq_1[y_1 == 0, ])
+)
+
 
 # ---------- Real Coefficients Visualization ----------
 # true coefs transformed to freq space: coef_freq = t(e) %*% coef_pixel
