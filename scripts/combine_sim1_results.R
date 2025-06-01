@@ -30,12 +30,12 @@ sapply(packages, require, character.only = TRUE)
 # ---------- Capture parameters ----------
 option_list <- list(
   optparse::make_option(
-    "--result_dir",
+    "result_dir",
     type = "character",
     help = "Directory that saves .rds files for each iter"
   ),
   optparse::make_option(
-    "--out_dir",
+    "out_dir",
     type = "character",
     help = "Directory to save the combined .rds file"
   )
