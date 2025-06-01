@@ -17,26 +17,39 @@
 #   - A scatterplot of the corresponding coefficients in freq space
 #   - A heatmap of p<0.05 in pixel space
 #   - A scatterplot of the corresponding p<0.05 in freq space
+#
+# Note: The .rds file (~1GB) must be downloaded before use.
+# A copy is available at: P:/ESFGSPproject/DataLibrary
 
 library(rprojroot)
 library(ggplot2)
 
 proj_dir <- rprojroot::find_root(rprojroot::is_git_root)
-data_dir <- "/scratch/alpine/sren@xsede.org/esfgsp"
+data_dir <- "" # temporary .rds location
 
 source(file.path(proj_dir, "R", "summarize_results.R"))
 
 # Read the .rds file saving all iterations
 res <- readRDS(file.path(data_dir, "sim1_combined_results.rds"))
 
-# Matrix of eigenvectors (decreasingly ordered)
-e <- res$data[[1]]$e
+x_list <- res$x
+y <- res$y
+beta_vec <- res$beta
+e <- res$e
+hparams <- res$hparams
+auc_acc_df <- res$auc_acc
+coefs_pvals_df <- res$coefs_pvals
 
-# Simulation 1 true coefs in pixel space
-beta_matrix <- matrix(0, nrow = 16, ncol = 16)
-beta_matrix[5:12, 5:12] <- 0.1
-beta_vec <- as.vector(beta_matrix)
 
+# ---------- Group Mean Difference ----------
+
+# ---------- Real Coefficients Visualization ----------
 # true coefs transformed to freq space: coef_freq = t(e) %*% coef_pixel
-b_vec <- t(e) %*% matrix(beta_vec, ncol = 1) |>
-  as.vector()
+b_vec <- as.vector(t(e) %*% matrix(beta_vec, ncol = 1))
+
+# heatmap for true beta
+p_beta_heat <- vector_to_heatmap(beta_vec)
+
+# Scatter plot of b_vec with x-axis as scaled index: i/256 for i = 1 to 256
+x_index <- seq_along(b_vec) / length(b_vec)
+p_b_scatter <- plot_scatter(x = x_index, y = b_vec)
