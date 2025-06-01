@@ -61,9 +61,9 @@ spaces <- names(file_1$fit)
 lambdas <- names(file_1$fit[[1]])
 
 # Initial empty vector / matrix / arrays
-beta_vec <- c()
-hparams <- c()
-e <- c()
+beta_vec <- NULL
+hparams <- NULL
+e <- NULL
 
 x_arr <- array(NA_real_, dim = c(n, p, n_iter))
 y_arr <- matrix(NA_real_, nrow = n_iter, ncol = n)
@@ -94,9 +94,9 @@ for (i in seq_along(files)) {
   if (is.null(res)) next
 
   if (i == 1) {
-    beta_vec <- c(beta_vec, res$data$beta)
-    hparams <- c(hparams, res$data$hparams[c("effect", "n_sample")])
-    e <- c(e, res$data$e)
+    beta_vec <- res$data$beta
+    hparams <- res$data$hparams[c("effect", "n_sample")]
+    e <- res$data$e
   }
 
   x_arr[, , i] <- res$data$x
