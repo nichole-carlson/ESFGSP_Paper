@@ -17,9 +17,7 @@ OUT_DIR=/scratch/alpine/sren@xsede.org/esfgsp/sim1_iters
 SIM_ID=${SLURM_ARRAY_TASK_ID}
 SEED=$((10000 + SIM_ID))
 
-Rscript --no-save scripts/simulation_1.R \
-  --sim_id "$SIM_ID" \
+Rscript --no-save scripts/simulation_1.R "$SIM_ID" "$OUT_DIR" \
   --effect 0.1 \
   --n_sample 1000 \
-  --out_dir "$OUT_DIR" \
   --seed "$SEED"
