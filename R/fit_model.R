@@ -244,7 +244,7 @@ lasso_pixel_or_freq <- function(x, y, in_pixel_space = TRUE, e = NULL, ...) {
         "Transformation matrix e is required when not in pixel space."
       )
     }
-    x <- x %*% e # map pixel tp freq
+    x <- x %*% e # map pixel to freq
   }
 
   fit_evaluate_lasso(x, y, ...)
