@@ -25,16 +25,21 @@ sapply(packages, require, character.only = TRUE)
 proj_dir <- rprojroot::find_root(rprojroot::is_git_root)
 
 source(file.path(proj_dir, "R", "simulate_data.R"))
-source(file.path(proj_dir, "R", "utils.R"))
 source(file.path(proj_dir, "R", "fit_model.R"))
+source(file.path(proj_dir, "R", "utils.R"))
 
 
 # ---------- Capture parameters ----------
 option_list <- list(
   optparse::make_option(
-    "--sim_id",
+    "sim_id",
     type = "integer",
     help = "Simulation index"
+  ),
+  optparse::make_option(
+    "out_dir",
+    type = "character",
+    help = "Directory to save the output file"
   ),
   optparse::make_option(
     "--effect",
@@ -47,11 +52,6 @@ option_list <- list(
     type = "integer",
     default = 1000,
     help = "Number of samples per iteration [default %default]"
-  ),
-  optparse::make_option(
-    "--out_dir",
-    type = "character",
-    help = "Directory to save the output file"
   ),
   optparse::make_option(
     "--seed",
