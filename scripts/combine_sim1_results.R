@@ -5,6 +5,8 @@
 #       - x: n × p input matrix
 #       - y: outcome vector
 #       - e: p × p eigenbasis matrix
+#       - beta
+#       - argparse values (e.g., sim_id, effect size, seed)
 #   - fit: a nested list of LASSO fits, structured as:
 #       - space: "pixel" or "freq"
 #         - lambda: "lambda.min" or "lambda.1se"
@@ -14,7 +16,8 @@
 #           - pvals: p-values corresponding to coefficients
 #
 # This script extracts:
-#   (1) A list of raw simulated `data` indexed by sim_id
+#   (1) A list of raw simulated `data` indexed by sim_id; hparams such as
+#       effect size and number of samples per iteration
 #   (2) A summary data.frame: sim_id, space, lambda, acc, auc
 #   (3) A long-format data.frame: sim_id, space, lambda, variable, coef, pval
 #
