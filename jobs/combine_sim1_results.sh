@@ -16,4 +16,6 @@ DATA_DRIVE="/scratch/alpine/sren@xsede.org/esfgsp"
 RESULT_DIR="${DATA_DRIVE}/sim1_iters"
 OUT_DIR="${DATA_DRIVE}"
 
-Rscript --no-save scripts/combine_sim1_results.R $RESULT_DIR $OUT_DIR
+Rscript --no-save scripts/combine_sim1_results.R \
+        --result_dir $RESULT_DIR \ 
+        --out_dir $OUT_DIR

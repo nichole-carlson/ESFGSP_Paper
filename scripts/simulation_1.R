@@ -32,12 +32,12 @@ source(file.path(proj_dir, "R", "utils.R"))
 # ---------- Capture parameters ----------
 option_list <- list(
   optparse::make_option(
-    "sim_id",
+    "--sim_id",
     type = "integer",
     help = "Simulation index"
   ),
   optparse::make_option(
-    "out_dir",
+    "--out_dir",
     type = "character",
     help = "Directory to save the output file"
   ),
