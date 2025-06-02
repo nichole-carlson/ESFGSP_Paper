@@ -33,25 +33,26 @@ source(file.path(proj_dir, "R", "summarize_results.R"))
 # Read the .rds file saving all iterations
 res <- readRDS(file.path(data_dir, "sim1_combined_results.rds"))
 
-x_list <- res$x
-y_list <- res$y
+x_arr <- res$x
+y_arr <- res$y
 beta_vec <- res$beta
 e <- res$e
 hparams <- res$hparams
 auc_acc_df <- res$auc_acc
-coefs_pvals_df <- res$coefs_pvals
+coef_arr <- res$coefs
+p_arr <- res$pvals
 
 
 # ---------- Group Mean Difference ----------
 # For 1 iteration
-x_1 <- x_list[[1]]
-y_1 <- y_list[[1]]
+x_1 <- x_arr[, , 1]
+y_1 <- y_arr[1, ]
 # In the pixel space
 p_group_mean_pixel <- vector_to_heatmap(
   colMeans(x_1[y_1 == 1, ]) - colMeans(x_1[y_1 == 0, ])
 )
 # In the freq space
-x_index <- seq_along(y_1) / length(y_1)
+x_index <- seq_along(beta_vec) / length(beta_vec)
 x_freq_1 <- x_1 %*% e
 p_group_mean_freq <- plot_scatter(
   x = x_index,
@@ -73,17 +74,55 @@ p_true_b <- plot_scatter(x = x_index, y = b_vec)
 
 # ---------- Average Estimated Coefs ----------
 # Average estimated beta, fit on pixel space
+beta_pixel <- coef_arr[, , "pixel", ]
+beta_pixel_avg <- apply(beta_pixel, MARGIN = c(1, 2), FUN = mean)
 p_est_beta_pixel <- {
-  all_means <- list()
+  lim <- range(beta_pixel_avg) # lower and upper
 
-  for (l in unique(coefs_pvals_df$lambda)) {
-    .df <- subset(coefs_pvals_df, space == "pixel" & lambda == l)
-    .mat <- do.call(rbind, split(.df$coef, .df$sim_id))
-    all_means[[l]] <- colMeans(.mat)
-  }
+  plot_list <- lapply(colnames(beta_pixel_avg), function(l) {
+    .vec <- beta_pixel_avg[, l]
+    vector_to_heatmap(.vec, lim) +
+      labs(subtitle = l) +
+      theme(plot.subtitle = element_text(hjust = 0.5))
+  })
+  patchwork::wrap_plots(plot_list, ncol = 2)
+}
 
-  lim <- range(unlist(all_means))
+# Average estimated b, fit in pixel space
+b_pixel_avg <- t(e) %*% beta_pixel_avg
+p_est_b_pixel <- {
+  plot_list <- lapply(colnames(b_pixel_avg), function(l) {
+    .vec <- b_pixel_avg[, l]
+    plot_scatter(x_index, .vec) +
+      labs(subtitle = l) +
+      theme(plot.subtitle = element_text(hjust = 0.5))
+  })
+  patchwork::wrap_plots(plot_list, ncol = 2)
+}
 
-  plot_list <- lapply(all_means, function(vec) vector_to_heatmap(vec, lim))
+# Average estimated b, fit in freq space
+b_freq <- coef_arr[, , "freq", ]
+b_freq_avg <- apply(b_freq, MARGIN = c(1, 2), FUN = mean)
+p_est_b_freq <- {
+  plot_list <- lapply(colnames(b_freq_avg), function(l) {
+    .vec <- b_freq_avg[, l]
+    plot_scatter(x_index, .vec) +
+      labs(subtitle = l) +
+      theme(plot.subtitle = element_text(hjust = 0.5))
+  })
+  patchwork::wrap_plots(plot_list, ncol = 2)
+}
+
+# Average estimated beta, fit in freq space
+beta_freq_avg <- e %*% b_freq_avg
+p_est_beta_freq <- {
+  lim <- range(beta_freq_avg)
+
+  plot_list <- lapply(colnames(beta_freq_avg), function(l) {
+    .vec <- beta_freq_avg[, l]
+    vector_to_heatmap(.vec, lim) +
+      labs(subtitle = l) +
+      theme(plot.subtitle = element_text(hjust = 0.5))
+  })
   patchwork::wrap_plots(plot_list, ncol = 2)
 }
