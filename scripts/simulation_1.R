@@ -24,8 +24,10 @@ sapply(packages, require, character.only = TRUE)
 
 proj_dir <- rprojroot::find_root(rprojroot::is_git_root)
 
+# simulate_pixel_outcome, simulate_mvn_samples
 source(file.path(proj_dir, "R", "simulate_data.R"))
 source(file.path(proj_dir, "R", "fit_model.R"))
+# gen_exp_corr_mat, eigen_decomp_cmc
 source(file.path(proj_dir, "R", "utils.R"))
 
 
@@ -83,7 +85,7 @@ beta_matrix[5:12, 5:12] <- opt$effect
 beta_vec <- as.vector(beta_matrix)
 
 # Simulate y
-y <- simulate_pixel_outcome(x = x, beta = beta_vec, from_pixel_space = TRUE)
+y <- simulate_pixel_outcome(x, beta_vec, from_pixel_space = TRUE)
 
 
 
