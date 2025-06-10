@@ -72,71 +72,9 @@ simulate_pixel_outcome <- function(data_mat,
 
 
 
-# Calculate the indices for the center area of a matrix.
-#
-# The center area is automatically calculated as half the dimensions of the
-# input matrix (rounded down for odd dimensions). Returns the row and column
-# indices for the center area as a single vector.
-#
-# Args:
-#   n_row: Integer. Number of rows in the matrix.
-#   n_col: Integer. Number of columns in the matrix.
-#
-# Returns:
-#   A numeric vector containing the start and end indices for the rows and
-#   columns of the center area in the format:
-#   c(row_start, row_end, col_start, col_end).
-#
-# Notes:
-#   For matrices with odd dimensions, the center area will be slightly smaller
-#   as it is calculated by rounding down the dimensions.
-calculate_center_indices <- function(n_row, n_col) {
-  # Calculate half dimensions for the center area
-  center_rows <- floor(n_row / 2)
-  center_cols <- floor(n_col / 2)
-
-  # Calculate start and end indices for rows
-  row_start <- floor((n_row - center_rows) / 2) + 1
-  row_end <- row_start + center_rows - 1
-
-  # Calculate start and end indices for columns
-  col_start <- floor((n_col - center_cols) / 2) + 1
-  col_end <- col_start + center_cols - 1
-
-  # Return indices as a vector
-  return(c(row_start, row_end, col_start, col_end))
-}
 
 
-# Simulate a sparse vector with a specified level of sparsity.
-#
-# Args:
-#   vec_len: Integer. Length of the vector to be simulated.
-#   sparse_level: Numeric (0 to 1). Proportion of non-zero elements.
-#   effect_size: Numeric. Value assigned to non-zero elements in the vector.
-#   seed: Optional. Integer seed for reproducibility.
-#
-# Returns:
-#   A numeric vector of length vec_len, with the specified level of sparsity.
-#
-# Notes:
-#   Non-zero elements are randomly assigned within the vector based on
-#   sparse_level.
-simulate_1d_sparse_vector <- function(
-    vec_len, sparse_level, effect_size, seed = NULL) {
-  if (!is.null(seed)) {
-    set.seed(seed)
-  }
-  vec <- rep(0, vec_len)
-  nz_index <- sample(
-    seq_len(vec_len),
-    size = floor(vec_len * sparse_level), # the number of items to choose
-    replace = FALSE
-  )
-  vec[nz_index] <- effect_size
 
-  return(vec)
-}
 
 # Generate a sparse vector representing coefficients in a 2D pixel space.
 #
@@ -172,24 +110,6 @@ generate_2d_sparse_vector <- function(n_row, n_col, effect_size, active_area) {
 
 
 
-# Simulate binary response variables based on a logistic model.
-#
-# Args:
-#   x: Matrix or data frame. Predictor variables (n_samples x n_features).
-#   beta: Numeric vector. Coefficients for the logistic model.
-#   seed: Optional. Integer seed for reproducibility.
-#
-# Returns:
-#   A numeric vector of binary response variables (0 or 1) generated using the
-#   logistic model: P(y = 1) = 1 / (1 + exp(-x * beta)).
-simulate_binary_response <- function(x, beta, seed = NULL) {
-  if (!is.null(seed)) {
-    set.seed(seed)
-  }
-  probs <- 1 / (1 + exp(-as.matrix(x) %*% beta))
-  binary_response <- rbinom(n = length(probs), size = 1, prob = probs)
-  return(binary_response)
-}
 
 
 # This function generates datasets where predictors are simulated in the pixel
