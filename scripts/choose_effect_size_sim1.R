@@ -18,13 +18,14 @@ source(file.path(proj_dir, "R", "utils.R"))
 effect_sizes <- c(1, 0.2, 0.1, 0.05, 0.01)
 seed <- 42
 
+set.seed(seed)
 # Covariance matrix for X
 cov_matrix <- gen_exp_corr_mat(n_row = 16, n_col = 16)
 
 # Simulate X ~ MVN(0, cov_matrix)
 x <- simulate_mvn_samples(
-  n_sample = 1000, 
-  cov_matrix = cov_matrix, 
+  n_sample = 1000,
+  cov_matrix = cov_matrix,
   seed = seed
 )
 
@@ -38,8 +39,8 @@ beta_matrix_list <- lapply(effect_sies, function(effect) {
 # Calculate p = logistic(X %*% beta)
 probs <- lapply(beta_matrix_list, function(mat) {
   vec <- as.vector(mat)
-  1 / (1 + exp(- x %*% vec))
-}) 
+  1 / (1 + exp(-x %*% vec))
+})
 
 # Convert list into a data.frame for plotting
 probs_df <- do.call(rbind, lapply(seq_along(probs), function(i) {
