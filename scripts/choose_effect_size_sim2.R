@@ -1,9 +1,10 @@
 # Choosing coefficient effect size for Simulation 2
 #
-# Simulate X_freq from a multivariate normal distribution, with covariance
-# as a diagonal matrix. Then compute p = logistic (X_freq %*% b), where b
-# is a vector with 10% non-zero values. The goal is to find a proper non-zero
-# value such that the dist of p is approximately uniform between 0 and 1.
+# Suppose D is a covariace matrix with D_ii = p + 1 - i, where p is number of
+# features. Simulate X_freq from MVN(0, D).  Then compute p = logistic (X_freq
+# %*% b), where b is a vector with 10% non-zero values. The goal is to find a
+# proper non-zero value such that the dist of p is approximately uniform
+# between 0 and 1.
 
 library(ggplot2)
 
@@ -11,6 +12,7 @@ proj_dir <- "/Users/siyangren/Documents/projects/ESFGSP_Paper"
 fig_path <- file.path(proj_dir, "results", "figures")
 
 source(file.path(proj_dir, "R", "simulate_data.R")) # simulate_mvn_samples
+source(file.path(proj_dir, "R", "utils.R")) # eigen_decomp_cmc
 
 
 # Parameters
