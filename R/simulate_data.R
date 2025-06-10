@@ -13,16 +13,6 @@ sapply(packages, require, character.only = TRUE)
 # ----- Functions for simulating data -----
 
 # Generate a matrix of samples from a multivariate normal distribution.
-#
-# Args:
-#   n_sample: Integer. Number of samples (rows) to generate.
-#   cov_matrix: Matrix. Covariance matrix defining the multivariate normal
-#               distribution.
-#   seed: Optional. Integer seed for reproducibility.
-#
-# Returns:
-#   A numeric matrix of samples with n_sample rows and columns equal to the
-#   dimension of the covariance matrix (img_size^2 for a 2D pixel grid).
 simulate_mvn_samples <- function(n_sample, cov_matrix, seed = NULL) {
   if (!is.null(seed)) {
     set.seed(seed)
@@ -38,57 +28,36 @@ simulate_mvn_samples <- function(n_sample, cov_matrix, seed = NULL) {
 }
 
 
-# Simulates binary outcome labels based on a linear model using pixel-space
-# or frequency-space data.
+# Simulates y ~ bin(p) in pixel space.
 #
 # Args:
-#   x: n x p matrix.
-#      If from_pixel_space = TRUE, x is assumed to be in pixel space.
-#      If FALSE, x is assumed to be in frequency space and will be transformed
-#      to pixel space using e.
+#   data_mat is n x p matrix. param_vec is either p x 1 matrix or length-p vec.
 #
-#   beta: p x 1 vector or length-p vector.
-#      Coefficients in pixel space if from_pixel_space = TRUE.
-#      Coefficients in frequency space if from_pixel_space = FALSE.
+#   from_pixel_space = TRUE if data_mat and param_vec are in pixel space.
 #
-#   from_pixel_space: Logical.
-#      TRUE if input data and beta are already in pixel space.
-#      FALSE if data and beta are in frequency space.
-#
-#   e: p x p transformation matrix (required if from_pixel_space = FALSE).
-#      Maps pixel data to frequency space
-#
-#   seed: Optional integer seed for reproducibility.
-#
-# Returns:
-#   A binary vector y of length n, sampled from Bernoulli distributions
-#   with probabilities defined by logistic(x %*% beta).
-simulate_pixel_outcome <- function(x,
-                                   beta,
+#   e is p x p matrix. Required if from_pixel_space is FALSE.
+simulate_pixel_outcome <- function(data_mat,
+                                   param_vec,
                                    from_pixel_space = TRUE,
                                    e = NULL,
                                    seed = NULL) {
-  # x: data matrix (either pixel or freq space)
-  # beta: coef vector (beta if pixel, b if freq)
-  # e: transform matrix: required if from_pixel_space = FALSE
-
-  if (is.null(dim(beta))) {
-    beta <- matrix(beta, ncol = 1)
-  } else if (ncol(beta) != 1) {
-    stop("beta must be a column vector (ncol = 1).")
+  if (is.null(dim(param_vec))) {
+    param_vec <- matrix(param_vec, ncol = 1)
+  } else if (ncol(param_vec) != 1) {
+    stop("param_vec must be a column vector (ncol = 1).")
   }
 
   if (!from_pixel_space) {
     if (is.null(e)) stop("e must be provided when not from pixel space.")
-    x <- x %*% t(e) # map freq to pixel
-    beta <- t(e) %*% beta # map freq to pixel
+    data_mat <- data_mat %*% t(e) # map freq to pixel
+    param_vec <- t(e) %*% param_vec # map freq to pixel
   }
 
   if (!is.null(seed)) {
     set.seed(seed)
   }
 
-  eta <- drop(x %*% beta)
+  eta <- drop(data_mat %*% param_vec)
   prob <- plogis(eta)
   y <- rbinom(length(prob), 1, prob)
   return(y)
