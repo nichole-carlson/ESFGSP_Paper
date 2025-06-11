@@ -36,7 +36,7 @@ option_list <- list(
   optparse::make_option("--effect", type = "double"),
   optparse::make_option("--sparsity", type = "double"),
   optparse::make_option("--n_sample", type = "integer"),
-  optparse::make_option("--seed", type = "character")
+  optparse::make_option("--seed", type = "integer")
 )
 
 opt_parser <- optparse::OptionParser(option_list = option_list)
@@ -68,10 +68,10 @@ x <- transform_data(x_freq, transform_mat, to_freq = FALSE)
 
 # ---------- Fit LASSO Model in Pixel and Freq Spaces ----------
 fit_results <- list(
-  pixel_min = fit_evaluate_lasso(x, y, "lambda.min"),
-  pixel_1se = fit_evaluate_lasso(x, y, "lambda.1se"),
-  freq_min = fit_evaluate_lasso(x_freq, y, "lambda.min"),
-  freq_1se = fit_evaluate_lasso(x_freq, y, "lambda.1se")
+  pixel_min = fit_evaluate_lasso(x, y, lambda = "lambda.min"),
+  pixel_1se = fit_evaluate_lasso(x, y, lambda = "lambda.1se"),
+  freq_min = fit_evaluate_lasso(x_freq, y, lambda = "lambda.min"),
+  freq_1se = fit_evaluate_lasso(x_freq, y, lambda = "lambda.1se")
 )
 
 
