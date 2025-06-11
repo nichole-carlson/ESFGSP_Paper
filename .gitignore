@@ -56,3 +56,5 @@ vignettes/*.pdf
 *.aux
 *.bbl
 *.blg
+
+tags/
