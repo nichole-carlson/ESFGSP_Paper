@@ -43,7 +43,7 @@ option_list <- list(
   optparse::make_option("--out_dir", type = "character"),
   optparse::make_option("--effect", type = "double"),
   optparse::make_option("--n_sample", type = "integer"),
-  optparse::make_option("--seed", type = "character")
+  optparse::make_option("--seed", type = "integer")
 )
 
 opt_parser <- optparse::OptionParser(option_list = option_list)
