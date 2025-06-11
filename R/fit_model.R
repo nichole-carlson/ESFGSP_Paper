@@ -25,23 +25,9 @@ if (length(new_packages) > 0) install.packages(new_packages)
 sapply(packages, require, character.only = TRUE)
 
 
+# ---------- Functions ----------
 # Splits the dataset into training and testing sets.
-#
-# Args:
-#  x: A data frame or matrix with observations as rows and features as columns.
-#  y: A vector of target values with the same number of observations as 'x'.
-#  p_train: A float value (0-1) specifying the proportion of data for training.
-#  seed: An optional integer for reproducibility.
-#
-# Returns:
-#  train: A list with 'x' and 'y'.
-#  test: A list with 'x' and 'y'.
-
-train_test_split <- function(x, y, p_train, seed = NULL) {
-  if (!is.null(seed)) {
-    set.seed(seed)
-  }
-
+train_test_split <- function(x, y, p_train) {
   # Check whether x and y have the same # of obs
   if (nrow(x) != length(y)) {
     stop("Check that 'x' and 'y' have the same number of observations.")
@@ -65,15 +51,6 @@ train_test_split <- function(x, y, p_train, seed = NULL) {
 
 
 # Fits a Lasso model using cross-validation and refits with the chosen lambda.
-#
-# Args:
-#   x: Predictor matrix (rows: observations, columns: features).
-#   y: Response vector, same length as rows in 'x'.
-#   lambda: Lambda selection, either "lambda.min" or "lambda.1se".
-#
-# Returns:
-#   A refitted glmnet model object.
-
 fit_lasso_cv <- function(x, y, lambda = c("lambda.min", "lambda.1se")) {
   # Match the 'lambda' argement to ensure it's one of the allowed options
   lambda <- match.arg(lambda)
@@ -94,15 +71,8 @@ fit_lasso_cv <- function(x, y, lambda = c("lambda.min", "lambda.1se")) {
 }
 
 
-# Computes the threshold that maximizes Youden's J statistic.
-#
-# Args:
-#   labels: Binary vector of true class labels (0/1).
-#   probs: Numeric vector of predicted probabilities (same length as labels).
-#
-# Returns:
-#   The cutoff value maximizing Youden’s J = sensitivity + specificity - 1
-
+# Computes the threshold that maximizes Youden's J statistic. Youden’s J =
+# sensitivity + specificity - 1
 youden_cutoff <- function(labels, probs) {
   stopifnot(length(labels) == length(probs))
 
@@ -128,12 +98,6 @@ youden_cutoff <- function(labels, probs) {
 
 
 # Evaluates a Lasso model's performance and extracts estimated coefficients.
-#
-# Args:
-#   model: A fitted glmnet model object.
-#   x: Predictor matrix (rows: observations, columns: features).
-#   y: Response vector, same length as rows in 'x'.
-#   threshold: Threshold for classification. If NULL, use Youden's index.
 #
 # Returns:
 #   A list with:
@@ -178,30 +142,20 @@ evaluate_lasso <- function(model, x, y, threshold = NULL) {
 # Splits data into training and testing sets, performs cross-validation to
 # select lambda, refits the model, and evaluates performance on the test set.
 #
-# Args:
-#   x: Predictor matrix.
-#   y: Response vector.
-#   p_train: Proportion of data for training. Default 0.8.
-#   lambda: Lambda selection ("lambda.min" or "lambda.1se")
-#   threshold (optional): Classification threshold for binary outcome.
-#   seed (optional): Seed for reproducibility.
-#
 # Returns:
 #   A list with:
 #     - auc: Area under the ROC curve.
 #     - acc: Classification accuracy.
 #     - coefs: Model coefficients.
 #     - pvals: hdi adjusted p-values.
-
 fit_evaluate_lasso <- function(x,
                                y,
                                p_train = 0.8,
                                lambda = c("lambda.min", "lambda.1se"),
-                               threshold = NULL,
-                               seed = NULL) {
+                               threshold = NULL) {
   lambda <- match.arg(lambda)
 
-  split <- train_test_split(x, y, p_train, seed)
+  split <- train_test_split(x, y, p_train)
   x_train <- split$train$x
   y_train <- split$train$y
   x_test <- split$test$x
