@@ -100,12 +100,13 @@ auc_acc_df <- do.call(rbind, auc_acc_rows)
 coef_arr <- array(
   unlist(coef_arrays),
   dim = c(p, length(lambdas), length(spaces), n_iter),
-  dimnames = list(
-    seq_len(p),
-    lambdas,
-    spaces,
-    seq_len(n_iter)
-  )
+  dimnames = list(seq_len(p), lambdas, spaces, seq_len(n_iter))
+)
+
+pval_arr <- array(
+  unlist(pval_arrays),
+  dim = c(p, length(lambdas), length(spaces), n_iter),
+  dimnames = list(seq_len(p), lambdas, spaces, seq_len(n_iter))
 )
 
 
