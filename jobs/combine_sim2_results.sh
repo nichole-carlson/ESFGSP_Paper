@@ -3,7 +3,7 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=6G
-#SBATCH --partition=amiland
+#SBATCH --partition=amilan
 #SBATCH --time=00:30:00
 #SBATCH --mail-type=FAIL
 #SBATCH --mail-user=siyang.ren@cuanschutz.edu
