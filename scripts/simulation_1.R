@@ -62,7 +62,7 @@ transform_mat <- generate_e_matrix(cov_matrix)
 # Simulate X ~ MVN(0, cov_matrix)
 x <- generate_image_data(opt$n_sample, cov_matrix)
 
-# Block coefficient matrix (beta)
+# Block coefficient vector (beta)
 beta <- generate_block_coefs(c(16, 16), c(8, 8), opt$effect)
 
 # Simulate y
