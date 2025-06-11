@@ -3,7 +3,7 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=1G
-#SBATCH --time=00:20:00
+#SBATCH --time=00:30:00
 #SBATCH --partition=amilan
 #SBATCH --array=1-500
 #SBATCH --mail-type=FAIL
