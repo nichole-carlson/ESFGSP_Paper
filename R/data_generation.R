@@ -42,7 +42,7 @@ generate_image_data <- function(n, cov_matrix, mu = NULL) {
 
   image_data <- MASS::mvrnorm(n, mu = mu, Sigma = cov_matrix)
 
-  return(iamge_data)
+  return(image_data)
 }
 
 
