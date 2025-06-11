@@ -8,7 +8,7 @@
 #SBATCH --array=1-500
 #SBATCH --mail-type=FAIL
 #SBATCH --mail-user=siyang.ren@cuanschutz.edu
-#SBATCH --output=logs/sim1_%A_%a.log
+#SBATCH --output=logs/sim1_%A.log
 
 module load R
 
