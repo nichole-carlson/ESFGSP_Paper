@@ -18,58 +18,58 @@
 #   - A heatmap of p<0.05 in pixel space
 #   - A scatterplot of the corresponding p<0.05 in freq space
 #
-# Note: The .rds file (~1GB) must be downloaded before use.
-# A copy is available at: P:/ESFGSPproject/DataLibrary
+# A copy of data is available at: P:/ESFGSPproject/DataLibrary
 
 library(rprojroot)
 library(ggplot2)
 library(patchwork)
 
 proj_dir <- rprojroot::find_root(rprojroot::is_git_root)
-data_dir <- "" # temporary .rds location
+data_dir <- "/Volumes/alzheimersdisease/ESFGSPproject/DataLibrary"
 
+# vector_to_heatmap, plot_scatter
 source(file.path(proj_dir, "R", "summarize_results.R"))
+# transform_data, transform_coef
+source(file.path(proj_dir, "R", "transformations.R"))
 
-# Read the .rds file saving all iterations
+# Read in .rds file saves all iteration fits, and data from iter1
+iter1 <- readRDS(file.path(data_dir, "data_015.rds"))
 res <- readRDS(file.path(data_dir, "sim1_combined_results.rds"))
 
-x_arr <- res$x
-y_arr <- res$y
-beta_vec <- res$beta
-e <- res$e
-hparams <- res$hparams
+x <- iter1$x
+y <- iter1$y
+beta <- iter1$beta
+e <- iter1$e
+hparams <- iter1$hparams
+
 auc_acc_df <- res$auc_acc
 coef_arr <- res$coefs
 p_arr <- res$pvals
 
 
 # ---------- Group Mean Difference ----------
-# For 1 iteration
-x_1 <- x_arr[, , 1]
-y_1 <- y_arr[1, ]
 # In the pixel space
 p_group_mean_pixel <- vector_to_heatmap(
-  colMeans(x_1[y_1 == 1, ]) - colMeans(x_1[y_1 == 0, ])
+  colMeans(x[y == 1, ]) - colMeans(x[y == 0, ])
 )
 # In the freq space
-x_index <- seq_along(beta_vec) / length(beta_vec)
-x_freq_1 <- x_1 %*% e
+index <- seq_along(beta) / length(beta)
+x_freq <- transform_data(x, e, to_freq = TRUE)
 p_group_mean_freq <- plot_scatter(
-  x = x_index,
-  y = colMeans(x_freq_1[y_1 == 1, ]) - colMeans(x_freq_1[y_1 == 0, ])
+  x = index,
+  y = colMeans(x_freq[y == 1, ]) - colMeans(x_freq[y == 0, ])
 )
 
 
 # ---------- Ture Coefficients Visualization ----------
-# True coefs transformed to freq space: coef_freq = t(e) %*% coef_pixel
-b_vec <- as.vector(t(e) %*% matrix(beta_vec, ncol = 1))
+b <- transform_coef(beta, e, to_freq = TRUE)
 
 # Heatmap for true beta
-p_true_beta <- vector_to_heatmap(beta_vec)
+p_true_beta <- vector_to_heatmap(beta)
 
-# Scatter plot of b_vec with x-axis as scaled index: i/256 for i = 1 to 256
-x_index <- seq_along(b_vec) / length(b_vec)
-p_true_b <- plot_scatter(x = x_index, y = b_vec)
+# Scatter plot of b with x-axis as scaled index: i/256 for i = 1 to 256
+index <- seq_along(b) / length(b)
+p_true_b <- plot_scatter(x = x_index, y = b)
 
 
 # ---------- Average Estimated Coefs ----------
@@ -89,7 +89,7 @@ p_est_beta_pixel <- {
 }
 
 # Average estimated b, fit in pixel space
-b_pixel_avg <- t(e) %*% beta_pixel_avg
+b_pixel_avg <- transform_coef(beta_pixel_avg, e)
 p_est_b_pixel <- {
   plot_list <- lapply(colnames(b_pixel_avg), function(l) {
     .vec <- b_pixel_avg[, l]
@@ -114,7 +114,7 @@ p_est_b_freq <- {
 }
 
 # Average estimated beta, fit in freq space
-beta_freq_avg <- e %*% b_freq_avg
+beta_freq_avg <- transform_coef(b_freq_avg, e)
 p_est_beta_freq <- {
   lim <- range(beta_freq_avg)
 
