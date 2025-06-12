@@ -78,7 +78,7 @@ fit_results <- list(
 # ---------- Save as a rds file ----------
 data_file <- paste0("data_", sprintf("%03d", opt$sim_id), ".rds")
 saveRDS(
-  list(x = x, y = y, beta = beta, e = transform_mat, hparams = opt),
+  list(x_freq = x_freq, y = y, b = b, e = transform_mat, hparams = opt),
   file.path(opt$out_dir, data_file)
 )
 
