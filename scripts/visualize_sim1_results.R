@@ -82,8 +82,9 @@ b_freq_avg <- apply(coef_arr[, , "freq", ], MARGIN = c(1, 2), FUN = mean)
 p_est_beta_pixel <- create_heatmap_plots(beta_pixel_avg)
 p_est_b_pixel <- create_scatter_plots(transform_coef(beta_pixel_avg, e), index)
 p_est_b_freq <- create_scatter_plots(b_freq_avg, index)
-p_est_beta_freq <- create_heatmap_plots(transform_coef(b_freq_avg, e))
-
+p_est_beta_freq <- create_heatmap_plots(
+  transform_coef(b_freq_avg, e, to_freq = FALSE)
+)
 
 
 # ---------- Percentage of p<0.05 Visualization ----------
