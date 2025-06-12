@@ -1,5 +1,5 @@
 # List of required packages
-packages <- c("ggplot2", "reshape2")
+packages <- c("ggplot2", "reshape2", "patchwork")
 
 # Install missing packages
 new_packages <- packages[!(packages %in% installed.packages()[, "Package"])]
@@ -12,15 +12,7 @@ sapply(packages, require, character.only = TRUE)
 # Convert a vector to a heatmap
 #
 # This function reshapes a 1D vector into a 2D matrix (assuming the length is
-# a perfect square) and plots it as a heatmap using ggplot2.
-#
-# Args:
-#   vec: Numeric vector to be reshaped and visualized.
-#   value_limits: (Optional) Num vector of length 2 to set color scale limits.
-#
-# Returns:
-#   A ggplot2 object displaying the heatmap.
-
+# a perfect square) and plots it as a heatmap.
 vector_to_heatmap <- function(vec, value_limits = NULL) {
   # Ensure the vector length is a perfect square
   len <- length(vec)
@@ -56,15 +48,6 @@ vector_to_heatmap <- function(vec, value_limits = NULL) {
 }
 
 # Plot a scatterplot of two numeric variables
-#
-# Args:
-#   x: Numeric vector for the x-axis values.
-#   y: Numeric vector for the y-axis values.
-#   xlab: (Optional) Label for the x-axis. Default is "X-axis".
-#   ylab: (Optional) Label for the y-axis. Default is "Y-axis".
-#
-# Returns:
-#   A ggplot2 scatterplot object.
 plot_scatter <- function(x, y, xlab = NULL, ylab = NULL) {
   # Calculate y-axis limits, ensuring no NAs
   y_range <- range(y, na.rm = TRUE)
@@ -85,4 +68,30 @@ plot_scatter <- function(x, y, xlab = NULL, ylab = NULL) {
       axis.text = element_text(size = 10),
       panel.grid.minor = element_blank() # Cleaner plot
     )
+}
+
+
+# Plot each column of input matrix as a heatmap
+create_heatmap_plots <- function(data_matrix, shared_limits = TRUE) {
+  lim <- if (shared_limits) range(data_matrix) else NULL
+
+  plot_list <- lapply(colnames(data_matrix), function(l) {
+    .vec <- data_matrix[, l]
+    vector_to_heatmap(.vec, lim) +
+      labs(subtitle = l) +
+      theme(plot.subtitle = element_text(hjust = 0.5))
+  })
+  patchwork::wrap_plots(plot_list, ncol = 2)
+}
+
+
+# Plot each column of input matrix as a scatterplot
+create_scatter_plots <- function(data_matrix, x_vals) {
+  plot_list <- lapply(colnames(data_matrix), function(l) {
+    .vec <- data_matrix[, l]
+    plot_scatter(x_vals, .vec) +
+      labs(subtitle = l) +
+      theme(plot.subtitle = element_text(hjust = 0.5))
+  })
+  patchwork::wrap_plots(plot_list, ncol = 2)
 }
