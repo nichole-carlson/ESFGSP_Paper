@@ -26,6 +26,7 @@ library(patchwork)
 
 proj_dir <- rprojroot::find_root(rprojroot::is_git_root)
 data_dir <- "/Volumes/alzheimersdisease/ESFGSPproject/DataLibrary/sim1"
+fig_dir <- file.path(proj_dir, "results", "figures", "sim1")
 
 # vector_to_heatmap, plot_scatter, create_heatmap_plots, create_scatter_plots
 source(file.path(proj_dir, "R", "summarize_results.R"))
@@ -46,7 +47,7 @@ auc_acc_df <- res$auc_acc
 coef_arr <- res$coefs
 p_arr <- res$pvals
 
-p <- length(p)
+p <- length(beta)
 index <- seq_len(p) / p
 x_freq <- transform_data(x, e, to_freq = TRUE)
 b <- transform_coef(beta, e, to_freq = TRUE)
@@ -100,3 +101,59 @@ freq_pval <- apply(
 
 p_pixel_pval <- create_heatmap_plots(pixel_pval)
 p_freq_pval <- create_scatter_plots(freq_pval, index)
+
+
+# ---------- Save figures ----------
+ggplot2::ggsave(
+  file.path(fig_dir, "group_mean_diff_pixel.pdf"),
+  p_group_mean_pixel,
+  width = 4, height = 4
+)
+ggplot2::ggsave(
+  file.path(fig_dir, "group_mean_diff_freq.pdf"),
+  p_group_mean_freq,
+  width = 4, height = 4
+)
+
+ggplot2::ggsave(
+  file.path(fig_dir, "true_coef_pixel.pdf"),
+  p_true_beta,
+  width = 4, height = 4
+)
+ggplot2::ggsave(
+  file.path(fig_dir, "true_coef_freq.pdf"),
+  p_true_b,
+  width = 4, height = 4
+)
+
+ggplot2::ggsave(
+  file.path(fig_dir, "est_coef_beta_pixel.pdf"),
+  p_est_beta_pixel,
+  width = 8, height = 4
+)
+ggplot2::ggsave(
+  file.path(fig_dir, "est_coef_b_pixel.pdf"),
+  p_est_b_pixel,
+  width = 8, height = 4
+)
+ggplot2::ggsave(
+  file.path(fig_dir, "est_coef_beta_freq.pdf"),
+  p_est_beta_freq,
+  width = 8, height = 4
+)
+ggplot2::ggsave(
+  file.path(fig_dir, "est_coef_b_freq.pdf"),
+  p_est_b_freq,
+  width = 8, height = 4
+)
+
+ggplot2::ggsave(
+  file.path(fig_dir, "pval_pixel.pdf"),
+  p_pixel_pval,
+  width = 8, height = 4
+)
+ggplot2::ggsave(
+  file.path(fig_dir, "pval_freq.pdf"),
+  p_freq_pval,
+  width = 8, height = 4
+)
