@@ -73,12 +73,14 @@ x_freq <- transform_data(x, transform_mat, to_freq = TRUE)
 
 
 # ---------- Fit LASSO Model in Pixel and Freq Spaces ----------
+tic()
 fit_results <- list(
-  pixel_min = fit_evaluate_lasso(x, y, lambda = "lambda.min"),
-  pixel_1se = fit_evaluate_lasso(x, y, lambda = "lambda.1se"),
-  freq_min = fit_evaluate_lasso(x_freq, y, lambda = "lambda.min"),
-  freq_1se = fit_evaluate_lasso(x_freq, y, lambda = "lambda.1se")
+  pixel_min = fit_evaluate_lasso(x, y, family = "binomial", lambda = "lambda.min"),
+  pixel_1se = fit_evaluate_lasso(x, y, family = "binomial", lambda = "lambda.1se"),
+  freq_min = fit_evaluate_lasso(x_freq, y, family = "binomial", lambda = "lambda.min"),
+  freq_1se = fit_evaluate_lasso(x_freq, y, family = "binomial", lambda = "lambda.1se")
 )
+toc()
 
 
 # ---------- Save as a rds file ----------
