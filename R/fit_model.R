@@ -1,38 +1,9 @@
 # -------------------------------------------------------
-# This script implements a LASSO-based modeling pipeline.
-#
-# It splits input data (x, y) into training and test sets.
-# Cross-validation is performed on the training set to select
-# the optimal lambda (either lambda.min or lambda.1se).
-#
-# The selected model is then evaluated on the test set,
-# with performance metrics (accuracy, AUC) and HDI-adjusted
-# p-values returned.
-#
-# A wrapper function is also provided to support simulations.
-# It assumes x and y are from pixel space and allows fitting
-# either in pixel space or frequency space (if an eigenvector matrix is given).
+# Binary Classification LASSO Pipeline
 # -------------------------------------------------------
 
-# List of required packages
-packages <- c("glmnet", "pROC", "hdi")
-
-# Install missing packages
-new_packages <- packages[!(packages %in% installed.packages()[, "Package"])]
-if (length(new_packages) > 0) install.packages(new_packages)
-
-# Load packages
-sapply(packages, require, character.only = TRUE)
-
-
-# ---------- Functions ----------
 # Splits the dataset into training and testing sets.
-train_test_split <- function(x, y, p_train) {
-  # Check whether x and y have the same # of obs
-  if (nrow(x) != length(y)) {
-    stop("Check that 'x' and 'y' have the same number of observations.")
-  }
-
+.train_test_split <- function(x, y, p_train) {
   # Calculate the train data size
   n <- nrow(x)
   train_idx <- sample(seq_len(n), size = floor(n * p_train))
@@ -50,32 +21,9 @@ train_test_split <- function(x, y, p_train) {
 }
 
 
-# Fits a Lasso model using cross-validation and refits with the chosen lambda.
-fit_lasso_cv <- function(x, y, lambda = c("lambda.min", "lambda.1se")) {
-  # Match the 'lambda' argement to ensure it's one of the allowed options
-  lambda <- match.arg(lambda)
-
-  if (!all(y %in% c(0, 1))) {
-    stop("fit_lasso_cv expects a binary response vector with values 0 and 1.")
-  }
-
-  # Perform cross-validation to find the optimal lambda value
-  cv_model <- glmnet::cv.glmnet(x, y, alpha = 1, family = "binomial")
-  lambda_to_use <- cv_model[[lambda]]
-
-  # Return the refitted model with the lambda chosen
-  glmnet::glmnet(
-    x, y,
-    alpha = 1, lambda = lambda_to_use, family = "binomial"
-  )
-}
-
-
 # Computes the threshold that maximizes Youden's J statistic. Youden’s J =
 # sensitivity + specificity - 1
-youden_cutoff <- function(labels, probs) {
-  stopifnot(length(labels) == length(probs))
-
+.youden_cutoff <- function(labels, probs) {
   thresholds <- sort(unique(probs), decreasing = TRUE)
   youdens <- numeric(length(thresholds))
 
@@ -92,86 +40,149 @@ youden_cutoff <- function(labels, probs) {
     youdens[i] <- sens + spec - 1
   }
 
-  best_idx <- which.max(youdens)
-  thresholds[best_idx]
+  thresholds[which.max(youdens)]
 }
 
 
-# Evaluates a Lasso model's performance and extracts estimated coefficients.
-#
-# Returns:
-#   A list with:
-#     - auc: Area under the ROC curve.
-#     - acc: Classification accuracy.
-#     - coefs: Estimated coefficients, excluding the intercept.
-
-evaluate_lasso <- function(model, x, y, threshold = NULL) {
-  # Check whether x and y have the same # of obs
-  if (nrow(x) != length(y)) {
-    stop("The number of rows in 'x' does not match the length of 'y'.")
-  }
-
-  # Calculate predicted probabilities
-  pred_probas <- predict(model, newx = x, type = "response")[, 1]
-
-  # Decide cutoff
-  if (is.null(threshold)) {
-    threshold <- youden_cutoff(y, pred_probas)
-  }
-
-  # Calculate predicted labels
-  pred_labels <- ifelse(pred_probas > threshold, 1, 0)
-
-  # Evaluate by accuracy and AUC
-  acc <- mean(pred_labels == y)
-  auc <- pROC::auc(pROC::roc(y, pred_probas))
-
-  # Extract estimated coefficients
-  coefs <- as.vector(coef(model))[-1]
+# Calculate accuracy and AUC
+.calculate_metrics <- function(true_labels, pred_probas, threshold) {
+  pred_labels <- as.numeric(pred_probas > threshold)
 
   list(
-    auc = auc,
-    acc = acc,
-    coefs = coefs
+    accuracy = mean(pred_labels == true_labels),
+    auc = as.numeric(pROC::auc(pROC::roc(true_labels, pred_probas)))
   )
 }
 
 
-# Executes a complete lasso analysis pipeline.
-#
-# Splits data into training and testing sets, performs cross-validation to
-# select lambda, refits the model, and evaluates performance on the test set.
-#
-# Returns:
-#   A list with:
-#     - auc: Area under the ROC curve.
-#     - acc: Classification accuracy.
-#     - coefs: Model coefficients.
-#     - pvals: hdi adjusted p-values.
-fit_evaluate_lasso <- function(x,
-                               y,
-                               p_train = 0.8,
-                               lambda = c("lambda.min", "lambda.1se"),
-                               threshold = NULL) {
-  lambda <- match.arg(lambda)
+# Find optimal LASSO lambda for binary outcomes using cross-validation
+.find_optimal_lambda <- function(x, y, lambda_choice) {
+  cv_model <- glmnet::cv.glmnet(x, y, alpha = 1, family = "binomial")
 
-  split <- train_test_split(x, y, p_train)
+  cv_model[[lambda_choice]]
+}
+
+
+# --------------------
+
+# Each row of the returned matrix is the estimated coefs of a permutation.
+run_lasso_permutations <- function(x, y, lambda, family, n_perm) {
+  if (nrow(x) != length(y)) {
+    stop("The number of rows in 'x' does not match the length of 'y'.")
+  }
+
+  if (!requireNamespace("glmnet", quietly = TRUE)) {
+    stop("Package 'glmnet' is required")
+  }
+
+  p <- ncol(x)
+
+  perm_coefs <- matrix(NA, nrow = n_perm, ncol = p)
+
+  for (i in seq_len(n_perm)) {
+    y_perm <- sample(y)
+    model <- glmnet::glmnet(
+      x, y_perm,
+      alpha = 1, lambda = lambda, family = family
+    )
+    perm_coefs[i, ] <- as.vector(coef(model))[-1] # remove intercept
+  }
+
+  perm_coefs
+}
+
+
+# Calculate two-sided p-values for LASSO coefficients using permutation test
+compute_permutation_pvals <- function(perm_coefs, orig_coefs) {
+  if (ncol(perm_coefs) != length(orig_coefs)) {
+    stop("The dimensions of inputs do not match")
+  }
+
+  n_perm <- nrow(perm_coefs)
+
+  perm_coefs <- abs(perm_coefs)
+  orig_coefs <- abs(orig_coefs)
+
+  (colSums(sweep(perm_coefs, 2, orig_coefs, FUN = ">=")) + 1) / (n_perm + 1)
+}
+
+
+
+# Calculate pvalue using projection based method
+get_hdi_pvals <- function(x, y, family, pval_adj = FALSE, ...) {
+  if (!requireNamespace("hdi", quietly = TRUE)) {
+    stop("Package 'hdi' is required")
+  }
+
+  result <- hdi::lasso.proj(x, y, family = family, ...)
+
+  if (pval_adj) {
+    return(result$pval.corr)
+  } else {
+    return(result$pval)
+  }
+}
+
+
+# For binary outcome, estimate coefs, calculate accuracy and AUC
+evaluate_lasso_performance <- function(
+    x,
+    y,
+    p_train = 0.8,
+    lambda_choice = c("lambda.min", "lambda.1se"),
+    threshold = NULL) {
+  lambda_choice <- match.arg(lambda_choice)
+
+  if (nrow(x) != length(y)) {
+    stop("The number of rows in 'x' does not match the length of 'y'.")
+  }
+
+  if (!requireNamespace("glmnet", quietly = TRUE)) {
+    stop("Package 'glmnet' is required")
+  }
+
+  if (!requireNamespace("pROC", quietly = TRUE)) {
+    stop("Package 'pROC' is required")
+  }
+
+  # Split data
+  split <- .train_test_split(x, y, p_train)
   x_train <- split$train$x
   y_train <- split$train$y
   x_test <- split$test$x
   y_test <- split$test$y
 
-  # Fit model with cross-validation
-  model <- fit_lasso_cv(x_train, y_train, lambda)
+  # Find optimal lambda with CV, then refit on the train split
+  optimal_lambda <- .find_optimal_lambda(x_train, y_train, lambda_choice)
+  model <- glmnet::glmnet(
+    x_train, y_train,
+    alpha = 1, lambda = optimal_lambda, family = "binomial"
+  )
+  est_coefs <- as.vector(coef(model))[-1] # remove intercept
 
-  # Evaluate model on the test split
-  evaluation <- evaluate_lasso(model, x_test, y_test, threshold)
+  # Decide threshold using train split
+  if (is.null(threshold)) {
+    train_probas <- predict(model, newx = x_train, type = "response")[, 1]
+    threshold <- .youden_cutoff(y_train, train_probas)
+  }
 
-  # Add p-values calculated by hdi
-  evaluation$pvals <- as.vector(hdi::lasso.proj(x, y)$pval)
+  # Evaluate on the test split
+  test_probas <- predict(model, newx = x_test, type = "response")[, 1]
+  metrics <- .calculate_metrics(y_test, test_probas, threshold)
 
-  return(evaluation)
+  # Return est coefs, accuracy and AUC
+  return(list(
+    coefs = est_coef,
+    threshold = threshold,
+    lambda = optimal_lambda,
+    accuracy = metrics$accuracy,
+    auc = metrics$auc
+  ))
 }
+
+
+
+
 
 
 # Fit a binary classification Lasso model in either pixel or frequency space.
@@ -191,15 +202,15 @@ fit_evaluate_lasso <- function(x,
 #     - pvals: p-values from HDI.
 #     - auc: AUC on the test set.
 #     - acc: Accuracy on the test set.
-lasso_pixel_or_freq <- function(x, y, in_pixel_space = TRUE, e = NULL, ...) {
-  if (!in_pixel_space) {
-    if (is.null(e)) {
-      stop(
-        "Transformation matrix e is required when not in pixel space."
-      )
-    }
-    x <- x %*% e # map pixel to freq
-  }
-
-  fit_evaluate_lasso(x, y, ...)
-}
+# lasso_pixel_or_freq <- function(x, y, in_pixel_space = TRUE, e = NULL, ...) {
+#   if (!in_pixel_space) {
+#     if (is.null(e)) {
+#       stop(
+#         "Transformation matrix e is required when not in pixel space."
+#       )
+#     }
+#     x <- x %*% e # map pixel to freq
+#   }
+#
+#   fit_evaluate_lasso(x, y, ...)
+# }
