@@ -125,7 +125,7 @@ get_hdi_pvals <- function(x, y, family, pval_adj = FALSE, ...) {
 
 
 # For binary outcome, estimate coefs, calculate accuracy and AUC
-evaluate_lasso_performance <- function(
+fit_evaluate_lasso <- function(
     x,
     y,
     p_train = 0.8,
