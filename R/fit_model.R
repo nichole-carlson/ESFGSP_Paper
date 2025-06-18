@@ -50,31 +50,15 @@
 
   list(
     accuracy = mean(pred_labels == true_labels),
-    auc = as.numeric(pROC::auc(pROC::roc(true_labels, pred_probas)))
+    auc = as.numeric(
+      pROC::auc(pROC::roc(true_labels, pred_probas, quiet = TRUE))
+    )
   )
 }
 
 
-# Find optimal LASSO lambda for binary outcomes using cross-validation
-.find_optimal_lambda <- function(x, y, lambda_choice) {
-  cv_model <- glmnet::cv.glmnet(x, y, alpha = 1, family = "binomial")
-
-  cv_model[[lambda_choice]]
-}
-
-
-# --------------------
-
 # Each row of the returned matrix is the estimated coefs of a permutation.
-run_lasso_permutations <- function(x, y, lambda, family, n_perm) {
-  if (nrow(x) != length(y)) {
-    stop("The number of rows in 'x' does not match the length of 'y'.")
-  }
-
-  if (!requireNamespace("glmnet", quietly = TRUE)) {
-    stop("Package 'glmnet' is required")
-  }
-
+.run_lasso_permutations <- function(x, y, lambda, n_perm) {
   p <- ncol(x)
 
   perm_coefs <- matrix(NA, nrow = n_perm, ncol = p)
@@ -83,7 +67,7 @@ run_lasso_permutations <- function(x, y, lambda, family, n_perm) {
     y_perm <- sample(y)
     model <- glmnet::glmnet(
       x, y_perm,
-      alpha = 1, lambda = lambda, family = family
+      alpha = 1, lambda = lambda, family = "binomial"
     )
     perm_coefs[i, ] <- as.vector(coef(model))[-1] # remove intercept
   }
@@ -92,6 +76,23 @@ run_lasso_permutations <- function(x, y, lambda, family, n_perm) {
 }
 
 
+# Calculate pvalue using projection based method
+.get_hdi_pvals <- function(x, y, pval_adj = FALSE, ...) {
+  if (!requireNamespace("hdi", quietly = TRUE)) {
+    stop("Package 'hdi' is required")
+  }
+
+  result <- hdi::lasso.proj(x, y, family = "binomial", ...)
+
+  if (pval_adj) {
+    return(result$pval.corr)
+  } else {
+    return(result$pval)
+  }
+}
+
+
+# --------------------
 # Calculate two-sided p-values for LASSO coefficients using permutation test
 compute_permutation_pvals <- function(perm_coefs, orig_coefs) {
   if (ncol(perm_coefs) != length(orig_coefs)) {
@@ -107,43 +108,14 @@ compute_permutation_pvals <- function(perm_coefs, orig_coefs) {
 }
 
 
-
-# Calculate pvalue using projection based method
-get_hdi_pvals <- function(x, y, family, pval_adj = FALSE, ...) {
-  if (!requireNamespace("hdi", quietly = TRUE)) {
-    stop("Package 'hdi' is required")
-  }
-
-  result <- hdi::lasso.proj(x, y, family = family, ...)
-
-  if (pval_adj) {
-    return(result$pval.corr)
-  } else {
-    return(result$pval)
-  }
-}
-
-
-# For binary outcome, estimate coefs, calculate accuracy and AUC
+# For binary outcome, use cross-validation to select optimal lambda,
+# then evaluate on the test split
 fit_evaluate_lasso <- function(
-    x,
-    y,
-    p_train = 0.8,
+    x, y,
     lambda_choice = c("lambda.min", "lambda.1se"),
-    threshold = NULL) {
+    p_train = 0.8,
+    n_perm = 1000) {
   lambda_choice <- match.arg(lambda_choice)
-
-  if (nrow(x) != length(y)) {
-    stop("The number of rows in 'x' does not match the length of 'y'.")
-  }
-
-  if (!requireNamespace("glmnet", quietly = TRUE)) {
-    stop("Package 'glmnet' is required")
-  }
-
-  if (!requireNamespace("pROC", quietly = TRUE)) {
-    stop("Package 'pROC' is required")
-  }
 
   # Split data
   split <- .train_test_split(x, y, p_train)
@@ -153,35 +125,39 @@ fit_evaluate_lasso <- function(
   y_test <- split$test$y
 
   # Find optimal lambda with CV, then refit on the train split
-  optimal_lambda <- .find_optimal_lambda(x_train, y_train, lambda_choice)
+  cv_model <- glmnet::cv.glmnet(
+    x_train, y_train,
+    alpha = 1, family = "binomial"
+  )
+
+  lambda <- cv_model[[lambda_choice]]
+
   model <- glmnet::glmnet(
     x_train, y_train,
-    alpha = 1, lambda = optimal_lambda, family = "binomial"
+    alpha = 1, lambda = lambda, family = "binomial"
   )
-  est_coefs <- as.vector(coef(model))[-1] # remove intercept
+  coefs <- as.vector(coef(model))[-1]
 
-  # Decide threshold using train split
-  if (is.null(threshold)) {
-    train_probas <- predict(model, newx = x_train, type = "response")[, 1]
-    threshold <- .youden_cutoff(y_train, train_probas)
-  }
+  # Threshold from training
+  train_probs <- predict(model, newx = x_train, type = "response")[, 1]
+  threshold <- .youden_cutoff(y_train, train_probs)
 
-  # Evaluate on the test split
-  test_probas <- predict(model, newx = x_test, type = "response")[, 1]
-  metrics <- .calculate_metrics(y_test, test_probas, threshold)
+  # Test performance
+  test_probs <- predict(model, newx = x_test, type = "response")[, 1]
+  metrics <- .calculate_metrics(y_test, test_probs, threshold)
 
-  # Return est coefs, accuracy and AUC
-  return(list(
-    coefs = est_coef,
+  # Permutation coefs from training
+  perm_coefs <- .run_lasso_permutations(x_train, y_train, lambda, n_perm)
+
+  list(
     threshold = threshold,
-    lambda = optimal_lambda,
+    lambda = lambda,
     accuracy = metrics$accuracy,
-    auc = metrics$auc
-  ))
+    auc = metrics$auc,
+    coefs = coefs,
+    perm_coefs = perm_coefs
+  )
 }
-
-
-
 
 
 
