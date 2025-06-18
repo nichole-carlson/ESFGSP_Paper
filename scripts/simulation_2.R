@@ -65,22 +65,75 @@ y <- generate_outcomes(x_freq, b)
 # Calculate x (pixel)
 x <- transform_data(x_freq, transform_mat, to_freq = FALSE)
 
+p <- ncol(x)
+
 
 # ---------- Fit LASSO Model in Pixel and Freq Spaces ----------
-fit_results <- list(
-  pixel_min = fit_evaluate_lasso(x, y, lambda = "lambda.min"),
-  pixel_1se = fit_evaluate_lasso(x, y, lambda = "lambda.1se"),
-  freq_min = fit_evaluate_lasso(x_freq, y, lambda = "lambda.min"),
-  freq_1se = fit_evaluate_lasso(x_freq, y, lambda = "lambda.1se")
+spaces <- list(pixel = x, freq = x_freq)
+lambda_choices <- c("lambda.min", "lambda.1se")
+
+auc_acc_rows <- list()
+coef_array <- array(
+  NA_real_,
+  dim = c(length(spaces), length(lambda_choices), 2, p),
+  dimnames = list(
+    space = names(spaces),
+    lambda = lambda_choices,
+    coef_type = c("orig", "trans"),
+    feature = seq_len(p)
+  )
 )
+pval_array <- array(
+  NA_real_,
+  dim = c(length(spaces), length(lambda_choices), 2, p),
+  dimnames = list(
+    space = names(spaces),
+    lambda = lambda_choices,
+    pval_type = c("orig", "trans"),
+    feature = seq_len(p)
+  )
+)
+
+# Process data
+for (space_name in names(spaces)) {
+  to_freq <- (space_name == "pixel")
+  data_mat <- spaces[[space_name]]
+
+  for (lambda_choice in lambda_choices) {
+    results <- fit_evaluate_lasso(data_mat, y, lambda_choice = lambda_choice)
+
+    # Store AUC and accuracy
+    auc_acc_rows[[length(auc_acc_rows) + 1]] <- data.frame(
+      space = space_name,
+      lambda = lambda_choice,
+      auc = results$auc,
+      accuracy = results$accuracy
+    )
+
+    # Process coefs
+    coefs <- results$coefs
+    coef_trans <- transform_coef(coefs, transform_mat, to_freq)
+    coef_array[space_name, lambda_choice, "orig"] <- coefs
+    coef_array[space_name, lambda_choice, "trans"] <- coef_trans
+
+    # Process permutation-based pvals
+    perm_coefs <- results$perm_coefs
+    perm_trans <- t(transform_coef(t(perm_coefs), transform_mat, to_freq))
+    pvals_orig <- compute_permutation_pvals(perm_coefs, coefs)
+    pvals_trans <- compute_permutation_pvals(perm_trans, coef_trans)
+    pval_array[space_name, lambda_choice, "orig"] <- pvals_orig
+    pval_array[space_name, lambda_choice, "trans"] <- pvals_trans
+  }
+}
+
+auc_acc_df <- do.call(rbind, auc_acc_rows)
 
 
 # ---------- Save as a rds file ----------
-data_file <- paste0("data_", sprintf("%03d", opt$sim_id), ".rds")
-saveRDS(
-  list(x_freq = x_freq, y = y, b = b, e = transform_mat, hparams = opt),
-  file.path(opt$out_dir, data_file)
-)
+data_path <- paste0("data_", sprintf("%03d", opt$sim_id), ".rds")
+list(x_freq = x_freq, y = y, b = b, e = transform_mat, hparams = opt) |>
+  saveRDS(file = file.path(opt$out_dir, data_path))
 
 results_file <- paste0("results_", sprintf("%03d", opt$sim_id), ".rds")
-saveRDS(fit_results, file.path(opt$out_dir, results_file))
+list(auc_acc = auc_acc_df, coefs = coef_array, pvals = pval_array) |>
+  saveRDS(file = file.path(opt$out_dir, results_path))
