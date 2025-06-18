@@ -5,9 +5,20 @@
 #     - acc: classification accuracy
 #     - auc: area under the ROC curve
 #     - coefs: named vector of coefficients
-#     - pvals: p-values corresponding to coefficients
+#     - pval_pixel: vector of p-values for pixel-space coefs
+#     - pval_freq: for freq-space coefs
 
-library(optparse)
+packages <- c("optparse", "rprojroot")
+new_packages <- packages[!(packages %in% installed.packages()[, "Package"])]
+if (length(new_packages) > 0) install.packages(new_packages)
+
+sapply(packages, require, character.only = TRUE)
+
+proj_dir <- rprojroot::find_root(rprojroot::is_git_root)
+
+# process_scalar_field, process_vector_field
+source(file.path(proj_dir, "R", "summarize_results.R"))
+
 
 
 # ---------- Arguments ----------
@@ -22,103 +33,52 @@ opt <- optparse::parse_args(opt_parser)
 
 
 # ---------- Get files ----------
-results_files <- list.files(
+file_paths <- list.files(
   opt$indir,
   pattern = "^results_\\d+\\.rds$", full.names = TRUE
 )
 
+if (length(file_paths) == 0) stop("No file found")
+
 # Sort by simulation ID
-get_sim_id <- function(files) {
-  as.integer(gsub("\\D", "", basename(files)))
+get_sim_id <- function(filepath) {
+  as.integer(gsub("\\D", "", basename(filepath)))
 }
-results_files <- results_files[order(get_sim_id(results_files))]
-
-# Get number of iterations
-n_iter <- length(results_files)
-if (n_iter == 0) stop("No results files found")
-
-
-# ---------- Simulation 1 hparams ----------
-p <- 256
-spaces <- c("pixel", "freq")
-lambdas <- c("lambda.min", "lambda.1se")
+file_paths <- file_paths[order(get_sim_id(file_paths))]
 
 
 
 # ---------- Process files ----------
 auc_acc_rows <- list()
-coef_arrays <- list()
-pval_arrays <- list()
+coef_array <- list()
+pval_array <- list()
 
-# Create mapping from flat names to array indices
-fit_mapping <- expand.grid(
-  lambda_idx = seq_along(lambdas), space_idx = seq_along(spaces)
-)
-fit_mapping$fit_name <- paste0(
-  spaces[fit_mapping$space_idx], "_",
-  sub("lambda\\.", "", lambdas[fit_mapping$lambda_idx])
-)
+for (i in seq_along(file_paths)) {
+  path <- file_paths[i]
+  results <- readRDS(path)
 
-for (i in seq_len(n_iter)) {
-  results <- readRDS(results_files[i])
+  auc_acc_df <- results$auc_acc
+  auc_acc_df$run <- i
+  auc_acc_rows[[i]] <- auc_acc_df
 
-  # auc acc
-  metrics_list <- lapply(fit_mapping$fit_name, function(name) {
-    parts <- strsplit(name, "_")[[1]]
-    data.frame(
-      sim = i,
-      space = parts[1],
-      lambda = paste0("lambda.", parts[2]),
-      auc = as.numeric(results[[name]]$auc),
-      acc = results[[name]]$acc
-    )
-  })
-  auc_acc_rows <- c(auc_acc_rows, metrics_list)
-
-  # coefs and pvalues
-  coef_matrix <- array(NA_real_, dim = c(p, length(lambdas), length(spaces)))
-  pval_matrix <- array(NA_real_, dim = c(p, length(lambdas), length(spaces)))
-
-  for (j in seq_len(nrow(fit_mapping))) {
-    fit_name <- fit_mapping$fit_name[j]
-    lambda_idx <- fit_mapping$lambda_idx[j]
-    space_idx <- fit_mapping$space_idx[j]
-
-    coef_matrix[, lambda_idx, space_idx] <- results[[fit_name]]$coefs
-    pval_matrix[, lambda_idx, space_idx] <- results[[fit_name]]$pvals
-  }
-
-  coef_arrays[[i]] <- coef_matrix
-  pval_arrays[[i]] <- pval_matrix
+  coef_array[[i]] <- results$coefs
+  pval_array[[i]] <- results$pvals
 }
 
-
-# ---------- Combine results ----------
 auc_acc_df <- do.call(rbind, auc_acc_rows)
-
-# Convert to 4D arrays
-coef_arr <- array(
-  unlist(coef_arrays),
-  dim = c(p, length(lambdas), length(spaces), n_iter),
-  dimnames = list(seq_len(p), lambdas, spaces, seq_len(n_iter))
-)
-
-pval_arr <- array(
-  unlist(pval_arrays),
-  dim = c(p, length(lambdas), length(spaces), n_iter),
-  dimnames = list(seq_len(p), lambdas, spaces, seq_len(n_iter))
-)
+auc_acc_df <- auc_acc_df[, c("run", setdiff(names(auc_acc_df), "run"))]
+coef_array <- simplify2array(coef_array)
+pval_array <- simplify2array(pval_array)
 
 
 # ---------- Save results ----------
 combined_results <- list(
   auc_acc = auc_acc_df,
-  coefs = coef_arr,
-  pvals = pval_arr
+  coefs = coef_array,
+  pvals = pval_array
 )
-output_file <- file.path(
-  opt$outdir, paste0(opt$sim_id, "_combined_results.rds")
-)
-saveRDS(combined_results, output_file)
 
-cat("Saved", n_iter, "simulations to", output_file, "\n")
+out_path <- file.path(opt$outdir, paste0(opt$sim_id, "_combined_results.rds"))
+saveRDS(combined_results, out_path)
+
+cat("Saved", length(file_paths), "simulations to", out_path, "\n")
