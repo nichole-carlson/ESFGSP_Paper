@@ -74,87 +74,91 @@ p_true_b <- plot_scatter(x = index, y = b)
 
 
 # ---------- Average Estimated Coefs ----------
+coefs_avg <- apply(coef_arr, 1:4, mean)
 # Average est coefs fit in pixel space
-beta_pixel_avg <- apply(coef_arr[, , "pixel", ], MARGIN = c(1, 2), FUN = mean)
+p_est_beta_pixel <- create_heatmap_plots(t(coefs_avg["pixel", , "orig", ]))
+p_est_b_pixel <- create_scatter_plots(t(coefs_avg["pixel", , "trans", ]), index)
 # Average est coefs fit in freq space
-b_freq_avg <- apply(coef_arr[, , "freq", ], MARGIN = c(1, 2), FUN = mean)
-
-p_est_beta_pixel <- create_heatmap_plots(beta_pixel_avg)
-p_est_b_pixel <- create_scatter_plots(transform_coef(beta_pixel_avg, e), index)
-p_est_b_freq <- create_scatter_plots(b_freq_avg, index)
-p_est_beta_freq <- create_heatmap_plots(
-  transform_coef(b_freq_avg, e, to_freq = FALSE)
-)
+p_est_b_freq <- create_scatter_plots(t(coefs_avg["freq", , "orig", ]), index)
+p_est_beta_freq <- create_heatmap_plots(t(coefs_avg["freq", , "trans", ]))
 
 
 # ---------- Percentage of p<0.05 Visualization ----------
 # Percentage of p<0.05 for the model fit on pixel space
-pixel_pval <- apply(
-  p_arr[, , "pixel", ],
-  MARGIN = c(1, 2),
-  FUN = function(x) mean(x < 0.05)
-)
-freq_pval <- apply(
-  p_arr[, , "freq", ],
-  MARGIN = c(1, 2),
-  FUN = function(x) mean(x < 0.05)
-)
+pvals_signif <- apply(p_arr, 1:4, function(x) mean(x < 0.05))
 
-p_pixel_pval <- create_heatmap_plots(pixel_pval)
-p_freq_pval <- create_scatter_plots(freq_pval, index)
+p_pval_pixel_orig <- create_heatmap_plots(t(pvals_signif["pixel", , "orig", ]))
+p_pval_pixel_trans <- create_scatter_plots(
+  t(pvals_signif["pixel", , "trans", ]), index
+)
+p_pval_freq_orig <- create_scatter_plots(
+  t(pvals_signif["freq", , "orig", ]), index
+)
+p_pval_freq_trans <- create_heatmap_plots(t(pvals_signif["freq", , "trans", ]))
+
 
 
 # ---------- Save figures ----------
 ggplot2::ggsave(
   file.path(fig_dir, "group_mean_diff_pixel.pdf"),
   p_group_mean_pixel,
-  width = 4, height = 4
+  width = 8, height = 8
 )
 ggplot2::ggsave(
   file.path(fig_dir, "group_mean_diff_freq.pdf"),
   p_group_mean_freq,
-  width = 4, height = 4
+  width = 8, height = 8
 )
 
 ggplot2::ggsave(
   file.path(fig_dir, "true_coef_pixel.pdf"),
   p_true_beta,
-  width = 4, height = 4
+  width = 8, height = 8
 )
 ggplot2::ggsave(
   file.path(fig_dir, "true_coef_freq.pdf"),
   p_true_b,
-  width = 4, height = 4
+  width = 8, height = 8
 )
 
 ggplot2::ggsave(
   file.path(fig_dir, "est_coef_beta_pixel.pdf"),
   p_est_beta_pixel,
-  width = 8, height = 4
+  width = 12, height = 8
 )
 ggplot2::ggsave(
   file.path(fig_dir, "est_coef_b_pixel.pdf"),
   p_est_b_pixel,
-  width = 8, height = 4
+  width = 12, height = 8
 )
 ggplot2::ggsave(
   file.path(fig_dir, "est_coef_beta_freq.pdf"),
   p_est_beta_freq,
-  width = 8, height = 4
+  width = 12, height = 8
 )
 ggplot2::ggsave(
   file.path(fig_dir, "est_coef_b_freq.pdf"),
   p_est_b_freq,
-  width = 8, height = 4
+  width = 12, height = 8
 )
 
 ggplot2::ggsave(
-  file.path(fig_dir, "pval_pixel.pdf"),
-  p_pixel_pval,
-  width = 8, height = 4
+  file.path(fig_dir, "pval_pixel_orig.pdf"),
+  p_pval_pixel_orig,
+  width = 12, height = 8
 )
 ggplot2::ggsave(
-  file.path(fig_dir, "pval_freq.pdf"),
-  p_freq_pval,
-  width = 8, height = 4
+  file.path(fig_dir, "pval_pixel_trans.pdf"),
+  p_pval_pixel_trans,
+  width = 12, height = 8
+)
+ggplot2::ggsave(
+  file.path(fig_dir, "pval_freq_orig.pdf"),
+  p_pval_freq_orig,
+  width = 12, height = 8
+)
+ggplot2::ggsave(
+  file.path(fig_dir, "pval_freq_trans.pdf"),
+  p_pval_freq_trans,
+  width = 12, height = 8
 )
