@@ -113,16 +113,16 @@ for (space_name in names(spaces)) {
     # Process coefs
     coefs <- results$coefs
     coef_trans <- transform_coef(coefs, transform_mat, to_freq)
-    coef_array[space_name, lambda_choice, "orig"] <- coefs
-    coef_array[space_name, lambda_choice, "trans"] <- coef_trans
+    coef_array[space_name, lambda_choice, "orig", ] <- coefs
+    coef_array[space_name, lambda_choice, "trans", ] <- coef_trans
 
     # Process permutation-based pvals
     perm_coefs <- results$perm_coefs
     perm_trans <- t(transform_coef(t(perm_coefs), transform_mat, to_freq))
     pvals_orig <- compute_permutation_pvals(perm_coefs, coefs)
     pvals_trans <- compute_permutation_pvals(perm_trans, coef_trans)
-    pval_array[space_name, lambda_choice, "orig"] <- pvals_orig
-    pval_array[space_name, lambda_choice, "trans"] <- pvals_trans
+    pval_array[space_name, lambda_choice, "orig", ] <- pvals_orig
+    pval_array[space_name, lambda_choice, "trans", ] <- pvals_trans
   }
 }
 
