@@ -27,12 +27,7 @@ proj_dir <- rprojroot::find_root(rprojroot::is_git_root)
 
 
 # ---------- Import functions ----------
-# generate_exp_corr, generate_image_data, generate_block_coefs,
-# generate_outcomes
-source(file.path(proj_dir, "R", "data_generation.R"))
-# eigen_decomp_mcm, generate_e_matrix, transform_data,
-# transform_coef
-source(file.path(proj_dir, "R", "transformations.R"))
+source(file.path(proj_dir, "R", "simulate_data.R"))
 # evaluate_lasso_performance, run_lasso_permutations, compute_permutation_pvals
 # get_hdi_pvals
 source(file.path(proj_dir, "R", "fit_model.R"))
@@ -58,57 +53,54 @@ set.seed(opt$seed)
 # Exponential decay correlation matrix
 cov_matrix <- generate_exp_corr(n_row = 16, n_col = 16, rate = 1)
 
-# Transformation matrix (E)
-transform_mat <- generate_e_matrix(cov_matrix)
-
-# Simulate X ~ MVN(0, cov_matrix)
-x <- generate_image_data(opt$n_sample, cov_matrix)
+# Adjacency matrix
+adj_matrix <- cov_matrix - diag(nrow(cov_matrix))
 
 # Block coefficient vector (beta)
 beta <- generate_block_coefs(c(16, 16), c(8, 8), opt$effect)
 
-# Simulate y
-y <- generate_outcomes(x, beta)
+# Run simulation
+data_sim <- simulate_data(
+  opt$n_sample, cov_matrix, beta, adj_matrix,
+  on_freq = FALSE
+)
 
-# Calculate x_freq
-x_freq <- transform_data(x, transform_mat, to_freq = TRUE)
-
-p <- ncol(x)
+# Extract simulated data
+y <- data_sim$outcome
+b <- data_sim$coef_trans
+transform_mat <- data_sim$transform_mat
 
 
 # ---------- Fit LASSO Model in Pixel and Freq Spaces ----------
-spaces <- list(pixel = x, freq = x_freq)
+space_map <- c(pixel = "orig", freq = "trans")
 lambda_choices <- c("lambda.min", "lambda.1se")
+p <- ncol(cov_matrix)
 
+# Placeholders
 auc_acc_rows <- list()
 coef_array <- array(
   NA_real_,
-  dim = c(length(spaces), length(lambda_choices), 2, p),
+  dim = c(p, 2, length(space_map), length(lambda_choices)),
   dimnames = list(
-    space = names(spaces),
-    lambda = lambda_choices,
+    feature = seq_len(p),
     coef_type = c("orig", "trans"),
-    feature = seq_len(p)
-  )
-)
-pval_array <- array(
-  NA_real_,
-  dim = c(length(spaces), length(lambda_choices), 2, p),
-  dimnames = list(
-    space = names(spaces),
+    space = names(space_map),
     lambda = lambda_choices,
-    pval_type = c("orig", "trans"),
-    feature = seq_len(p)
   )
 )
+pval_array <- coef_array
 
-# Process data
-for (space_name in names(spaces)) {
-  to_freq <- (space_name == "pixel")
-  data_mat <- spaces[[space_name]]
+for (space_name in names(space_map)) {
+  on_freq <- (space_name == "freq")
+  data_mat <- data_sim$x[, space_map[space_name]]
 
   for (lambda_choice in lambda_choices) {
-    results <- fit_evaluate_lasso(data_mat, y, lambda_choice = lambda_choice)
+    # Fit model on the space specified and lambda chosen
+    # Return coef and pval on both spaces
+    results <- fit_evaluate_lasso(
+      data_mat, y, on_freq, transform_mat,
+      lambda_choice = lambda_choice
+    )
 
     # Store AUC and accuracy
     auc_acc_rows[[length(auc_acc_rows) + 1]] <- data.frame(
@@ -118,19 +110,9 @@ for (space_name in names(spaces)) {
       accuracy = results$accuracy
     )
 
-    # Process coefs
-    coefs <- results$coefs
-    coef_trans <- transform_coef(coefs, transform_mat, to_freq)
-    coef_array[space_name, lambda_choice, "orig", ] <- coefs
-    coef_array[space_name, lambda_choice, "trans", ] <- coef_trans
-
-    # Process permutation-based pvals
-    perm_coefs <- results$perm_coefs
-    perm_trans <- t(transform_coef(t(perm_coefs), transform_mat, to_freq))
-    pvals_orig <- compute_permutation_pvals(perm_coefs, coefs)
-    pvals_trans <- compute_permutation_pvals(perm_trans, coef_trans)
-    pval_array[space_name, lambda_choice, "orig", ] <- pvals_orig
-    pval_array[space_name, lambda_choice, "trans", ] <- pvals_trans
+    # Process coefs and pvals
+    coef_array[, , space_name, lambda_choice] <- results$coef_arr
+    pval_array[, , space_name, lambda_choice] <- results$pval_arr
   }
 }
 

@@ -20,11 +20,7 @@ proj_dir <- rprojroot::find_root(rprojroot::is_git_root)
 
 
 # ---------- Import functions ----------
-# generate_exp_corr, generate_image_data, generate_sparse_coefs,
-# generate_outcomes
-source(file.path(proj_dir, "R", "data_generation.R"))
-# eigen_decomp_mcm, generate_e_matrix, transform_data
-source(file.path(proj_dir, "R", "transformations.R"))
+source(file.path(proj_dir, "R", "simulate_data.R"))
 # fit_evaluate_lasso
 source(file.path(proj_dir, "R", "fit_model.R"))
 
@@ -49,27 +45,25 @@ set.seed(opt$seed)
 # Diagonal covariance matrix (D)
 cov_matrix <- diag(256 + 1 - seq_len(256))
 
-# Transformation matrix (E)
+# Adjacency matrix
 exp_corr <- generate_exp_corr(n_row = 16, n_col = 16, rate = 1)
-transform_mat <- generate_e_matrix(exp_corr)
-
-# Simulate X_freq ~ MVN(0, D)
-x_freq <- generate_image_data(opt$n_sample, cov_matrix)
+adj_mat <- exp_corr - diag(nrow(exp_corr))
 
 # Sparse coefficient vector (b)
 b <- generate_sparse_coefs(256, opt$sparsity, opt$effect)
 
-# Simulate y
-y <- generate_outcomes(x_freq, b)
+data_sim <- simulate_data(opt$n_sample, cov_matrix, b, adj_mat, on_freq = TRUE)
 
-# Calculate x (pixel)
-x <- transform_data(x_freq, transform_mat, to_freq = FALSE)
 
-p <- ncol(x)
 
 
 # ---------- Fit LASSO Model in Pixel and Freq Spaces ----------
-spaces <- list(pixel = x, freq = x_freq)
+y <- data_sim$outcome
+beta <- data_sim$coef_trans
+transform_mat <- data_sim$transform_mat
+p <- ncol(cov_matrix)
+
+spaces <- list(pixel = data_sim$x_trans, freq = data_sim$x_orig)
 lambda_choices <- c("lambda.min", "lambda.1se")
 
 auc_acc_rows <- list()

@@ -1,9 +1,9 @@
-# data_generation.R
-# Functions for generating data, correlation matrix, coefficients, and outcomes
+# simulate_data.R
 
 library(MASS)
 
 
+# --------------------
 # Generate exponential correlation matrix for 16x16 image grid
 generate_exp_corr <- function(n_row, n_col, rate) {
   # Generate all coorediates
@@ -29,6 +29,19 @@ gen_n_neighbor_adj_mat <- function(n_row, n_col, d_max) {
   diag(adj_mat) <- 0
 
   return(adj_mat)
+}
+
+
+# Eigendecomposition of M*C*M where M is centering matrix, C is adjacency mat
+eigen_decomp_mcm <- function(adj_mat) {
+  n <- ncol(adj_mat)
+  # Center matrix: M = I - (1/n) * 11'
+  cent_adj_mat <- diag(n) - adj_matrix(1 / n, n, n)
+  # mcm
+  mcm <- cent_adj_mat %*% adj_mat %*% cent_adj_mat
+  mcm <- (mcm + t(mcm)) / 2 # for numerical stability
+
+  eigen(mcm, symmetric = TRUE)
 }
 
 
@@ -89,6 +102,7 @@ generate_sparse_coefs <- function(n, p_nonzero, beta_value) {
   return(beta)
 }
 
+
 # Generate binary outcome from logistic model
 generate_outcomes <- function(x, beta, beta0 = 0) {
   if (!is.matrix(beta)) {
@@ -106,4 +120,57 @@ generate_outcomes <- function(x, beta, beta0 = 0) {
   y <- rbinom(n, 1, p)
 
   return(y)
+}
+
+
+# Transform data between spaces
+transform_data <- function(x, e, to_freq = TRUE) {
+  if (to_freq) {
+    x %*% e
+  } else {
+    x %*% t(e)
+  }
+}
+
+
+# Transform coefs between spaces
+transform_coef <- function(coefs, e, to_freq = TRUE) {
+  # Ensure coefs is a column matrix
+  if (!is.matrix(coefs)) {
+    coefs <- matrix(coefs, ncol = 1)
+  }
+
+  if (to_freq) {
+    # pixel to freq: b = t(E) * beta
+    t(e) %*% coefs
+  } else {
+    # freq to pixel: beta = E * b
+    e %*% coefs
+  }
+}
+
+
+# ---------- Function to use ----------
+simulate_data <- function(n_sample, cov_matrix, coef_vec, adj_matrix, on_freq) {
+  # Simulate items
+  x_orig <- generate_image_data(n_sample, cov_matrix)
+  transform_mat <- eigen_decomp_mcm(adj_matrix)$vectors
+  x_trans <- transform_data(x_orig, transform_mat, !on_freq)
+  coef_trans <- transform_coef(coef_vec, transform_mat, !on_freq)
+  y <- generate_outcomes(x_orig, coef_vec)
+
+  # Prepare for return
+  x_arr <- cbind(x_orig, x_trans)
+  colnames(x_arr) <- c("orig", "trans")
+
+  coef_arr <- cbind(coef_vec, coef_trans)
+  colnames(coef_arr) <- c("orig", "trans")
+
+  return(list(
+    x = x_arr,
+    coef = coef_arr,
+    outcome = y,
+    on_freq = on_freq,
+    transform_mat = transform_mat
+  ))
 }

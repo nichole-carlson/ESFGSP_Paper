@@ -2,6 +2,8 @@
 # Binary Classification LASSO Pipeline
 # -------------------------------------------------------
 
+
+# --------------------
 # Splits the dataset into training and testing sets.
 .train_test_split <- function(x, y, p_train) {
   # Calculate the train data size
@@ -92,13 +94,25 @@
 }
 
 
-# --------------------
-# Calculate two-sided p-values for LASSO coefficients using permutation test
-compute_permutation_pvals <- function(perm_coefs, orig_coefs) {
-  if (ncol(perm_coefs) != length(orig_coefs)) {
-    stop("The dimensions of inputs do not match")
+# Transform coefs between spaces
+.transform_coef <- function(coefs, e, to_freq = TRUE) {
+  # Ensure coefs is a column matrix
+  if (!is.matrix(coefs)) {
+    coefs <- matrix(coefs, ncol = 1)
   }
 
+  if (to_freq) {
+    # pixel to freq: b = t(E) * beta
+    t(e) %*% coefs
+  } else {
+    # freq to pixel: beta = E * b
+    e %*% coefs
+  }
+}
+
+
+# Calculate two-sided p-values for LASSO coefficients using permutation test
+.compute_permutation_pvals <- function(perm_coefs, orig_coefs) {
   n_perm <- nrow(perm_coefs)
 
   perm_coefs <- abs(perm_coefs)
@@ -108,13 +122,19 @@ compute_permutation_pvals <- function(perm_coefs, orig_coefs) {
 }
 
 
+# --------------------
 # For binary outcome, use cross-validation to select optimal lambda,
-# then evaluate on the test split
+# then evaluate on the test split.
+#
+# Return estiamted coefs in pixel and freq space, and corresponding pvals
 fit_evaluate_lasso <- function(
     x, y,
+    on_freq,
+    transform_mat,
     lambda_choice = c("lambda.min", "lambda.1se"),
     p_train = 0.8,
-    n_perm = 1000) {
+    n_perm = 1000,
+    ) {
   lambda_choice <- match.arg(lambda_choice)
 
   # Split data
@@ -136,7 +156,12 @@ fit_evaluate_lasso <- function(
     x_train, y_train,
     alpha = 1, lambda = lambda, family = "binomial"
   )
-  coefs <- as.vector(coef(model))[-1]
+
+  # Est coefs
+  coef_orig <- matrix(as.vector(coef(model))[-1], ncol = 1)
+  coef_trans <- .transform_coef(coef_orig, transform_mat, !on_freq)
+  coef_arr <- cbind(coef_orig, coef_trans)
+  colnames(coef_arr) <- c("orig", "trans")
 
   # Threshold from training
   train_probs <- predict(model, newx = x_train, type = "response")[, 1]
@@ -148,45 +173,21 @@ fit_evaluate_lasso <- function(
 
   # Permutation coefs from training
   perm_coefs <- .run_lasso_permutations(x_train, y_train, lambda, n_perm)
+  pval_orig <- .compute_permutation_pvals(perm_coefs, coef_orig)
+
+  perm_trans <- t(.transform_coef(t(perm_coefs), transform_mat, !on_freq))
+  pval_trans <- .compute_permutation_pvals(perm_trans, coef_trans)
+
+  pval_arr <- cbind(pval_orig, pval_trans)
+  colnames(pval_arr) <- c("orig", "trans")
 
   list(
     threshold = threshold,
     lambda = lambda,
     accuracy = metrics$accuracy,
     auc = metrics$auc,
-    coefs = coefs,
-    perm_coefs = perm_coefs
+    coef_arr = coef_arr,
+    pval_arr = pval_arr,
+    on_freq = on_freq
   )
 }
-
-
-
-# Fit a binary classification Lasso model in either pixel or frequency space.
-#
-# Args:
-#   x: n x p matrix. Design matrix in PIXEL space
-#   y: Binary outcome vector of length n.
-#   in_pixel_space: Logical. If TRUE, fit model directly on x.
-#                   If FALSE, x is transformed using matrix e before fitting.
-#   e: p x p transformation matrix (required if in_pixel_space = FALSE).
-#      Used to map pixel space to frequency space.
-#   ...: Additional arguments passed to fit_evaluate_lasso().
-#
-# Returns:
-#   A list with:
-#     - coefs: Estimated coefficients (excluding intercept).
-#     - pvals: p-values from HDI.
-#     - auc: AUC on the test set.
-#     - acc: Accuracy on the test set.
-# lasso_pixel_or_freq <- function(x, y, in_pixel_space = TRUE, e = NULL, ...) {
-#   if (!in_pixel_space) {
-#     if (is.null(e)) {
-#       stop(
-#         "Transformation matrix e is required when not in pixel space."
-#       )
-#     }
-#     x <- x %*% e # map pixel to freq
-#   }
-#
-#   fit_evaluate_lasso(x, y, ...)
-# }
