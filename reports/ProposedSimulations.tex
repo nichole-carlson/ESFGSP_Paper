@@ -34,14 +34,14 @@ We will simulated $n=n_A+n_B$ images, where $n_A$ is the number of images from g
 
 $$y_i =\beta z_i + \epsilon_i\hspace{2cm}\epsilon_i\sim\text{MVN}(0,\Sigma_{g_i}),$$
 equivalently
-$$y_i\sim\text{MVN}(\beta z_i,\Sigma).$$
+$$y_i\sim\text{MVN}(\beta z_i,\Sigma_{g_i}).$$
 
 A particular simulation context will be defined through specification of the following:
 \begin{enumerate}[(a)]
 	\item An `image space.' Unless otherwise stated, we'll be talking about images of the same dimension as the handwritten digit data. Thus, $s=256$ pixels arranged in a $16\times16$ lattice.
 	\item Desired number of observations per group, $n_A$ and $n_B$
-	\item Desired covariances $\Sigma_g$, either by providing a model (e.g. exponential) or by providing eigenvectors $Q_g$ and eigenvalues $\Lambda_g$. Unless otherwise specified, we will assume $\Sigma_A=\Sigma_B$.
-	\item The group effect $\beta$. We might choose $\beta$ in a couple of ways, such as by a function of pixel location (e.g. 1 for all pixels in the top half of the image and -1 for all pixels in the bottom half), as a linear combination of ESF/GSP eigenvectors, or empirically (using the empirical covariance matrix, maybe estimated with regularization).
+	\item Desired covariances $\Sigma_g$, either by providing a model (e.g. exponential) or by providing eigenvectors $Q_g$ and eigenvalues $\Lambda_g$ (e.g. frequency transform $Q_g$ and constant eigenvalues). Unless otherwise specified, we will assume $\Sigma_A=\Sigma_B$.
+	\item The group effect $\beta$. We might choose $\beta$ in a couple of ways, such as by a function of pixel location (e.g. 1 for all pixels in the top half of the image and -1 for all pixels in the bottom half) or as a linear combination of ESF/GSP eigenvectors.
 \end{enumerate}
 
 
