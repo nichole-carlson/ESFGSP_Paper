@@ -133,8 +133,7 @@ fit_evaluate_lasso <- function(
     transform_mat,
     lambda_choice = c("lambda.min", "lambda.1se"),
     p_train = 0.8,
-    n_perm = 1000,
-    ) {
+    n_perm = 1000) {
   lambda_choice <- match.arg(lambda_choice)
 
   # Split data

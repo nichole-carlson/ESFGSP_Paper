@@ -67,7 +67,6 @@ data_sim <- simulate_data(
 
 # Extract simulated data
 y <- data_sim$outcome
-b <- data_sim$coef_trans
 transform_mat <- data_sim$transform_mat
 
 
@@ -81,18 +80,13 @@ auc_acc_rows <- list()
 coef_array <- array(
   NA_real_,
   dim = c(p, 2, length(space_map), length(lambda_choices)),
-  dimnames = list(
-    feature = seq_len(p),
-    coef_type = c("orig", "trans"),
-    space = names(space_map),
-    lambda = lambda_choices,
-  )
+  dimnames = list(NULL, c("orig", "trans"), names(space_map), lambda_choices)
 )
 pval_array <- coef_array
 
 for (space_name in names(space_map)) {
   on_freq <- (space_name == "freq")
-  data_mat <- data_sim$x[, space_map[space_name]]
+  data_mat <- data_sim$x[, , space_map[space_name]]
 
   for (lambda_choice in lambda_choices) {
     # Fit model on the space specified and lambda chosen

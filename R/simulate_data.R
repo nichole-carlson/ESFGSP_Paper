@@ -1,6 +1,7 @@
 # simulate_data.R
 
 library(MASS)
+library(abind)
 
 
 # --------------------
@@ -36,7 +37,7 @@ gen_n_neighbor_adj_mat <- function(n_row, n_col, d_max) {
 eigen_decomp_mcm <- function(adj_mat) {
   n <- ncol(adj_mat)
   # Center matrix: M = I - (1/n) * 11'
-  cent_adj_mat <- diag(n) - adj_matrix(1 / n, n, n)
+  cent_adj_mat <- diag(n) - matrix(1 / n, n, n)
   # mcm
   mcm <- cent_adj_mat %*% adj_mat %*% cent_adj_mat
   mcm <- (mcm + t(mcm)) / 2 # for numerical stability
@@ -152,6 +153,10 @@ transform_coef <- function(coefs, e, to_freq = TRUE) {
 
 # ---------- Function to use ----------
 simulate_data <- function(n_sample, cov_matrix, coef_vec, adj_matrix, on_freq) {
+  if (!is.matrix(coef_vec)) {
+    coef_vec <- matrix(coef_vec, ncol = 1)
+  }
+
   # Simulate items
   x_orig <- generate_image_data(n_sample, cov_matrix)
   transform_mat <- eigen_decomp_mcm(adj_matrix)$vectors
@@ -160,11 +165,14 @@ simulate_data <- function(n_sample, cov_matrix, coef_vec, adj_matrix, on_freq) {
   y <- generate_outcomes(x_orig, coef_vec)
 
   # Prepare for return
-  x_arr <- cbind(x_orig, x_trans)
-  colnames(x_arr) <- c("orig", "trans")
-
-  coef_arr <- cbind(coef_vec, coef_trans)
-  colnames(coef_arr) <- c("orig", "trans")
+  x_arr <- abind::abind(
+    x_orig, x_trans,
+    along = 3, new.names = list(NULL, NULL, c("orig", "trans"))
+  )
+  coef_arr <- abind::abind(
+    coef_vec, coef_trans,
+    along = 3, new.names = list(NULL, NULL, c("orig", "trans"))
+  )
 
   return(list(
     x = x_arr,
