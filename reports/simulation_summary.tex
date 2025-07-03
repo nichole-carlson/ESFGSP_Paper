@@ -52,7 +52,7 @@ Imaging data are often characterized by spatial autocorrelation, where neighbori
 When image data are used as predictors, each pixel serves as a feature to predict a scalar outcome \( y \). Let \( X \) represent a dataset of images, where each image \( x_i \) is a row vector of \( p \) pixels. The predictive model can be expressed as:
 
 \[
-  y_i = x_i \beta + \epsilon_i,
+	y_i = x_i \beta + \epsilon_i,
 \]
 
 where \( \beta \) is a vector of regression coefficients, and \( \epsilon_i \sim N (0, \sigma^2) \) is the error term. In this scenario, the inherent correlations among pixels can lead to multicollinearity, which reduces the stability of coefficient estimation and complicates feature selection.
@@ -60,7 +60,7 @@ where \( \beta \) is a vector of regression coefficients, and \( \epsilon_i \sim
 Alternatively, when image data are treated as outcomes, each pixel becomes a response variable, modeled as a function of predictors. Suppose \( x_i \) is a vector of predictors and \( y_i \) represents an image outcome with \( s \) pixels. The model can be written as:
 
 \[
-y_i = x_i \beta + \epsilon_i,
+	y_i = x_i \beta + \epsilon_i,
 \]
 
 where \( \beta \) is a \( p \times s \) matrix of coefficients and \( \epsilon_i \sim \mathcal{N}(0, \Sigma) \) captures the covariance among pixels. A key consideration in this case is the structure of the covariance matrix \( \Sigma \), which determines how spatial relationships between pixels are modeled. Simplifying \( \Sigma \) improves computational efficiency but may sacrifice accuracy, while a more complex structure captures fine details but increases computational demands.
@@ -78,54 +78,54 @@ Reducing spatial dependencies in imaging data is crucial for effective modeling 
 Moran’s Coefficient (MC) is a widely used statistic for quantifying spatial autocorrelation, which measures the degree to which similar values cluster in space. For an image represented as a vector \( x = (x_1, x_2, \dots, x_p)^T \) of length \( p \), where \( x_i \) denotes the intensity of the \( i \)-th pixel, and a spatial adjacency matrix \( C \) of size \( p \times p \), Moran’s Coefficient is defined in summation form as follows \citet{griffith2014spatial}:
 
 \[
-  M C(x) = \frac{p}{\sum_{i=1}^p \sum_{j=1}^p C_{ij}} \cdot \frac{\sum_{i=1}^p \left(x_i - \bar{x} \right) \left[ \sum_{j=1}^p C_{ij} \left( x_j - \bar{x} \right) \right]}{\sum_{i=1}^p \left( x_i - \bar{x} \right)^2}
+	M C(x) = \frac{p}{\sum_{i=1}^p \sum_{j=1}^p C_{ij}} \cdot \frac{\sum_{i=1}^p \left(x_i - \bar{x} \right) \left[ \sum_{j=1}^p C_{ij} \left( x_j - \bar{x} \right) \right]}{\sum_{i=1}^p \left( x_i - \bar{x} \right)^2}
 \]
-where \( C_{ij} \) encodes the spatial relationship between pixels \( i \) and \( j \). 
+where \( C_{ij} \) encodes the spatial relationship between pixels \( i \) and \( j \).
 
 To simplify this expression, we transform it into matrix form by introducing the centering matrix \( M = I - \frac{1}{p} 1 1^T \). The centering matarix \( M \) ssatisfies two essential properties: \( M^2 = M \) (idempotencen) and \( M^T = M \) (symmetry). The idempotence of \( M \) can be shown as follows. By definition, we have:
 \[
-  M^2 = M M = \left( I - \frac{1 1^T}{p} \right) \left( I - \frac{1 1^T}{p} \right).
+	M^2 = M M = \left( I - \frac{1 1^T}{p} \right) \left( I - \frac{1 1^T}{p} \right).
 \]
 Expanding this expression yields:
 \[
-  M^2 = I - \frac{1 1^T}{p} - \frac{1 1^T}{p} + \frac{1 1^T 1 1^T}{p^2}.
+	M^2 = I - \frac{1 1^T}{p} - \frac{1 1^T}{p} + \frac{1 1^T 1 1^T}{p^2}.
 \]
 Since \( 1^T 1 = p \), the last term simplifies to \( \frac{1 1^T}{p} \), and we get:
 \[
-  M^2 = I - \frac{2}{p} 1 1^T + \frac{1}{p} 1 1^T = I - \frac{1 1^T}{p} = M.
+	M^2 = I - \frac{2}{p} 1 1^T + \frac{1}{p} 1 1^T = I - \frac{1 1^T}{p} = M.
 \]
 Symmetry is evident because both \( I \) and \( \frac{1}{p} 1 1^T \) are symmetric matrices, so \( M \) is also symmetric.
 
 The general property of matrix-vector multiplication also aids in rewriting the summation form of Moran's Coefficient. For any two column vectors \( a \) and \( c \) of length \( p \), and a matrix \( B \) of size \( p \times p \), the expression \( a^T B c \) can be written in summation form as:
 \[
-  a^T B c = \sum_{i=1}^p \sum_{j=1}^p a_i B_{ij} c_j.
+	a^T B c = \sum_{i=1}^p \sum_{j=1}^p a_i B_{ij} c_j.
 \]
 This property can be verified by examining the operations step-by-step. First, the matrix-vector product \( Bc \) produces a column vector, where the \( i \)-th entry is:
 \[
-  (Bc)_i = \sum_{j=1}^p B_{ij} c_j.
+	(Bc)_i = \sum_{j=1}^p B_{ij} c_j.
 \]
 Multiplying this result by the vector \( a^T \) computes the weighted sum of these entries:
 \[
-  a^T B c = \sum_{i=1}^p a_i (Bc)_i = \sum_{i=1}^p a_i \left( \sum_{j=1}^p B_{ij} c_j \right).
+	a^T B c = \sum_{i=1}^p a_i (Bc)_i = \sum_{i=1}^p a_i \left( \sum_{j=1}^p B_{ij} c_j \right).
 \]
 Rearranging the terms gives:
 \[
-  a^T B c = \sum_{i=1}^p \sum_{j=1}^p a_i B_{ij} c_j,
+	a^T B c = \sum_{i=1}^p \sum_{j=1}^p a_i B_{ij} c_j,
 \]
 proving the equivalence.
 
-Using this approach, the numerator of Moran's Coefficient, originally written as 
+Using this approach, the numerator of Moran's Coefficient, originally written as
 \[
-  \sum_{i=1}^p \sum_{j=1}^p C_{ij} (x_i - \bar{x})(x_j - \bar{x}),
+	\sum_{i=1}^p \sum_{j=1}^p C_{ij} (x_i - \bar{x})(x_j - \bar{x}),
 \]
-becomes \( (Mx)^T C (Mx) \), representing the covariance of \( x \) along the spatial structure defined by \( C \). Similarly, the denominator, \( \sum_{i=1}^p (x_i - \bar{x})^2 \), simplifies to \( (Mx)^T (Mx) \), which captures the covariance of \( x \) along an independent structure. The normalization factor, \( \sum_{i=1}^p \sum_{j=1}^p C_{ij} \), is rewritten as \( 1^T C 1 \), the total weight of the spatial adjacency matrix. Combining these terms, Moran’s Coefficient in matrix form is expressed as: 
+becomes \( (Mx)^T C (Mx) \), representing the covariance of \( x \) along the spatial structure defined by \( C \). Similarly, the denominator, \( \sum_{i=1}^p (x_i - \bar{x})^2 \), simplifies to \( (Mx)^T (Mx) \), which captures the covariance of \( x \) along an independent structure. The normalization factor, \( \sum_{i=1}^p \sum_{j=1}^p C_{ij} \), is rewritten as \( 1^T C 1 \), the total weight of the spatial adjacency matrix. Combining these terms, Moran’s Coefficient in matrix form is expressed as:
 \[
-  MC(x) = \frac{p}{1^T C 1} \cdot \frac{(Mx)^T C (Mx)}{(Mx)^T (Mx)}.
+	MC(x) = \frac{p}{1^T C 1} \cdot \frac{(Mx)^T C (Mx)}{(Mx)^T (Mx)}.
 \]
 
 Finally, substituting the properties of \( M \) into the matrix form, Moran’s Coefficient can be further compacted to:
 \[
-  MC(x) = \frac{p}{1^T C 1} \cdot \frac{x^T M C M x}{x^T M x}.
+	MC(x) = \frac{p}{1^T C 1} \cdot \frac{x^T M C M x}{x^T M x}.
 \]
 
 
@@ -134,7 +134,7 @@ Finally, substituting the properties of \( M \) into the matrix form, Moran’s 
 Eigenvector Spatial Filtering is a method for identifying orthogonal spatial patterns by using the eigendecomposition of \( MCM \). The eigendecomposition of \( MCM \) is expressed as:
 
 \[
-  MCM = E \Lambda E^T,
+	MCM = E \Lambda E^T,
 \]
 where \( \Lambda \) is a diagonal matrix containing eigenvalues \( \lambda_1, \lambda_2, \ldots, \lambda_p \), and \( E \) is a matrix whose columns are the corresponding eigenvectors. Each eigenvector \( v_i \) represents a distinct spatial pattern, and its associated eigenvalue \( \lambda_i \) quantifies the strength of spatial autocorrelation for that pattern.
 
@@ -147,41 +147,41 @@ The eigendecomposition of \( M C M \) exhibits several important properties. Fir
 
 To establish the connection, consider the definition of the Moran coefficient for an eigenvector \( v_i \):
 \[
-  MC(v_i) = \frac{p}{1^T C 1} \cdot \frac{v_i^T MCM v_i}{v_i^T M v_i}.
+	MC(v_i) = \frac{p}{1^T C 1} \cdot \frac{v_i^T MCM v_i}{v_i^T M v_i}.
 \]
 
 We first prove that for any eigenvector \( v_i \), \( M v_i = v_i \). Given that \( MCM v_i = \lambda_i v_i \), where \( \lambda_i \) is the eigenvalue corresponding to \( v_i \), we apply \( M \) on both sides:
 \[
-  MCM v_i = \lambda_i v_i \implies M(MCM v_i) = M(\lambda_i v_i).
+	MCM v_i = \lambda_i v_i \implies M(MCM v_i) = M(\lambda_i v_i).
 \]
 Since \( M^2 = M \) (idempotence), this becomes:
 \[
-  MCM v_i = \lambda_i M v_i.
+	MCM v_i = \lambda_i M v_i.
 \]
 By comparing with the original equation \( MCM v_i = \lambda_i v_i \), we deduce:
 \[
-  \lambda_i v_i = \lambda_i M v_i.
+	\lambda_i v_i = \lambda_i M v_i.
 \]
 For \( \lambda_i \neq 0 \), this implies \( M v_i = v_i \), as required.
 
 With this property established, we simplify the numerator of \( MC(v_i) \). Using \( MCM v_i = \lambda_i v_i \), we find:
 \[
-  v_i^T MCM v_i = v_i^T (\lambda_i v_i) = \lambda_i (v_i^T v_i).
+	v_i^T MCM v_i = v_i^T (\lambda_i v_i) = \lambda_i (v_i^T v_i).
 \]
 
 The denominator, \( v_i^T M v_i \), simplifies as:
 \[
-  v_i^T M v_i = v_i^T v_i,
+	v_i^T M v_i = v_i^T v_i,
 \]
 since \( M v_i = v_i \).
 
 Substituting these results into the definition of \( MC(v_i) \), we have:
 \[
-  MC(v_i) = \frac{p}{1^T C 1} \cdot \frac{\lambda_i v_i^T v_i}{v_i^T v_i}.
+	MC(v_i) = \frac{p}{1^T C 1} \cdot \frac{\lambda_i v_i^T v_i}{v_i^T v_i}.
 \]
 The terms \( v_i^T v_i \) cancel, leaving:
 \[
-  MC(v_i) = \frac{p}{1^T C 1} \lambda_i.
+	MC(v_i) = \frac{p}{1^T C 1} \lambda_i.
 \]
 
 This derivation shows that the Moran coefficient of an eigenvector \( v_i \) is directly proportional to its eigenvalue \( \lambda_i \). The eigenvector associated with the largest eigenvalue achieves the highest Moran coefficient, capturing the strongest spatial autocorrelation, while eigenvectors with smaller or negative eigenvalues represent weaker or dispersed spatial patterns.
@@ -200,7 +200,7 @@ Orthogonal matrices are typically derived from the eigendecomposition of a symme
 
 It is important to note that this transformation is not directly based on the empirical covariance of the dataset but instead on the spatial structure defined by \( C \). Consequently, while this transformation may not fully eliminate pixel correlations, a reasonable adjacency matrix \( C \) can substantially reduce these dependencies, enhancing computational efficiency and model performance.
 
-The choice of adjacency matrix \( C \) is crucial for effectively reducing spatial dependencies. For an image with \( p \) pixels, \( C \) is a \( p \times p \) matrix, where each element \( C_{ij} \) encodes the adjacency relationship between pixels \( i \) and \( j \). There are various strategies for defining adjacency. One approach is data-independent and unweighted, where adjacency is binary, with values of 1 assigned to adjacent pixels and 0 otherwise. For instance, a ``2-neighbor adjacency matrix'' considers two pixels adjacent if they are direct neighbors or share a direct neighbor. All other entries, including the diagonal, are set to 0. 
+The choice of adjacency matrix \( C \) is crucial for effectively reducing spatial dependencies. For an image with \( p \) pixels, \( C \) is a \( p \times p \) matrix, where each element \( C_{ij} \) encodes the adjacency relationship between pixels \( i \) and \( j \). There are various strategies for defining adjacency. One approach is data-independent and unweighted, where adjacency is binary, with values of 1 assigned to adjacent pixels and 0 otherwise. For instance, a ``2-neighbor adjacency matrix'' considers two pixels adjacent if they are direct neighbors or share a direct neighbor. All other entries, including the diagonal, are set to 0.
 
 Another approach is data-independent but weighted, where adjacency values are based on the distance between pixels. Let \( d_{ij} \) denote the Euclidean distance between pixels \( i \) and \( j \). The adjacency value is then defined as \( C_{ij} = -\exp(d_{ij}) \). Both methods rely on pixel positions rather than their actual intensity values, providing a flexible framework for encoding spatial relationships in \( C \).
 
@@ -208,7 +208,7 @@ Once an adjacency matrix \( C \) is chosen, the eigendecomposition of \( MCM \) 
 
 For a dataset \( X \) containing \( n \) images, represented as an \( n \times p \) matrix (where each row corresponds to a flattened image), projecting the data into the frequency space is achieved by:
 \[
-  X_{\text{freq}} = X \cdot E.
+	X_{\text{freq}} = X \cdot E.
 \]
 This transformation aligns the data along orthogonal spatial patterns encoded by the eigenvectors, facilitating more efficient modeling and analysis while preserving meaningful spatial relationships.
 
@@ -218,35 +218,35 @@ This transformation aligns the data along orthogonal spatial patterns encoded by
 
 To evaluate the performance of the proposed whitening transformation, we focus on binary classification problems where the outcome \( y_i \in \{0, 1\} \) is predicted using imaging data as predictors. To model binary outcomes, we use logistic regression, which predicts the probability of an event occurring (e.g., \( y_i = 1 \) ) as a function of predictors \( X \). Let \( x_i \) represent the vector of predictor variables for the \( i \)-th observation, \( y_i \in \{ 0, 1 \} \) denote the binary outcome, and \( \beta \) represent the vector of coefficients. The probability of \( y_i = 1 \) is modeled as:
 \[
-  p(y_i = 1) = \frac{1}{1 + \exp(-x_i^T \beta)}.
+	p(y_i = 1) = \frac{1}{1 + \exp(-x_i^T \beta)}.
 \]
 The model estimates \( \beta \) by maximizing the log-likelihood of the observed data, which is expressed as:
 \[
-  \ell = \ln(L) = \sum_i \left[ y_i \ln(p_i) + (1 - y_i) \ln(1 - p_i) \right].
+	\ell = \ln(L) = \sum_i \left[ y_i \ln(p_i) + (1 - y_i) \ln(1 - p_i) \right].
 \]
 
 In LASSO logistic regression and \( L_1 \) penalty is added to the negative log-likehood to enforce sparsity in the coefficients:
 \[
-  \min_{\beta} - \ell + \lambda \sum_j |\beta_j|,
+	\min_{\beta} - \ell + \lambda \sum_j |\beta_j|,
 \]
 where \( \lambda > 0 \) controls the strength of regularization, shrinking coefficients \( \beta_j \) with small absolute values to zero. This regularization enforces sparsity, making the model particularly suited for high-dimensional data with sparse true features.
 
 In the context of imaging data, each pixel is treated as a predictor. Spatial autocorrelation between pixels can degrade the performance of the LASSO model by violating the independence assumption among predictors. To address this, whitening transformations can be employed to reduce spatial dependencies by projecting the data into a frequency space where features are decorrelated. As introduced earlier, this transformation is achieved through the eigendecomposition of the spatially adjusted matrix \( MCM \). Let \( E \) represent the matrix of eigenvectors of \( MCM \), the transformed data in the frequency space is then:
 \[
-  X_{\text{freq}} = X \cdot E.
+	X_{\text{freq}} = X \cdot E.
 \]
 
 When applying logistic regression, the relationship between predictors and the outcome is defined by the coefficient vector \( \beta \), which assigns weights to predictors. In the pixel space, \( \beta \) indicates the importance of each pixel in determining the classification. When data is transformed into the frequency space, the coefficients must also be transformed to align with the new basis defined by \( E \). The relationship between the data and coefficients can be expressed as:
 \[
-  X \cdot \beta = X_{\text{freq}} \cdot b = (X \cdot E) \cdot b.
+	X \cdot \beta = X_{\text{freq}} \cdot b = (X \cdot E) \cdot b.
 \]
 For this equality to hold for all \( X \), it follows that:
 \[
-  \beta = E \cdot b.
+	\beta = E \cdot b.
 \]
 Taking the transpose of both sides and leveraging the orthogonality of \( E \) (\( E^T E = I \)), the coefficient vector in the frequency space is:
 \[
-  b = E^T \beta.
+	b = E^T \beta.
 \]
 
 The transformed coefficient vector \( b \) encodes the contribution of each frequency component to the classification, analogous to how \( \beta \) encodes the contribution of each pixel in the original space.
@@ -307,15 +307,15 @@ By applying this process to models in both the pixel and frequency spaces, we ev
 
 To evaluate the performance of LASSO models, several metrics were used. After predicting the probabilities \( p_i \) for \( y = 1 \), classifications were made by assigning \( y_i = 1 \) if \( p_i > 0.5 \), and \( y_i = 0 \) otherwise. The classification accuracy was then calculated as the proportion of correctly predicted outcomes. Another key metric was the Area Under the Curve (AUC) of the Receiver Operating Characteristic (ROC) curve, which provides a measure of the model’s ability to balance true positive and false positive rates across various thresholds. Higher AUC values indicate better classifier performance, particularly in distinguishing between classes. Additionally, p-values for the predictors were computed using the \texttt{hdi} package. While logistic regression with \( L_1 \) penalty does not inherently produce p-values, this package facilitates their calculation, and further details on its methodology will be provided.
 
-The analysis also included a detailed comparison of the coefficients estimated by LASSO models in the pixel and frequency spaces. For each simulation, we visualized the true coefficients, the mean estimated coefficients across 500 iterations, and their transformations between the two spaces. In the pixel space, coefficients were visualized as \( 16 \times 16 \) heatmaps, reflecting their spatial arrangement. In the frequency space, coefficients were displayed as scatterplots, ordered by the corresponding eigenvalues of \( MCM \) from smallest to largest. 
+The analysis also included a detailed comparison of the coefficients estimated by LASSO models in the pixel and frequency spaces. For each simulation, we visualized the true coefficients, the mean estimated coefficients across 500 iterations, and their transformations between the two spaces. In the pixel space, coefficients were visualized as \( 16 \times 16 \) heatmaps, reflecting their spatial arrangement. In the frequency space, coefficients were displayed as scatterplots, ordered by the corresponding eigenvalues of \( MCM \) from smallest to largest.
 
-For Simulation 1, where data was generated in the pixel space, the visualizations included: the true coefficients \( \beta \) and their transformation into the frequency space as \( b \), the coefficients estimated from models fit in the pixel space and their transformed estimates in the frequency space, and the coefficients estimated in the frequency space with their transformed counterparts in the pixel space. Similarly, for Simulation 2, where data was generated in the frequency space, we visualized \( b \), the transformed coefficients \( \beta \), and the corresponding estimates and transformations for both spaces. 
+For Simulation 1, where data was generated in the pixel space, the visualizations included: the true coefficients \( \beta \) and their transformation into the frequency space as \( b \), the coefficients estimated from models fit in the pixel space and their transformed estimates in the frequency space, and the coefficients estimated in the frequency space with their transformed counterparts in the pixel space. Similarly, for Simulation 2, where data was generated in the frequency space, we visualized \( b \), the transformed coefficients \( \beta \), and the corresponding estimates and transformations for both spaces.
 
 Since two regularization parameters (\texttt{lambda.min} and \texttt{lambda.1se}) were used, each scenario produced 10 visualizations in total. These visualizations provided insights into the effects of whitening transformations on coefficient estimation and feature selection accuracy in both the pixel and frequency spaces.
 
 Additionally, the p-values from the \texttt{hdi} package were analyzed. For each simulation, the percentage of predictors with \( p < 0.05 \) was calculated and visualized. In the pixel space, these percentages were displayed as heatmaps, while in the frequency space, they were shown as scatterplots ordered by eigenvalues. This analysis offered a deeper understanding of the statistical significance of predictors under different modeling approaches and sparsity scenarios.
 
-The p-values from the \texttt{hdi} package were analyzed to assess the statistical significance of predictors in both the pixel and frequency spaces. For each simulation, the percentage of iterations (out of 500) in which each predictor had a p-value less than 0.05 was calculated. This provided a measure of the consistency with which predictors were identified as significant across simulations. 
+The p-values from the \texttt{hdi} package were analyzed to assess the statistical significance of predictors in both the pixel and frequency spaces. For each simulation, the percentage of iterations (out of 500) in which each predictor had a p-value less than 0.05 was calculated. This provided a measure of the consistency with which predictors were identified as significant across simulations.
 
 In the pixel space, these percentages were visualized as heatmaps, reflecting the spatial distribution of statistically significant predictors. In the frequency space, the percentages were displayed as scatterplots, with frequencies ordered by the corresponding eigenvalues of \( MCM \). By comparing these visualizations, we could assess how the whitening transformation influenced the identification of significant predictors under different modeling approaches and sparsity scenarios.
 
@@ -332,14 +332,14 @@ Similarly, in Simulation 2, we assessed the distribution of \( \mathbf{p} \) at 
 \begin{figure}[H]
 	\centering
 	\includegraphics[width=0.8\textwidth]{sim1_p_dist.png}
-  \caption{Distribution of success probability \( \mathbf{p} \) at different non-zero values in Simulation 1.}
+	\caption{Distribution of success probability \( \mathbf{p} \) at different non-zero values in Simulation 1.}
 	\label{fig:sim1_p_dist}
 \end{figure}
 
 \begin{figure}[H]
 	\centering
 	\includegraphics[width=0.8\textwidth]{sim2_p_dist.png}
-  \caption{Distribution of success probability \( \mathbf{p} \) at different non-zero values in Simulation 2.}
+	\caption{Distribution of success probability \( \mathbf{p} \) at different non-zero values in Simulation 2.}
 	\label{fig:sim2_p_dist}
 \end{figure}
 
@@ -353,7 +353,7 @@ Figure \ref{fig:group_diff1} presents the group mean differences for Simulation 
 
 \begin{figure}[H]
 	\centering
-  \includegraphics[width=0.8\textwidth, height=0.35\textwidth]{group_mean_diff_sim1.png}
+	\includegraphics[width=0.8\textwidth, height=0.35\textwidth]{group_mean_diff_sim1.png}
 	\caption{Group mean difference in covariate values between instances where \( y = 1 \) and \( y = 0 \) in Simulation
 		1, shown for both the pixel space (left) and frequency space (right).}
 	\label{fig:group_diff1}
@@ -394,17 +394,13 @@ Table~\ref*{tab:auc_acc_table} summarizes the average AUCs and accuracies over 5
 	\label{tab:auc_acc_table}
 	\begin{tabular}{l|cc|cc}
 		\toprule
-		\textbf{Simulation}   & \multicolumn{2}{c}{\textbf{Model in Pixel Space}} & \multicolumn{2}{c}{\textbf{Model in Frequency Space}}                                              \\
+		\textbf{Simulation}   & \multicolumn{2}{c}{\textbf{Model in Pixel Space}} & \multicolumn{2}{c}{\textbf{Model in Freq Space}}                                              \\
 		\midrule
-		                      & \textbf{AUC (SE)}                                 & \textbf{Accuracy (SE)}                                & \textbf{AUC (SE)} & \textbf{Accuracy (SE)} \\
+		                      & \textbf{AUC (SE)}                                 & \textbf{Accuracy (SE)}                           & \textbf{AUC (SE)} & \textbf{Accuracy (SE)} \\
 		\midrule
-		\textbf{Simulation 1} &                                                   &                                                       &                   &                        \\
-    \texttt{lambda.min}            & 0.803 (0.031)                                     & 0.726 (0.032)                                         & 0.826 (0.028)     & 0.745 (0.030)          \\
-      \texttt{lambda.1se}            & 0.800 (0.032)                                     & 0.722 (0.032)                                         & 0.826 (0.029)     & 0.745 (0.031)          \\
-		\midrule
-		\textbf{Simulation 2} &                                                   &                                                       &                   &                        \\
-    \texttt{lambda.min}            & 0.755 (0.036)                                     & 0.684 (0.034)                                         & 0.812 (0.030)     & 0.732 (0.032)          \\
-      \texttt{lambda.1se}            & 0.735 (0.039)                                     & 0.669 (0.038)                                         & 0.812 (0.031)     & 0.732 (0.032)          \\
+		\textbf{Simulation 1} &                                                   &                                                  &                   &                        \\
+		\texttt{lambda.min}   & 0.803 (0.032)                                     & 0.725 (0.032)                                    & 0.826 (0.028)     & 0.742 (0.032)          \\
+		\texttt{lambda.1se}   & 0.799 (0.033)                                     & 0.721 (0.033)                                    & 0.829 (0.028)     & 0.745 (0.032)          \\
 		\bottomrule
 	\end{tabular}
 \end{table}
@@ -462,9 +458,9 @@ Another observation is that, although the non-zero effect size for \( \mathbf{b}
 \section*{Future Work}
 
 \begin{itemize}
-  \item Adding details about how \texttt{hdi} package calculated p-values and why my permutation test didn't work.
-  \item Increase \( b \) effect size (how to keep \( p \) evenly distributed in the same time?) see whether the pattern of coefficient estimates disappear or relieve.
-  \item What is the next step in higher level?
+	\item Adding details about how \texttt{hdi} package calculated p-values and why my permutation test didn't work.
+	\item Increase \( b \) effect size (how to keep \( p \) evenly distributed in the same time?) see whether the pattern of coefficient estimates disappear or relieve.
+	\item What is the next step in higher level?
 \end{itemize}
 
 \footnotesize

@@ -31,7 +31,7 @@ fig_dir <- file.path(proj_dir, "results", "figures", "sim1")
 # vector_to_heatmap, plot_scatter, create_heatmap_plots, create_scatter_plots
 source(file.path(proj_dir, "R", "summarize_results.R"))
 # transform_data, transform_coef
-source(file.path(proj_dir, "R", "transformations.R"))
+source(file.path(proj_dir, "R", "simulate_data.R"))
 
 # Read in .rds file saves all iteration fits, and data from iter1
 iter1 <- readRDS(file.path(data_dir, "data_015.rds"))
@@ -51,6 +51,17 @@ p <- length(beta)
 index <- seq_len(p) / p
 x_freq <- transform_data(x, e, to_freq = TRUE)
 b <- transform_coef(beta, e, to_freq = TRUE)
+
+
+# ---------- AUC/ACC ----------
+auc_acc_df |>
+  dplyr::group_by(space, lambda) |>
+  dplyr::summarize(
+    mean_auc = mean(auc),
+    se_auc = sd(auc),
+    mean_acc = mean(accuracy),
+    se_acc = sd(accuracy)
+  )
 
 
 # ---------- Group Mean Difference ----------
@@ -81,6 +92,54 @@ p_est_b_pixel <- create_scatter_plots(t(coefs_avg["pixel", , "trans", ]), index)
 # Average est coefs fit in freq space
 p_est_b_freq <- create_scatter_plots(t(coefs_avg["freq", , "orig", ]), index)
 p_est_beta_freq <- create_heatmap_plots(t(coefs_avg["freq", , "trans", ]))
+
+
+# Goal: select the top b values under lambda.min and lambda.1se, project
+# back to beta, visualize
+est_b <- t(coefs_avg["freq", , "orig", ]) # (256, 2)
+
+# Select the top n values by absolute value, set others to zero
+select_top_sparse <- function(coefs, top_n) {
+  # Get indices of top n values by absolute value
+  top_indices <- order(abs(coefs), decreasing = TRUE)[1:top_n]
+
+  # Create sparse version with only top n coefficients
+  sparse_coefs <- rep(0, length(coefs))
+  sparse_coefs[top_indices] <- coefs[top_indices]
+
+  return(sparse_coefs)
+}
+
+lambda_min_plots <- purrr::map(seq(1, 20, 2), ~ {
+  transformed_vec <- est_b[, 1] |>
+    select_top_sparse(top_n = .x) |>
+    transform_coef(e = e, to_freq = FALSE)
+
+  vector_to_heatmap(transformed_vec) +
+    ggplot2::ggtitle(paste("Top", .x, "coefficients"))
+}) |>
+  patchwork::wrap_plots(ncol = 5)
+
+lambda_1se_plots <- purrr::map(seq(1, 20, 2), ~ {
+  transformed_vec <- est_b[, 2] |>
+    select_top_sparse(top_n = .x) |>
+    transform_coef(e = e, to_freq = FALSE)
+
+  vector_to_heatmap(transformed_vec) +
+    ggplot2::ggtitle(paste("Top", .x, "coefficients"))
+}) |>
+  patchwork::wrap_plots(ncol = 5)
+
+ggplot2::ggsave(
+  file.path(fig_dir, "est_beta_freq_lmin_top20.pdf"),
+  lambda_min_plots,
+  width = 28, height = 16
+)
+ggplot2::ggsave(
+  file.path(fig_dir, "est_beta_freq_l1se_top20.pdf"),
+  lambda_1se_plots,
+  width = 28, height = 16
+)
 
 
 # ---------- Percentage of p<0.05 Visualization ----------
